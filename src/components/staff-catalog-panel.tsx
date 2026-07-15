@@ -147,7 +147,11 @@ export function StaffCatalogPanel({
       setTitle("");
       setBody("");
       setAssignContactId("");
-      setMessage(t("staff.catalogSaved"));
+      setMessage(
+        assignContactId
+          ? t("staff.catalogSavedAndSent")
+          : t("staff.catalogSaved"),
+      );
       setRows(await loadCatalog());
     } catch {
       setError(t("staff.unreachable"));
@@ -182,7 +186,7 @@ export function StaffCatalogPanel({
           );
           return;
         }
-        setMessage(t("staff.catalogAssigned"));
+        setMessage(t("staff.catalogAssignedAndSent"));
         setRows(await loadCatalog());
       } catch {
         setError(t("staff.unreachable"));

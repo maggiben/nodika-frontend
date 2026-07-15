@@ -5,17 +5,13 @@ import {
   Box,
   Button,
   Container,
-  Divider,
   FormControl,
-  FormControlLabel,
-  FormLabel,
   InputLabel,
   MenuItem,
   Paper,
   Select,
   type SelectChangeEvent,
   Stack,
-  Switch,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -23,7 +19,7 @@ import {
 } from "@mui/material";
 import { useColorScheme } from "@mui/material/styles";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   defaultLocale,
@@ -33,19 +29,9 @@ import {
   type Locale,
 } from "@/i18n/config";
 import { useDictionary } from "@/i18n/dictionary-provider";
-import type { AccountSettings, EmailSchedule } from "@/lib/core-auth";
+import type { AccountSettings } from "@/lib/core-auth";
 
 type ThemePreference = "light" | "dark" | "system";
-
-const weekdayKeys = [
-  "sunday",
-  "monday",
-  "tuesday",
-  "wednesday",
-  "thursday",
-  "friday",
-  "saturday",
-] as const;
 
 function replaceLocale(pathname: string, nextLocale: Locale) {
   const segments = pathname.split("/");
@@ -56,13 +42,6 @@ function replaceLocale(pathname: string, nextLocale: Locale) {
   return `/${nextLocale}${pathname === "/" ? "" : pathname}`;
 }
 
-function formatPreviewDate(value: string, locale: Locale) {
-  return new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 export function UserSettingsForm() {
   const router = useRouter();
   const pathname = usePathname();
@@ -71,12 +50,8 @@ export function UserSettingsForm() {
   const activeMode = (mode ?? "system") as ThemePreference;
 
   const [settings, setSettings] = useState<AccountSettings | null>(null);
-  const [schedule, setSchedule] = useState<EmailSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [savingSchedule, setSavingSchedule] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -111,9 +86,7 @@ export function UserSettingsForm() {
         }
 
         if (!cancelled && body && typeof body === "object") {
-          const next = body as AccountSettings;
-          setSettings(next);
-          setSchedule(next.emailSchedule);
+          setSettings(body as AccountSettings);
         }
       } catch {
         if (!cancelled) {
@@ -132,11 +105,6 @@ export function UserSettingsForm() {
     };
   }, [t]);
 
-  const previewDates = useMemo(
-    () => settings?.nextSendDates ?? [],
-    [settings?.nextSendDates],
-  );
-
   function changeTheme(preference: ThemePreference) {
     setMode(preference);
   }
@@ -150,63 +118,6 @@ export function UserSettingsForm() {
     document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
     router.push(replaceLocale(pathname || `/${defaultLocale}`, nextLocale));
     router.refresh();
-  }
-
-  function toggleWeekday(day: number) {
-    if (!schedule) {
-      return;
-    }
-
-    const days = schedule.daysOfWeek.includes(day)
-      ? schedule.daysOfWeek.filter((value) => value !== day)
-      : [...schedule.daysOfWeek, day].sort((a, b) => a - b);
-
-    setSchedule({
-      ...schedule,
-      daysOfWeek: days.length > 0 ? days : [day],
-    });
-  }
-
-  async function saveSchedule() {
-    if (!schedule) {
-      return;
-    }
-
-    setSavingSchedule(true);
-    setSaveMessage(null);
-    setSaveError(null);
-
-    try {
-      const response = await fetch("/api/settings", {
-        body: JSON.stringify(schedule),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
-      });
-      const body: unknown = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        setSaveError(
-          typeof body === "object" &&
-            body !== null &&
-            "message" in body &&
-            typeof body.message === "string"
-            ? body.message
-            : t("settings.saveError"),
-        );
-        return;
-      }
-
-      if (body && typeof body === "object") {
-        const next = body as AccountSettings;
-        setSettings(next);
-        setSchedule(next.emailSchedule);
-      }
-      setSaveMessage(t("settings.scheduleSaved"));
-    } catch {
-      setSaveError(t("settings.unreachable"));
-    } finally {
-      setSavingSchedule(false);
-    }
   }
 
   async function submitPasswordChange() {
@@ -378,151 +289,6 @@ export function UserSettingsForm() {
                 : t("settings.passwordSave")}
             </Button>
           </Stack>
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          <Typography component="h2" variant="h6">
-            {t("settings.emailTitle")}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
-            {t("settings.emailDescription")}
-          </Typography>
-
-          {schedule ? (
-            <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={schedule.enabled}
-                    onChange={(event) =>
-                      setSchedule({
-                        ...schedule,
-                        enabled: event.target.checked,
-                      })
-                    }
-                  />
-                }
-                label={t("settings.emailEnabled")}
-              />
-
-              <FormControl size="small" sx={{ maxWidth: 220 }}>
-                <InputLabel id="settings-frequency-label">
-                  {t("settings.frequency")}
-                </InputLabel>
-                <Select
-                  disabled={!schedule.enabled}
-                  label={t("settings.frequency")}
-                  labelId="settings-frequency-label"
-                  onChange={(event) =>
-                    setSchedule({
-                      ...schedule,
-                      frequency: event.target
-                        .value as EmailSchedule["frequency"],
-                    })
-                  }
-                  value={schedule.frequency}
-                >
-                  <MenuItem value="weekly">{t("settings.weekly")}</MenuItem>
-                  <MenuItem value="monthly">{t("settings.monthly")}</MenuItem>
-                </Select>
-              </FormControl>
-
-              {schedule.frequency === "weekly" ? (
-                <Box>
-                  <FormLabel>{t("settings.weekdays")}</FormLabel>
-                  <ToggleButtonGroup
-                    disabled={!schedule.enabled}
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}
-                  >
-                    {weekdayKeys.map((key, index) => (
-                      <ToggleButton
-                        key={key}
-                        onClick={() => toggleWeekday(index)}
-                        selected={schedule.daysOfWeek.includes(index)}
-                        value={index}
-                      >
-                        {t(`settings.weekdaysShort.${key}`)}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                </Box>
-              ) : (
-                <FormControl size="small" sx={{ maxWidth: 220 }}>
-                  <InputLabel id="settings-day-of-month-label">
-                    {t("settings.dayOfMonth")}
-                  </InputLabel>
-                  <Select
-                    disabled={!schedule.enabled}
-                    label={t("settings.dayOfMonth")}
-                    labelId="settings-day-of-month-label"
-                    onChange={(event) =>
-                      setSchedule({
-                        ...schedule,
-                        dayOfMonth: Number(event.target.value),
-                      })
-                    }
-                    value={schedule.dayOfMonth}
-                  >
-                    {Array.from({ length: 28 }, (_, index) => index + 1).map(
-                      (day) => (
-                        <MenuItem key={day} value={day}>
-                          {day}
-                        </MenuItem>
-                      ),
-                    )}
-                  </Select>
-                </FormControl>
-              )}
-
-              <TextField
-                disabled={!schedule.enabled}
-                label={t("settings.sendTime")}
-                onChange={(event) =>
-                  setSchedule({ ...schedule, sendTime: event.target.value })
-                }
-                slotProps={{ htmlInput: { step: 300 } }}
-                sx={{ maxWidth: 220 }}
-                type="time"
-                value={schedule.sendTime}
-              />
-
-              <Divider />
-
-              <Box>
-                <Typography variant="subtitle2">
-                  {t("settings.nextSends")}
-                </Typography>
-                {schedule.enabled && previewDates.length > 0 ? (
-                  <Stack spacing={0.5} sx={{ mt: 1 }}>
-                    {previewDates.map((date) => (
-                      <Typography key={date} color="text.secondary">
-                        {formatPreviewDate(date, locale)}
-                      </Typography>
-                    ))}
-                  </Stack>
-                ) : (
-                  <Typography color="text.secondary" sx={{ mt: 1 }}>
-                    {t("settings.noUpcomingSends")}
-                  </Typography>
-                )}
-              </Box>
-
-              {saveError ? <Alert severity="error">{saveError}</Alert> : null}
-              {saveMessage ? (
-                <Alert severity="success">{saveMessage}</Alert>
-              ) : null}
-
-              <Button
-                disabled={savingSchedule}
-                onClick={saveSchedule}
-                variant="contained"
-              >
-                {savingSchedule
-                  ? t("settings.saving")
-                  : t("settings.saveSchedule")}
-              </Button>
-            </Stack>
-          ) : null}
         </Paper>
       </Stack>
     </Container>

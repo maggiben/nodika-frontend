@@ -21,6 +21,7 @@ import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-dat
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import {
@@ -648,6 +649,8 @@ export function StaffMessagingForm() {
         </Paper>
 
         <StaffCatalogPanel roster={rows} />
+
+        <EmailFollowUpSchedulePanel />
 
         <Paper sx={{ p: 3 }}>
           <Typography component="h2" variant="h6">
