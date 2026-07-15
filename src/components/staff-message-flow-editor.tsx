@@ -35,6 +35,12 @@ import {
   type MessageFlowNode,
   validateFlowUpsertBody,
 } from "@/lib/staff-message-flow";
+import {
+  applyCatalogMessagePreset,
+  CATALOG_MESSAGE_PRESET_IDS,
+  type CatalogMessagePresetId,
+} from "@/lib/staff-org-chart-draft";
+import { readOrgChart } from "@/lib/staff-org-chart";
 import { parseStaffRoster, type StaffRosterRow } from "@/lib/staff-roster";
 
 const NODE_WIDTH = 220;
@@ -318,6 +324,42 @@ export function StaffMessageFlowEditor() {
     setSelectedEdgeId(null);
   }
 
+  function addNodeFromPreset(presetId: CatalogMessagePresetId) {
+    if (!draft) {
+      return;
+    }
+    const lead = roster.find((row) => row._id === startContactId);
+    const leadName = lead?.label?.trim() || lead?.phone || "";
+    const chart = startContactId ? readOrgChart(startContactId) : null;
+    const applied = applyCatalogMessagePreset({
+      presetId,
+      locale,
+      leadName,
+      chart,
+    });
+    const id = createFlowEntityId("node");
+    const index = draft.nodes.length;
+    updateDraft((prev) => ({
+      ...prev,
+      nodes: [
+        ...prev.nodes,
+        {
+          id,
+          title: applied.title,
+          body: applied.body,
+          position: { x: 40 + index * 36, y: 40 + index * 36 },
+        },
+      ],
+    }));
+    setSelectedNodeId(id);
+    setSelectedEdgeId(null);
+    setMessage(
+      applied.usedOrgChart
+        ? t("staff.flow.presetNodeApplied")
+        : t("staff.flow.presetNodePlaceholder"),
+    );
+  }
+
   function beginConnect(nodeId: string) {
     if (!draft) {
       return;
@@ -470,7 +512,41 @@ export function StaffMessageFlowEditor() {
                   <Button onClick={addNode} variant="outlined">
                     {t("staff.flow.addNode")}
                   </Button>
+                  <FormControl sx={{ minWidth: 220 }} size="small">
+                    <InputLabel id="flow-preset-node">
+                      {t("staff.flow.addPresetNode")}
+                    </InputLabel>
+                    <Select
+                      displayEmpty
+                      label={t("staff.flow.addPresetNode")}
+                      labelId="flow-preset-node"
+                      onChange={(event) => {
+                        const value = String(event.target.value);
+                        if (
+                          CATALOG_MESSAGE_PRESET_IDS.includes(
+                            value as CatalogMessagePresetId,
+                          )
+                        ) {
+                          addNodeFromPreset(value as CatalogMessagePresetId);
+                        }
+                      }}
+                      value=""
+                    >
+                      <MenuItem disabled value="">
+                        <em>{t("staff.flow.addPresetNodeChoose")}</em>
+                      </MenuItem>
+                      {CATALOG_MESSAGE_PRESET_IDS.map((id) => (
+                        <MenuItem key={id} value={id}>
+                          {t(`staff.catalogPresets.${id}`)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                 </Stack>
+
+                <Typography color="text.secondary" variant="body2">
+                  {t("staff.flow.chainHint")}
+                </Typography>
 
                 <Box
                   onPointerLeave={() => setDrag(null)}
