@@ -8,7 +8,7 @@ Define the current behavior of the single public route at `/`.
 
 ### Requirement: Public home route
 
-The application SHALL render a public home page at `/` with the snapshot upload workflow without requiring frontend authentication.
+The application SHALL render a public home page at `/` with the snapshot upload workflow without requiring frontend authentication. Session actions SHALL come from the shared application navbar rather than a home-page-local control cluster.
 
 #### Scenario: Requesting the root path
 
@@ -21,6 +21,7 @@ The application SHALL render a public home page at `/` with the snapshot upload 
 - **WHEN** an uploader requests `/`
 - **THEN** the page SHALL render the snapshot upload editor and validation summary
 - **AND** the page SHALL not embed a Core bearer token in the server-rendered response
+- **AND** the page SHALL not duplicate Sign in, Register, or Sign out controls outside the shared navbar
 
 ### Requirement: Responsive starter content
 

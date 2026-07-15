@@ -16,7 +16,7 @@ const theme = createTheme({
 
 export function AppTheme({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider defaultMode="system" theme={theme}>
       <CssBaseline enableColorScheme />
       {children}
     </ThemeProvider>

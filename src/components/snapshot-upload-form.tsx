@@ -89,9 +89,7 @@ export function SnapshotUploadForm({
     setSubmissionError(null);
 
     if (!parseNodikaSnapshot(values.snapshot).success) {
-      setSubmissionError(
-        "Correct the JSON validation errors before uploading.",
-      );
+      setSubmissionError("Correct the JSON syntax errors before uploading.");
       return;
     }
 
@@ -184,7 +182,7 @@ export function SnapshotUploadForm({
         {!validation.success && (
           <Alert aria-live="polite" severity="error">
             <AlertTitle>
-              Fix {validation.errors.length} validation issue(s)
+              Fix {validation.errors.length} JSON syntax issue(s)
             </AlertTitle>
             <Box component="ul" sx={{ mb: 0, pl: 2.5 }}>
               {validation.errors.map((issue) => (

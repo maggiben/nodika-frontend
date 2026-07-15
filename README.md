@@ -78,4 +78,5 @@ This repository uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) as the s
 5. Validate with `npm run spec:validate`, sync accepted delta specs, then archive with `/opsx:archive`.
 
 The installed Cursor commands require an IDE restart before they appear.
+
 # nordika-frontend

@@ -8,10 +8,6 @@ vi.mock("@/components/snapshot-upload-form", () => ({
   SnapshotUploadForm: () => <div>Snapshot upload form</div>,
 }));
 
-vi.mock("@/components/session-controls", () => ({
-  SessionControls: () => <div>Session controls</div>,
-}));
-
 vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
 }));
@@ -27,6 +23,11 @@ describe("Home", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Snapshot upload form")).toBeInTheDocument();
-    expect(screen.getByText("nodika-snapshot-v1")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Paste snapshot JSON, check syntax/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Sign in" }),
+    ).not.toBeInTheDocument();
   });
 });

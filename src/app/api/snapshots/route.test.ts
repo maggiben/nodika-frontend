@@ -76,9 +76,7 @@ describe("POST /api/snapshots", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await POST(
-      createRequest({ ...validSnapshot, schema_version: "unknown" }),
-    );
+    const response = await POST(createRawRequest("{ broken"));
 
     expect(response.status).toBe(400);
     expect(fetchMock).not.toHaveBeenCalled();

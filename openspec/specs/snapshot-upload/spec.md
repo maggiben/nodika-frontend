@@ -18,7 +18,7 @@ The application SHALL provide an editor for entering `nodika-snapshot-v1` JSON w
 
 ### Requirement: Snapshot structure validation
 
-The application SHALL reject syntactically invalid or structurally inconsistent snapshots before upload.
+The application SHALL reject syntactically invalid JSON before upload. It SHALL accept any JSON object that parses successfully, without enforcing snapshot field names, date ranges, uniqueness, or schema version semantics.
 
 #### Scenario: Invalid JSON syntax
 
@@ -26,27 +26,26 @@ The application SHALL reject syntactically invalid or structurally inconsistent 
 - **THEN** the application SHALL display a syntax error
 - **AND** the application SHALL not send an upload request
 
-#### Scenario: Inconsistent snapshot dates
+#### Scenario: Valid JSON object
 
-- **WHEN** a snapshot task starts after it ends
-- **THEN** the application SHALL display a task-specific validation error
-- **AND** the application SHALL not send an upload request
-
-#### Scenario: Valid snapshot structure
-
-- **WHEN** the editor contains a valid `nodika-snapshot-v1` document and the browser has an authenticated BFF session
-- **THEN** the application SHALL accept the required metadata and task fields
-- **AND** the application SHALL allow submission without requesting or accepting a bearer token field
+- **WHEN** the editor contains a syntactically valid JSON object and the browser has an authenticated BFF session
+- **THEN** the application SHALL allow submission without requesting or accepting a bearer token field
+- **AND** the application SHALL not require `schema_version`, task fields, or calendar date consistency
 
 ### Requirement: Server-side snapshot validation
 
-The upload route SHALL validate the snapshot JSON and semantic constraints independently of client-side validation.
+The upload route SHALL validate that the request body is syntactically valid JSON and a JSON object, independently of client-side validation. It SHALL not enforce snapshot field schemas or semantic date rules.
 
 #### Scenario: Bypassed client validation
 
-- **WHEN** a request sends an invalid snapshot directly to `POST /api/snapshots`
+- **WHEN** a request sends syntactically invalid JSON directly to `POST /api/snapshots`
 - **THEN** the route SHALL return a 400 response with safe validation errors
 - **AND** the route SHALL not forward the document to Core
+
+#### Scenario: Valid object forwarded
+
+- **WHEN** a request sends a syntactically valid JSON object with an authenticated BFF session
+- **THEN** the route SHALL forward the document to Core without schema-field rejection
 
 ### Requirement: Authenticated Core forwarding
 

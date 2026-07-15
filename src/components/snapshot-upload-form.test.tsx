@@ -39,7 +39,7 @@ describe("SnapshotUploadForm", () => {
       target: { value: "{" },
     });
 
-    expect(screen.getByText("Fix 1 validation issue(s)")).toBeInTheDocument();
+    expect(screen.getByText("Fix 1 JSON syntax issue(s)")).toBeInTheDocument();
     expect(screen.getByText(/Invalid JSON syntax/)).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /validate and upload/i }),
