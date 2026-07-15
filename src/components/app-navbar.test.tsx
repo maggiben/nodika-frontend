@@ -71,6 +71,9 @@ describe("AppNavbar", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Open account menu" }));
+    expect(
+      screen.getByRole("menuitem", { name: "Upload snapshot" }),
+    ).toHaveAttribute("href", "/upload");
     fireEvent.click(screen.getByRole("menuitem", { name: "Dark theme" }));
     expect(setMode).toHaveBeenCalledWith("dark");
 

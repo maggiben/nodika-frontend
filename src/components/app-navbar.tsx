@@ -77,7 +77,7 @@ export function AppNavbar({ authenticated }: { authenticated: boolean }) {
         borderColor: "divider",
       }}
     >
-      <Container maxWidth="md">
+      <Container maxWidth="lg">
         <Toolbar disableGutters sx={{ gap: 2, minHeight: 64 }}>
           <Typography
             component={Link}
@@ -129,6 +129,14 @@ export function AppNavbar({ authenticated }: { authenticated: boolean }) {
                   list: { "aria-label": "Account preferences" },
                 }}
               >
+                <MenuItem
+                  component={Link}
+                  href="/upload"
+                  onClick={() => setAnchorEl(null)}
+                >
+                  <ListItemText primary="Upload snapshot" />
+                </MenuItem>
+                <Divider />
                 <MenuItem disabled dense>
                   <ListItemText primary="Preferences" secondary="Appearance" />
                 </MenuItem>

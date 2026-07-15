@@ -13,6 +13,16 @@ vi.mock("next/headers", () => ({
   cookies: async () => ({ get: () => undefined }),
 }));
 
+vi.mock("@mui/material-nextjs/v16-appRouter", () => ({
+  AppRouterCacheProvider: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
+}));
+
+vi.mock("@mui/material/InitColorSchemeScript", () => ({
+  default: () => null,
+}));
+
 vi.mock("@/components/app-navbar", () => ({
   AppNavbar: ({ authenticated }: { authenticated: boolean }) => (
     <div>App navbar {authenticated ? "signed-in" : "signed-out"}</div>

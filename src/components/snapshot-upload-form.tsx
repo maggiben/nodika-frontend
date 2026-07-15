@@ -11,9 +11,11 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
+import { storeSnapshotJson } from "@/lib/snapshot-storage";
 
 type UploadFormValues = {
   snapshot: string;
@@ -69,6 +71,7 @@ export function SnapshotUploadForm({
 }: {
   authenticated: boolean;
 }) {
+  const router = useRouter();
   const {
     control,
     formState: { isSubmitting },
@@ -121,7 +124,9 @@ export function SnapshotUploadForm({
         return;
       }
 
+      storeSnapshotJson(values.snapshot);
       setResult(body);
+      router.push("/");
     } catch {
       setSubmissionError(
         "The upload service could not be reached. Try again later.",
@@ -137,8 +142,8 @@ export function SnapshotUploadForm({
             Snapshot JSON
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 1 }} variant="body2">
-            The editor checks JSON syntax, field names, dates, numeric ranges,
-            and duplicate task IDs before upload.
+            The editor checks JSON syntax before upload. After a successful
+            upload, the home dashboard updates from this snapshot.
           </Typography>
           <Controller
             control={control}

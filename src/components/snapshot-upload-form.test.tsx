@@ -10,6 +10,12 @@ import {
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { SnapshotUploadForm } from "./snapshot-upload-form";
 
+const push = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+}));
+
 vi.mock("@uiw/react-codemirror", () => ({
   default: ({
     onChange,
@@ -28,6 +34,8 @@ vi.mock("@uiw/react-codemirror", () => ({
 
 afterEach(() => {
   cleanup();
+  push.mockReset();
+  window.localStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -72,6 +80,10 @@ describe("SnapshotUploadForm", () => {
         }),
       );
     });
+    expect(window.localStorage.getItem("nordika.lastSnapshotJson")).toContain(
+      "nodika-snapshot-v1",
+    );
+    expect(push).toHaveBeenCalledWith("/");
     expect(screen.getByText(/Uploaded/)).toBeInTheDocument();
     expect(screen.getByText(/source_1/)).toBeInTheDocument();
   });

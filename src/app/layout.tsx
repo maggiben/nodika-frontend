@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import InitColorSchemeScript from "@mui/material/InitColorSchemeScript";
+import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppNavbar } from "@/components/app-navbar";
 import { AppTheme } from "@/components/app-theme";
@@ -19,7 +20,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Nordika",
-  description: "Upload and manage Nordika project snapshots.",
+  description: "View Nordika project status and upload snapshots.",
 };
 
 export default async function RootLayout({
@@ -38,11 +39,16 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <body>
-        <InitColorSchemeScript defaultMode="system" />
-        <AppTheme>
-          <AppNavbar authenticated={authenticated} />
-          {children}
-        </AppTheme>
+        <InitColorSchemeScript
+          attribute="data-mui-color-scheme"
+          defaultMode="system"
+        />
+        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
+          <AppTheme>
+            <AppNavbar authenticated={authenticated} />
+            {children}
+          </AppTheme>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

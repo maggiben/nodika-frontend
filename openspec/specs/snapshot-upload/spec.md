@@ -6,13 +6,28 @@ TBD - created by archiving change upload-nodika-snapshot. Update Purpose after a
 
 ## Requirements
 
+### Requirement: Snapshot upload route
+
+The application SHALL provide snapshot upload at `/upload` using the existing syntax validation and authenticated BFF upload flow.
+
+#### Scenario: Opening the upload route while signed in
+
+- **WHEN** an authenticated user opens `/upload`
+- **THEN** the page SHALL show the snapshot JSON editor and upload controls
+- **AND** a successful upload SHALL persist the snapshot JSON for the dashboard
+
+#### Scenario: Opening the upload route while signed out
+
+- **WHEN** an unauthenticated user opens `/upload`
+- **THEN** the page SHALL require sign-in before enabling upload
+
 ### Requirement: JSON snapshot editor
 
-The application SHALL provide an editor for entering `nodika-snapshot-v1` JSON with JSON syntax highlighting.
+The application SHALL provide an editor for entering snapshot JSON with JSON syntax highlighting.
 
 #### Scenario: Editing a snapshot
 
-- **WHEN** an uploader opens the home page
+- **WHEN** an uploader opens the upload page
 - **THEN** the application SHALL show a JSON-highlighted editor with a snapshot template
 - **AND** the uploader SHALL be able to replace its content
 
