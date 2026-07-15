@@ -134,6 +134,11 @@ describe("truncateForPreview", () => {
     expect(preview.endsWith("…")).toBe(true);
     expect(preview.length).toBeLessThanOrEqual(100);
   });
+
+  it("preserves line breaks instead of flattening them", () => {
+    expect(truncateForPreview("linea 1\nlinea 2")).toBe("linea 1\nlinea 2");
+    expect(truncateForPreview("a  \n\n  b")).toBe("a\n\nb");
+  });
 });
 
 describe("parseStaffCatalog", () => {

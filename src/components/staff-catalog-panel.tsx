@@ -452,13 +452,20 @@ export function StaffCatalogPanel({
                   </Tooltip>
                 </Stack>
 
-                <Tooltip title={row.body}>
+                <Tooltip
+                  title={
+                    <Box sx={{ whiteSpace: "pre-wrap", maxWidth: 320 }}>
+                      {row.body}
+                    </Box>
+                  }
+                >
                   <Typography
                     color="text.secondary"
                     sx={{
                       display: "-webkit-box",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      whiteSpace: "pre-wrap",
                       WebkitBoxOrient: "vertical",
                       WebkitLineClamp: 3,
                     }}
