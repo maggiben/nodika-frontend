@@ -20,6 +20,12 @@ import { useCallback, useEffect, useState } from "react";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { parseStaffCatalog, type StaffCatalogRow } from "@/lib/staff-catalog";
+import {
+  buildAttendanceDraft,
+  buildAttendanceTitle,
+  chartHasNoReports,
+} from "@/lib/staff-org-chart-draft";
+import { readOrgChart } from "@/lib/staff-org-chart";
 import type { StaffRosterRow } from "@/lib/staff-roster";
 import {
   computeStaffResponseStatus,
@@ -113,6 +119,26 @@ export function StaffCatalogPanel({
   useVisibleInterval(() => {
     void refreshCatalogQuietly();
   }, 4_000);
+
+  function applyAttendanceTemplate() {
+    const lead = roster.find((row) => row._id === assignContactId);
+    const leadName = lead?.label?.trim() || lead?.phone || "";
+    const chart = assignContactId ? readOrgChart(assignContactId) : null;
+    setTitle(buildAttendanceTitle({ locale, leadName }));
+    setBody(
+      buildAttendanceDraft({
+        locale,
+        leadName,
+        chart,
+      }),
+    );
+    setMessage(
+      chart && !chartHasNoReports(chart)
+        ? t("staff.catalogAttendanceApplied")
+        : t("staff.catalogAttendancePlaceholder"),
+    );
+    setError(null);
+  }
 
   async function saveCatalogMessage() {
     setSaving(true);
@@ -349,6 +375,14 @@ export function StaffCatalogPanel({
               ))}
             </Select>
           </FormControl>
+          <Button
+            fullWidth
+            onClick={applyAttendanceTemplate}
+            size="small"
+            variant="outlined"
+          >
+            {t("staff.catalogAttendanceTemplate")}
+          </Button>
           <Button
             disabled={
               saving || title.trim().length === 0 || body.trim().length === 0

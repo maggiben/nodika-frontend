@@ -2,7 +2,11 @@
 
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { buildPerformanceDraft } from "./staff-org-chart-draft";
+import {
+  buildAttendanceDraft,
+  buildAttendanceTitle,
+  buildPerformanceDraft,
+} from "./staff-org-chart-draft";
 import {
   clearOrgCharts,
   countOrgReports,
@@ -268,5 +272,47 @@ describe("staff-org-chart-draft", () => {
       },
     });
     expect(draft).toContain("Hi there");
+  });
+
+  test("builds a Spanish attendance draft from org chart reports", () => {
+    const draft = buildAttendanceDraft({
+      locale: "es",
+      leadName: "Juan",
+      chart: {
+        contactId: "lead_1",
+        contactLabel: "Juan",
+        reports: [
+          { id: "r1", name: "Ana", role: "operario" },
+          { id: "r2", name: "Luis", role: "jornalero" },
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    });
+    expect(draft).toContain("Hola Juan");
+    expect(draft).toContain("1. Ana (operario)");
+    expect(draft).toContain("2. Luis (jornalero)");
+    expect(draft).toContain("Día completo");
+    expect(draft).toContain("Media jornada");
+    expect(draft).toContain("Faltó");
+    expect(
+      buildAttendanceTitle({
+        locale: "es",
+        leadName: "Juan",
+        dateLabel: "15 jul 2026",
+      }),
+    ).toBe("Asistencia del equipo — Juan — 15 jul 2026");
+  });
+
+  test("builds placeholder attendance draft when the chart is empty", () => {
+    const draft = buildAttendanceDraft({
+      locale: "en",
+      leadName: "Juan",
+      chart: emptyOrgChart("lead_1", "Juan"),
+    });
+    expect(draft).toContain("Hi Juan");
+    expect(draft).toContain("1. Person 1");
+    expect(draft).toContain("Full day");
+    expect(draft).toContain("Half day");
+    expect(draft).toContain("Absent");
   });
 });

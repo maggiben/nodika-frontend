@@ -62,3 +62,100 @@ export function buildPerformanceDraft(input: {
 export function chartHasNoReports(chart: StaffOrgChart): boolean {
   return chart.reports.length === 0;
 }
+
+const ATTENDANCE_CHOICES: Record<Locale, readonly string[]> = {
+  es: ["Día completo", "Media jornada", "Faltó"],
+  en: ["Full day", "Half day", "Absent"],
+};
+
+function attendanceChoiceLines(locale: Locale): string[] {
+  return ATTENDANCE_CHOICES[locale].flatMap((choice) => [`   - [ ] ${choice}`]);
+}
+
+function formatAttendancePersonBlock(
+  locale: Locale,
+  index: number,
+  name: string,
+  roleSuffix?: string,
+): string[] {
+  const heading = roleSuffix
+    ? `${index}. ${name} (${roleSuffix})`
+    : `${index}. ${name}`;
+  return [heading, ...attendanceChoiceLines(locale), ""];
+}
+
+export function buildAttendanceTitle(input: {
+  locale: Locale;
+  leadName?: string;
+  dateLabel?: string;
+}): string {
+  const datePart =
+    input.dateLabel?.trim() ||
+    new Intl.DateTimeFormat(input.locale === "es" ? "es-AR" : "en-US", {
+      dateStyle: "medium",
+    }).format(new Date());
+  const lead = input.leadName?.trim();
+  if (input.locale === "en") {
+    return lead
+      ? `Team attendance — ${lead} — ${datePart}`
+      : `Team attendance — ${datePart}`;
+  }
+  return lead
+    ? `Asistencia del equipo — ${lead} — ${datePart}`
+    : `Asistencia del equipo — ${datePart}`;
+}
+
+export function buildAttendanceDraft(input: {
+  locale: Locale;
+  leadName: string;
+  chart: StaffOrgChart | null;
+}): string {
+  const lead = input.leadName.trim() || input.chart?.contactLabel?.trim() || "";
+  const roleLabels = ROLE_LABELS[input.locale];
+  const personBlocks: string[] = [];
+
+  if (input.chart && !chartHasNoReports(input.chart)) {
+    input.chart.reports.forEach((report, index) => {
+      personBlocks.push(
+        ...formatAttendancePersonBlock(
+          input.locale,
+          index + 1,
+          report.name,
+          reportRoleLabel(report, roleLabels),
+        ),
+      );
+    });
+  } else {
+    const placeholders =
+      input.locale === "en"
+        ? ["Person 1", "Person 2", "Person 3"]
+        : ["Persona 1", "Persona 2", "Persona 3"];
+    placeholders.forEach((name, index) => {
+      personBlocks.push(
+        ...formatAttendancePersonBlock(input.locale, index + 1, name),
+      );
+    });
+  }
+
+  if (input.locale === "en") {
+    return [
+      `Hi ${lead || "there"},`,
+      "",
+      "Please report today’s attendance for each person on your team.",
+      "Mark one option for each person: full day, half day, or absent.",
+      "",
+      ...personBlocks,
+      "Reply with the chosen option for each name. Thanks.",
+    ].join("\n");
+  }
+
+  return [
+    `Hola ${lead || ""},`.trimEnd(),
+    "",
+    "Por favor reportá la asistencia de hoy de cada persona a cargo.",
+    "Marcá una opción por persona: día completo, media jornada o faltó.",
+    "",
+    ...personBlocks,
+    "Respondé indicando la opción de cada uno. Gracias.",
+  ].join("\n");
+}
