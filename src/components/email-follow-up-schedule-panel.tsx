@@ -101,19 +101,6 @@ export function EmailFollowUpSchedulePanel() {
     [schedule],
   );
 
-  function toggleWeekday(day: number) {
-    if (!schedule) {
-      return;
-    }
-    const days = schedule.daysOfWeek.includes(day)
-      ? schedule.daysOfWeek.filter((value) => value !== day)
-      : [...schedule.daysOfWeek, day].sort((a, b) => a - b);
-    setSchedule({
-      ...schedule,
-      daysOfWeek: days.length > 0 ? days : [day],
-    });
-  }
-
   async function saveSchedule() {
     if (!schedule) {
       return;
@@ -205,16 +192,24 @@ export function EmailFollowUpSchedulePanel() {
             <Box>
               <FormLabel>{t("settings.weekdays")}</FormLabel>
               <ToggleButtonGroup
+                aria-label={t("settings.weekdays")}
+                color="primary"
                 disabled={!schedule.enabled}
-                sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1 }}
+                size="small"
+                sx={{ mt: 1 }}
+                value={schedule.daysOfWeek}
+                onChange={(_, days: number[]) => {
+                  if (days.length === 0) {
+                    return;
+                  }
+                  setSchedule({
+                    ...schedule,
+                    daysOfWeek: [...days].sort((a, b) => a - b),
+                  });
+                }}
               >
                 {weekdayKeys.map((key, index) => (
-                  <ToggleButton
-                    key={key}
-                    onClick={() => toggleWeekday(index)}
-                    selected={schedule.daysOfWeek.includes(index)}
-                    value={index}
-                  >
+                  <ToggleButton key={key} value={index}>
                     {t(`settings.weekdaysShort.${key}`)}
                   </ToggleButton>
                 ))}
