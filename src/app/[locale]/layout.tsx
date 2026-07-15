@@ -8,7 +8,12 @@ import { AppTheme } from "@/components/app-theme";
 import { isLocale, locales, type Locale } from "@/i18n/config";
 import { DictionaryProvider } from "@/i18n/dictionary-provider";
 import { getDictionary } from "@/i18n/get-dictionary";
-import { CORE_ACCESS_COOKIE } from "@/lib/core-auth";
+import {
+  authenticatedCoreRequest,
+  CORE_ACCESS_COOKIE,
+  CORE_REFRESH_COOKIE,
+  parseAccountSettings,
+} from "@/lib/core-auth";
 import { HtmlLang } from "@/components/html-lang";
 
 export function generateStaticParams() {
@@ -28,9 +33,25 @@ export default async function LocaleLayout({
   }
   const locale: Locale = localeParam;
   const dictionary = await getDictionary(locale);
-  const authenticated = Boolean(
-    (await cookies()).get(CORE_ACCESS_COOKIE)?.value,
-  );
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get(CORE_ACCESS_COOKIE)?.value;
+  const refreshToken = cookieStore.get(CORE_REFRESH_COOKIE)?.value;
+  const authenticated = Boolean(accessToken);
+  let userEmail: string | null = null;
+
+  if (accessToken) {
+    const settingsResult = await authenticatedCoreRequest(
+      "/account/settings",
+      { method: "GET" },
+      accessToken,
+      refreshToken,
+    );
+
+    if (settingsResult.ok) {
+      const settings = await parseAccountSettings(settingsResult.response);
+      userEmail = settings?.email ?? null;
+    }
+  }
 
   return (
     <AppRouterCacheProvider options={{ enableCssLayer: true }}>
@@ -41,7 +62,7 @@ export default async function LocaleLayout({
       <AppTheme>
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           <HtmlLang locale={locale} />
-          <AppNavbar authenticated={authenticated} />
+          <AppNavbar authenticated={authenticated} userEmail={userEmail} />
           {children}
         </DictionaryProvider>
       </AppTheme>

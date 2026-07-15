@@ -21,6 +21,7 @@ export default defineConfig({
         "src/i18n/dictionaries/**",
         "src/app/[locale]/layout.tsx",
         "src/app/[locale]/upload/page.tsx",
+        "src/app/[locale]/settings/page.tsx",
       ],
       include: ["src/**/*.{ts,tsx}"],
       provider: "v8",

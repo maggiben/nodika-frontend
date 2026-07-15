@@ -16,7 +16,8 @@
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión…",
     "language": "Idioma",
-    "project": "Proyecto"
+    "project": "Proyecto",
+    "settings": "Configuración"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -93,5 +94,51 @@
       "window": "Ventana"
     },
     "tasksSeries": "Tareas"
+  },
+  "settings": {
+    "title": "Configuración",
+    "description": "Administra tu apariencia, idioma, contraseña y la periodicidad de los correos.",
+    "signedInAs": "Sesión iniciada como {email}",
+    "loading": "Cargando configuración…",
+    "loadError": "No pudimos cargar tu configuración.",
+    "unreachable": "No se pudo contactar el servicio. Inténtalo más tarde.",
+    "appearanceTitle": "Apariencia",
+    "appearanceDescription": "Elige cómo quieres ver Nordika en este dispositivo.",
+    "languageTitle": "Idioma",
+    "languageDescription": "Cambia el idioma de la interfaz.",
+    "passwordTitle": "Contraseña",
+    "passwordDescription": "Actualiza tu contraseña sin salir de la aplicación.",
+    "currentPassword": "Contraseña actual",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "passwordMismatch": "La confirmación no coincide con la nueva contraseña.",
+    "passwordError": "No pudimos actualizar tu contraseña.",
+    "passwordSaved": "Tu contraseña se actualizó correctamente.",
+    "passwordSave": "Guardar contraseña",
+    "passwordSaving": "Guardando…",
+    "emailTitle": "Correos de seguimiento",
+    "emailDescription": "Elige los días y la hora en que quieres recibir resúmenes por correo.",
+    "emailEnabled": "Activar correos programados",
+    "frequency": "Periodicidad",
+    "weekly": "Semanal",
+    "monthly": "Mensual",
+    "weekdays": "Días de la semana",
+    "dayOfMonth": "Día del mes",
+    "sendTime": "Hora de envío",
+    "nextSends": "Próximos envíos",
+    "noUpcomingSends": "No hay envíos programados con esta configuración.",
+    "saveSchedule": "Guardar periodicidad",
+    "saving": "Guardando…",
+    "scheduleSaved": "La periodicidad de correos se guardó.",
+    "saveError": "No pudimos guardar la configuración.",
+    "weekdaysShort": {
+      "sunday": "Do",
+      "monday": "Lu",
+      "tuesday": "Ma",
+      "wednesday": "Mi",
+      "thursday": "Ju",
+      "friday": "Vi",
+      "saturday": "Sa"
+    }
   }
 }

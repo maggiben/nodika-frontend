@@ -148,3 +148,104 @@ export async function refreshSession(refreshToken: string | undefined) {
 
   return parseCoreSession(result.response);
 }
+
+export type EmailSchedule = {
+  enabled: boolean;
+  frequency: "weekly" | "monthly";
+  daysOfWeek: number[];
+  dayOfMonth: number;
+  sendTime: string;
+  timezone: string;
+};
+
+export type AccountSettings = {
+  email: string;
+  emailSchedule: EmailSchedule;
+  nextSendDates: string[];
+};
+
+export function isAccountSettings(value: unknown): value is AccountSettings {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+  const schedule = record.emailSchedule;
+
+  return (
+    typeof record.email === "string" &&
+    Array.isArray(record.nextSendDates) &&
+    typeof schedule === "object" &&
+    schedule !== null &&
+    typeof (schedule as Record<string, unknown>).enabled === "boolean" &&
+    typeof (schedule as Record<string, unknown>).frequency === "string" &&
+    Array.isArray((schedule as Record<string, unknown>).daysOfWeek) &&
+    typeof (schedule as Record<string, unknown>).sendTime === "string"
+  );
+}
+
+export async function parseAccountSettings(
+  response: Response,
+): Promise<AccountSettings | null> {
+  const payload: unknown = await response.json().catch(() => null);
+  return isAccountSettings(payload) ? payload : null;
+}
+
+export async function authenticatedCoreRequest(
+  path: string,
+  init: RequestInit,
+  accessToken: string | undefined,
+  refreshToken: string | undefined,
+): Promise<
+  | { ok: true; response: Response; refreshedSession: CoreSession | null }
+  | { ok: false; status: number; message: string; refreshedSession: null }
+> {
+  if (!accessToken) {
+    return {
+      ok: false,
+      status: 401,
+      message: "Your session is no longer valid.",
+      refreshedSession: null,
+    };
+  }
+
+  let refreshedSession: CoreSession | null = null;
+  let token = accessToken;
+
+  async function send(currentToken: string) {
+    return coreRequest(path, {
+      ...init,
+      headers: {
+        ...Object.fromEntries(new Headers(init.headers).entries()),
+        Authorization: `Bearer ${currentToken}`,
+      },
+    });
+  }
+
+  let result = await send(token);
+
+  if (!result.ok && result.status === 401 && refreshToken) {
+    refreshedSession = await refreshSession(refreshToken);
+    if (!refreshedSession) {
+      return {
+        ok: false,
+        status: 401,
+        message: "Your session is no longer valid.",
+        refreshedSession: null,
+      };
+    }
+    token = refreshedSession.accessToken;
+    result = await send(token);
+  }
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      status: result.status,
+      message: result.message,
+      refreshedSession: null,
+    };
+  }
+
+  return { ok: true, response: result.response, refreshedSession };
+}

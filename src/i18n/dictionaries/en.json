@@ -16,7 +16,8 @@
     "signOut": "Sign out",
     "signingOut": "Signing out…",
     "language": "Language",
-    "project": "Project"
+    "project": "Project",
+    "settings": "Settings"
   },
   "auth": {
     "email": "Email address",
@@ -93,5 +94,51 @@
       "window": "Window"
     },
     "tasksSeries": "Tasks"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage appearance, language, password, and email timing.",
+    "signedInAs": "Signed in as {email}",
+    "loading": "Loading settings…",
+    "loadError": "We could not load your settings.",
+    "unreachable": "The settings service could not be reached. Try again later.",
+    "appearanceTitle": "Appearance",
+    "appearanceDescription": "Choose how Nordika looks on this device.",
+    "languageTitle": "Language",
+    "languageDescription": "Change the interface language.",
+    "passwordTitle": "Password",
+    "passwordDescription": "Update your password without leaving the app.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "passwordMismatch": "Confirmation does not match the new password.",
+    "passwordError": "We could not update your password.",
+    "passwordSaved": "Your password was updated.",
+    "passwordSave": "Save password",
+    "passwordSaving": "Saving…",
+    "emailTitle": "Follow-up emails",
+    "emailDescription": "Pick the days and time when you want summary emails.",
+    "emailEnabled": "Enable scheduled emails",
+    "frequency": "Frequency",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "weekdays": "Weekdays",
+    "dayOfMonth": "Day of month",
+    "sendTime": "Send time",
+    "nextSends": "Upcoming sends",
+    "noUpcomingSends": "No upcoming sends with this configuration.",
+    "saveSchedule": "Save schedule",
+    "saving": "Saving…",
+    "scheduleSaved": "Email schedule saved.",
+    "saveError": "We could not save your settings.",
+    "weekdaysShort": {
+      "sunday": "Su",
+      "monday": "Mo",
+      "tuesday": "Tu",
+      "wednesday": "We",
+      "thursday": "Th",
+      "friday": "Fr",
+      "saturday": "Sa"
+    }
   }
 }
