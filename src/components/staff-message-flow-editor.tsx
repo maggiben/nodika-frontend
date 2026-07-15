@@ -821,10 +821,9 @@ export function StaffMessageFlowEditor() {
                       }}
                     >
                       <Stack
-                        alignItems="center"
                         direction="row"
                         spacing={0.75}
-                        sx={{ mb: 0.5 }}
+                        sx={{ mb: 0.5, alignItems: "center" }}
                       >
                         <Box
                           aria-label={t("staff.flow.orderBadge", {

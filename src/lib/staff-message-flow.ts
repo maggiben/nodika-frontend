@@ -224,12 +224,15 @@ export function orderedFlowNodeIds(input: {
     ? input.startNodeId
     : nodeIds[0];
 
-  while (current && !seen.has(current)) {
+  while (current !== undefined && !seen.has(current)) {
     ordered.push(current);
     seen.add(current);
-    const nexts = (outgoing.get(current) ?? []).filter((id) =>
-      nodeIds.includes(id),
-    );
+    const nexts: string[] = [];
+    for (const id of outgoing.get(current) ?? []) {
+      if (nodeIds.includes(id)) {
+        nexts.push(id);
+      }
+    }
     current = nexts.length === 1 ? nexts[0] : undefined;
   }
 
