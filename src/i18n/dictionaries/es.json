@@ -250,7 +250,7 @@
       "pending": "Esperando respuesta"
     },
     "catalogTitle": "Mensajes del equipo",
-    "catalogDescription": "Mensajes por capataz, 4 por fila. Reordená con ⋮⋮; el número reinicia por jefe. Enviá el 1 y al responder sigue el siguiente.",
+    "catalogDescription": "Mensajes por capataz, 4 por fila. Reordená con ⋮⋮; el número reinicia por jefe. Solo se manda uno a la vez: el siguiente llega cuando responden el actual.",
     "catalogMessageTitle": "Título del mensaje",
     "catalogMessageBody": "Texto completo del mensaje",
     "catalogSave": "Agregar mensaje",

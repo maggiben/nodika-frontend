@@ -250,7 +250,7 @@
       "pending": "Waiting for reply"
     },
     "catalogTitle": "Team messages",
-    "catalogDescription": "Messages by site lead, 4 per row. Reorder with ⋮⋮; numbers restart per lead. Send #1 and the next follows on reply.",
+    "catalogDescription": "Messages by site lead, 4 per row. Reorder with ⋮⋮; numbers restart per lead. Only one WhatsApp at a time: the next is sent after they reply.",
     "catalogMessageTitle": "Message title",
     "catalogMessageBody": "Full message text",
     "catalogSave": "Add message",
