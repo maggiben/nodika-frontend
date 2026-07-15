@@ -1,6 +1,4 @@
-/** Pre-rebrand keys; migrated once into LIBRARY_STORAGE_KEY. */
-const PREVIOUS_BRAND_LIBRARY_KEY = "nordika.projectLibrary.v1";
-const PREVIOUS_BRAND_SNAPSHOT_KEY = "nordika.lastSnapshotJson";
+/** Older single-snapshot key (pre multi-project library). */
 const LEGACY_STORAGE_KEY = "nodika.lastSnapshotJson";
 const LIBRARY_STORAGE_KEY = "nodika.projectLibrary.v1";
 export const PROJECT_LIBRARY_CHANGED_EVENT = "nodika:project-library-changed";
@@ -153,24 +151,9 @@ function migrateLegacySnapshot(): ProjectLibrary {
   }
 
   try {
-    const previousLibrary = parseLibrary(
-      window.localStorage.getItem(PREVIOUS_BRAND_LIBRARY_KEY),
-    );
-    if (previousLibrary && previousLibrary.projects.length > 0) {
-      writeLibrary(previousLibrary);
-      window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
-      window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-      return previousLibrary;
-    }
-
-    const legacy =
-      window.localStorage.getItem(LEGACY_STORAGE_KEY) ??
-      window.localStorage.getItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
+    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
     const migrated = migrateSingleSnapshot(legacy);
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
     return migrated;
   } catch {
     return EMPTY_LIBRARY;
@@ -269,8 +252,6 @@ export function clearStoredSnapshotJson(): void {
   try {
     window.localStorage.removeItem(LIBRARY_STORAGE_KEY);
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
     notifyLibraryChanged();
   } catch {
     // Ignore storage failures.
