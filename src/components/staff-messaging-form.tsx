@@ -22,6 +22,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import {
   parseStaffRoster,
   type StaffRosterRow,
@@ -82,7 +83,9 @@ export function StaffMessagingForm() {
   const [remindTarget, setRemindTarget] = useState<StaffRosterRow | null>(null);
 
   const loadRoster = useCallback(async () => {
-    const rosterResponse = await fetch("/api/messaging/roster");
+    const rosterResponse = await fetch("/api/messaging/roster", {
+      cache: "no-store",
+    });
     const rosterBody: unknown = await rosterResponse.json().catch(() => null);
 
     if (rosterResponse.ok) {
@@ -90,7 +93,9 @@ export function StaffMessagingForm() {
     }
 
     // Degraded mode: fall back to contacts list.
-    const contactsResponse = await fetch("/api/messaging/contacts");
+    const contactsResponse = await fetch("/api/messaging/contacts", {
+      cache: "no-store",
+    });
     const contactsBody: unknown = await contactsResponse
       .json()
       .catch(() => null);
@@ -206,6 +211,19 @@ export function StaffMessagingForm() {
       cancelled = true;
     };
   }, [loadRoster, locale, t]);
+
+  const refreshRosterQuietly = useCallback(async () => {
+    try {
+      const roster = await loadRoster();
+      setRows(roster);
+    } catch {
+      // Keep the last good roster during background polls.
+    }
+  }, [loadRoster]);
+
+  useVisibleInterval(() => {
+    void refreshRosterQuietly();
+  }, 4_000);
 
   async function saveContact() {
     setSavingContact(true);

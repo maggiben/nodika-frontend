@@ -18,6 +18,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import {
   parseStaffCatalog,
   type StaffCatalogRow,
@@ -63,7 +64,9 @@ export function StaffCatalogPanel({
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const loadCatalog = useCallback(async () => {
-    const response = await fetch("/api/messaging/catalog");
+    const response = await fetch("/api/messaging/catalog", {
+      cache: "no-store",
+    });
     const payload: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       throw new Error(
@@ -100,6 +103,19 @@ export function StaffCatalogPanel({
       cancelled = true;
     };
   }, [loadCatalog, t]);
+
+  const refreshCatalogQuietly = useCallback(async () => {
+    try {
+      const next = await loadCatalog();
+      setRows(next);
+    } catch {
+      // Keep the last good catalog during background polls.
+    }
+  }, [loadCatalog]);
+
+  useVisibleInterval(() => {
+    void refreshCatalogQuietly();
+  }, 4_000);
 
   async function saveCatalogMessage() {
     setSaving(true);
