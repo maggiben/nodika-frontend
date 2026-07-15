@@ -1,0 +1,150 @@
+import type { NextResponse } from "next/server";
+
+export const CORE_ACCESS_COOKIE = "nodika_access_token";
+export const CORE_REFRESH_COOKIE = "nodika_refresh_token";
+
+type Account = Record<string, unknown>;
+
+export type CoreSession = {
+  accessToken: string;
+  refreshToken: string;
+  account: Account;
+};
+
+type CoreResult =
+  | { ok: true; response: Response }
+  | { ok: false; status: number; message: string };
+
+const cookieOptions = {
+  httpOnly: true,
+  path: "/",
+  sameSite: "lax" as const,
+  secure: true,
+};
+
+export function getCoreUrl(): URL | null {
+  const value = process.env.NODIKA_CORE_URL;
+
+  if (!value) {
+    return null;
+  }
+
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
+export function safeCoreError(status: number) {
+  if (status === 401) {
+    return "Your session is no longer valid.";
+  }
+
+  if (status === 429) {
+    return "Too many requests. Try again later.";
+  }
+
+  if (status >= 500) {
+    return "Core is temporarily unavailable.";
+  }
+
+  return "Core could not complete this request.";
+}
+
+export async function coreRequest(
+  path: string,
+  init: RequestInit,
+): Promise<CoreResult> {
+  const coreUrl = getCoreUrl();
+
+  if (!coreUrl) {
+    return {
+      ok: false,
+      status: 503,
+      message: "Authentication is not configured.",
+    };
+  }
+
+  try {
+    const response = await fetch(new URL(path, coreUrl), {
+      ...init,
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        status: response.status,
+        message: safeCoreError(response.status),
+      };
+    }
+
+    return { ok: true, response };
+  } catch {
+    return { ok: false, status: 502, message: "Core could not be reached." };
+  }
+}
+
+export function isCoreSession(value: unknown): value is CoreSession {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "accessToken" in value &&
+    "refreshToken" in value &&
+    "account" in value &&
+    typeof value.accessToken === "string" &&
+    value.accessToken.length > 0 &&
+    typeof value.refreshToken === "string" &&
+    value.refreshToken.length > 0 &&
+    typeof value.account === "object" &&
+    value.account !== null
+  );
+}
+
+export async function parseCoreSession(
+  response: Response,
+): Promise<CoreSession | null> {
+  const payload: unknown = await response.json().catch(() => null);
+  return isCoreSession(payload) ? payload : null;
+}
+
+export function setSessionCookies(
+  response: NextResponse,
+  session: CoreSession,
+) {
+  response.cookies.set(CORE_ACCESS_COOKIE, session.accessToken, cookieOptions);
+  response.cookies.set(
+    CORE_REFRESH_COOKIE,
+    session.refreshToken,
+    cookieOptions,
+  );
+  return response;
+}
+
+export function clearSessionCookies(response: NextResponse) {
+  response.cookies.set(CORE_ACCESS_COOKIE, "", { ...cookieOptions, maxAge: 0 });
+  response.cookies.set(CORE_REFRESH_COOKIE, "", {
+    ...cookieOptions,
+    maxAge: 0,
+  });
+  return response;
+}
+
+export async function refreshSession(refreshToken: string | undefined) {
+  if (!refreshToken) {
+    return null;
+  }
+
+  const result = await coreRequest("/auth/refresh", {
+    body: JSON.stringify({ refreshToken }),
+    headers: { "Content-Type": "application/json" },
+    method: "POST",
+  });
+
+  if (!result.ok) {
+    return null;
+  }
+
+  return parseCoreSession(result.response);
+}

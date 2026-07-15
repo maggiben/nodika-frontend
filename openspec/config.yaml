@@ -1,0 +1,29 @@
+schema: spec-driven
+
+context: |
+  Nordika Frontend is a Next.js 16.2.10 App Router application using React 19,
+  strict TypeScript, Material UI, React Hook Form, CodeMirror JSON editing,
+  ESLint, Prettier, and Vitest. Application code is in src/app; routes are Server Components by
+  default. The project currently has only the / route and no API routes,
+  server actions, database, auth, payment, environment variables, CI, Docker,
+  or deployment configuration. A sibling nodika-core backend exists but is
+  not integrated; do not assume an API contract. Preserve turbopack.root in
+  next.config.ts. Read AGENTS.md and the relevant installed Next.js 16 docs
+  before using unfamiliar framework APIs. Follow .ai/constitution.md and
+  .ai/constraints/ before creating or applying a change.
+
+rules:
+  proposal:
+    - State the problem, scope, non-goals, affected OpenSpec capabilities, and acceptance criteria.
+    - Do not invent backend contracts, environment variables, or infrastructure that is not approved.
+  design:
+    - Identify Server Component and Client Component boundaries.
+    - Describe security, accessibility, compatibility, rollback, and test implications.
+  specs:
+    - Use only observable requirements with SHALL or MUST and at least one testable scenario.
+    - Use ADDED, MODIFIED, REMOVED, or RENAMED sections for change deltas.
+  tasks:
+    - Map every task to a requirement or scenario.
+    - Include implementation, tests, documentation, formatting, linting, and production-build validation.
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
