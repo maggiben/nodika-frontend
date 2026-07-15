@@ -53,6 +53,27 @@ export function safeCoreError(status: number) {
   return "Core could not complete this request.";
 }
 
+export function readCoreErrorMessage(payload: unknown): string | null {
+  if (typeof payload !== "object" || payload === null || !("message" in payload)) {
+    return null;
+  }
+
+  const message = (payload as { message: unknown }).message;
+  if (typeof message === "string" && message.trim().length > 0) {
+    return message.trim();
+  }
+
+  if (
+    Array.isArray(message) &&
+    message.length > 0 &&
+    message.every((item) => typeof item === "string")
+  ) {
+    return message.join(" ");
+  }
+
+  return null;
+}
+
 export async function coreRequest(
   path: string,
   init: RequestInit,
@@ -74,10 +95,13 @@ export async function coreRequest(
     });
 
     if (!response.ok) {
+      const payload: unknown = await response.clone().json().catch(() => null);
+      const coreMessage =
+        response.status < 500 ? readCoreErrorMessage(payload) : null;
       return {
         ok: false,
         status: response.status,
-        message: safeCoreError(response.status),
+        message: coreMessage ?? safeCoreError(response.status),
       };
     }
 
