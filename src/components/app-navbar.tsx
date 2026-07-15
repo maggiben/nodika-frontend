@@ -135,7 +135,7 @@ export function AppNavbar({
                 >
                   <ListItemText primary={t("nav.settings")} />
                 </MenuItem>
-                <Divider />
+                <Divider component="li" sx={{ my: 0.5 }} />
                 <MenuItem disabled={isLoggingOut} onClick={logout}>
                   {isLoggingOut ? t("nav.signingOut") : t("nav.signOut")}
                 </MenuItem>
