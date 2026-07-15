@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Container,
-  Divider,
   IconButton,
   ListItemText,
   Menu,
@@ -135,7 +134,21 @@ export function AppNavbar({
                 >
                   <ListItemText primary={t("nav.settings")} />
                 </MenuItem>
-                <Divider component="li" sx={{ my: 0.5 }} />
+                <Box
+                  component="li"
+                  role="separator"
+                  sx={{
+                    border: 0,
+                    borderTop: (theme) => `1px solid ${theme.palette.divider}`,
+                    height: "1px",
+                    listStyle: "none",
+                    m: 0,
+                    minHeight: "1px",
+                    my: 0.5,
+                    p: 0,
+                    width: "100%",
+                  }}
+                />
                 <MenuItem disabled={isLoggingOut} onClick={logout}>
                   {isLoggingOut ? t("nav.signingOut") : t("nav.signOut")}
                 </MenuItem>

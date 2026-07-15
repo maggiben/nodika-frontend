@@ -2,6 +2,7 @@ import type { NextResponse } from "next/server";
 
 export const CORE_ACCESS_COOKIE = "nodika_access_token";
 export const CORE_REFRESH_COOKIE = "nodika_refresh_token";
+export const CORE_EMAIL_COOKIE = "nodika_account_email";
 
 type Account = Record<string, unknown>;
 
@@ -109,6 +110,13 @@ export async function parseCoreSession(
   return isCoreSession(payload) ? payload : null;
 }
 
+export function readAccountEmail(account: Account): string | null {
+  const email = account.email;
+  return typeof email === "string" && email.trim().length > 0
+    ? email.trim()
+    : null;
+}
+
 export function setSessionCookies(
   response: NextResponse,
   session: CoreSession,
@@ -119,6 +127,12 @@ export function setSessionCookies(
     session.refreshToken,
     cookieOptions,
   );
+
+  const email = readAccountEmail(session.account);
+  if (email) {
+    response.cookies.set(CORE_EMAIL_COOKIE, email, cookieOptions);
+  }
+
   return response;
 }
 
@@ -128,6 +142,7 @@ export function clearSessionCookies(response: NextResponse) {
     ...cookieOptions,
     maxAge: 0,
   });
+  response.cookies.set(CORE_EMAIL_COOKIE, "", { ...cookieOptions, maxAge: 0 });
   return response;
 }
 

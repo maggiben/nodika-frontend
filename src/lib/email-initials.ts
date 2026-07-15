@@ -1,15 +1,24 @@
 export function emailInitials(email: string): string {
-  const trimmed = email.trim();
-  const localPart = trimmed.split("@")[0] ?? trimmed;
-  const letters = localPart.replace(/[^a-zA-ZáéíóúñÁÉÍÓÚÑ]/g, "");
+  const localPart = email.trim().split("@")[0] ?? "";
+  const letters: string[] = [];
+
+  for (const char of localPart) {
+    if (/[\p{L}]/u.test(char)) {
+      letters.push(char);
+      if (letters.length === 2) {
+        break;
+      }
+    }
+  }
 
   if (letters.length >= 2) {
-    return letters.slice(0, 2).toUpperCase();
+    return letters.join("").toUpperCase();
   }
 
   if (letters.length === 1) {
-    return `${letters}${letters}`.toUpperCase();
+    return `${letters[0]}${letters[0]}`.toUpperCase();
   }
 
-  return trimmed.slice(0, 2).toUpperCase();
+  const fallback = localPart.slice(0, 2);
+  return fallback.length > 0 ? fallback.toUpperCase() : "??";
 }

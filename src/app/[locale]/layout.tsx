@@ -11,6 +11,7 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import {
   authenticatedCoreRequest,
   CORE_ACCESS_COOKIE,
+  CORE_EMAIL_COOKIE,
   CORE_REFRESH_COOKIE,
   parseAccountSettings,
 } from "@/lib/core-auth";
@@ -37,9 +38,9 @@ export default async function LocaleLayout({
   const accessToken = cookieStore.get(CORE_ACCESS_COOKIE)?.value;
   const refreshToken = cookieStore.get(CORE_REFRESH_COOKIE)?.value;
   const authenticated = Boolean(accessToken);
-  let userEmail: string | null = null;
+  let userEmail = cookieStore.get(CORE_EMAIL_COOKIE)?.value ?? null;
 
-  if (accessToken) {
+  if (accessToken && !userEmail) {
     const settingsResult = await authenticatedCoreRequest(
       "/account/settings",
       { method: "GET" },

@@ -69,7 +69,7 @@ describe("AppNavbar", () => {
     expect(menuItems[0]).toHaveTextContent("Subir snapshot");
     expect(menuItems[1]).toHaveTextContent("Configuración");
     expect(menuItems[2]).toHaveTextContent("Cerrar sesión");
-    expect(document.querySelector("hr, .MuiDivider-root")).toBeTruthy();
+    expect(screen.getByRole("separator")).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: "Subir snapshot" }),
     ).toHaveAttribute("href", "/es/upload");
