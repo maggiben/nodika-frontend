@@ -639,6 +639,48 @@ export function StaffMessagingForm() {
             {t("staff.templateHelp")}
           </Typography>
           <Stack spacing={2}>
+            <Box>
+              <Typography variant="subtitle2">{t("staff.legendTitle")}</Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 1,
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                    md: "repeat(4, minmax(0, 1fr))",
+                  },
+                  mt: 1,
+                }}
+              >
+                {TEMPLATE_TOKENS.map((token) => (
+                  <Typography
+                    key={token}
+                    color="text.secondary"
+                    sx={{ fontFamily: "ui-monospace, monospace" }}
+                    variant="body2"
+                  >
+                    {`{{${token}}}`}
+                    <Box
+                      component="span"
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        fontFamily: "inherit",
+                        fontSize: "0.8rem",
+                        mt: 0.25,
+                        opacity: 0.85,
+                      }}
+                    >
+                      {t(`staff.tokens.${token}`)}
+                    </Box>
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+            <Alert severity="info" variant="outlined">
+              {t("staff.widgetsHelp")}
+            </Alert>
             <TextField
               label={t("staff.templateKey")}
               onChange={(event) => setTemplateKey(event.target.value)}
@@ -656,16 +698,6 @@ export function StaffMessagingForm() {
               onChange={(event) => setTemplateBody(event.target.value)}
               value={templateBody}
             />
-            <Box>
-              <Typography variant="subtitle2">{t("staff.legendTitle")}</Typography>
-              <Stack spacing={0.5} sx={{ mt: 1 }}>
-                {TEMPLATE_TOKENS.map((token) => (
-                  <Typography key={token} color="text.secondary">
-                    {`{{${token}}}`} — {t(`staff.tokens.${token}`)}
-                  </Typography>
-                ))}
-              </Stack>
-            </Box>
             <Button
               disabled={savingTemplate || templateBody.trim().length === 0}
               onClick={() => void saveTemplate()}

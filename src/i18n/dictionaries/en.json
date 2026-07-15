@@ -170,6 +170,7 @@
     "templateBody": "Message text",
     "templateDescription": "Status template for area leads",
     "legendTitle": "Available variables",
+    "widgetsHelp": "Buttons, checkboxes, and inputs can be modeled in the template, but WhatsApp (Baileys) won’t render native controls: they’re flattened into plain text reply instructions (e.g. “Reply A for Yes”).",
     "saveTemplate": "Save message",
     "templateSaved": "Template saved.",
     "templateSaveError": "We could not save the template.",

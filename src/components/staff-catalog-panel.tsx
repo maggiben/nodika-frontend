@@ -15,8 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import {
@@ -38,6 +37,17 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "#ed6c02",
   neutral: "#9e9e9e",
 };
+
+function formatLatency(ms: number | null): string {
+  if (ms === null) {
+    return "—";
+  }
+  const hours = ms / (60 * 60 * 1000);
+  if (hours < 48) {
+    return `${Math.round(hours)}h`;
+  }
+  return `${Math.round(hours / 24)}d`;
+}
 
 export function StaffCatalogPanel({
   roster,
@@ -208,160 +218,6 @@ export function StaffCatalogPanel({
     [loadCatalog, t],
   );
 
-  const columns = useMemo<GridColDef<StaffCatalogRow>[]>(
-    () => [
-      {
-        field: "title",
-        headerName: t("staff.catalogColumns.title"),
-        flex: 1,
-        minWidth: 140,
-      },
-      {
-        field: "body",
-        headerName: t("staff.catalogColumns.body"),
-        flex: 1.4,
-        minWidth: 180,
-        valueGetter: (_value, row) => truncateForPreview(row.body),
-        renderCell: (params: GridRenderCellParams<StaffCatalogRow>) => (
-          <Tooltip title={params.row.body}>
-            <Typography
-              noWrap
-              sx={{ maxWidth: "100%" }}
-              variant="body2"
-            >
-              {truncateForPreview(params.row.body)}
-            </Typography>
-          </Tooltip>
-        ),
-      },
-      {
-        field: "assignedLabel",
-        headerName: t("staff.catalogColumns.assignee"),
-        flex: 1,
-        minWidth: 140,
-        valueGetter: (_value, row) =>
-          row.assignedLabel || row.assignedPhone || "—",
-      },
-      {
-        field: "lastSentAt",
-        headerName: t("staff.catalogColumns.lastSent"),
-        flex: 1,
-        minWidth: 140,
-        renderCell: (params) =>
-          formatStaffTimestamp(params.row.lastSentAt, locale),
-      },
-      {
-        field: "repliedAt",
-        headerName: t("staff.catalogColumns.repliedAt"),
-        flex: 1,
-        minWidth: 140,
-        renderCell: (params) =>
-          formatStaffTimestamp(params.row.repliedAt, locale),
-      },
-      {
-        field: "responseLatencyMs",
-        headerName: t("staff.catalogColumns.latency"),
-        width: 110,
-        valueGetter: (_value, row) => row.responseLatencyMs ?? -1,
-        renderCell: (params) => {
-          const ms = params.row.responseLatencyMs;
-          if (ms === null) {
-            return "—";
-          }
-          const hours = ms / (60 * 60 * 1000);
-          if (hours < 48) {
-            return `${Math.round(hours)}h`;
-          }
-          return `${Math.round(hours / 24)}d`;
-        },
-      },
-      {
-        field: "responseStatus",
-        headerName: t("staff.catalogColumns.status"),
-        width: 100,
-        renderCell: (params) => {
-          const status = (
-            ["green", "yellow", "red", "neutral", "pending"].includes(
-              params.row.responseStatus,
-            )
-              ? params.row.responseStatus
-              : computeStaffResponseStatus(
-                  params.row.lastSentAt,
-                  params.row.repliedAt,
-                )
-          ) as StaffResponseStatus;
-          const labelText = t(`staff.status.${status}`);
-          return (
-            <Tooltip title={labelText}>
-              <IconButton
-                aria-label={labelText}
-                size="small"
-                sx={{ color: STATUS_COLOR[status] ?? STATUS_COLOR.neutral }}
-              >
-                <Box
-                  aria-hidden
-                  component="span"
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    borderRadius: "50%",
-                    bgcolor: "currentColor",
-                    display: "inline-block",
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
-          );
-        },
-      },
-      {
-        field: "actions",
-        headerName: t("staff.catalogColumns.actions"),
-        sortable: false,
-        filterable: false,
-        width: 320,
-        renderCell: (params) => {
-          const busy = busyId === params.row._id;
-          return (
-            <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
-                <Select
-                  disabled={busy || roster.length === 0}
-                  displayEmpty
-                  onChange={(event) => {
-                    const contactId = String(event.target.value);
-                    if (contactId) {
-                      void assignRow(params.row, contactId);
-                    }
-                  }}
-                  value={params.row.assignedContactId ?? ""}
-                >
-                  <MenuItem value="">
-                    <em>{t("staff.catalogAssignPlaceholder")}</em>
-                  </MenuItem>
-                  {roster.map((contact) => (
-                    <MenuItem key={contact._id} value={contact._id}>
-                      {contact.label || contact.phone}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Button
-                disabled={busy || !params.row.assignedContactId}
-                onClick={() => void sendRow(params.row)}
-                size="small"
-                variant="outlined"
-              >
-                {t("staff.catalogSend")}
-              </Button>
-            </Stack>
-          );
-        },
-      },
-    ],
-    [assignRow, busyId, locale, roster, sendRow, t],
-  );
-
   return (
     <Paper sx={{ p: 3 }}>
       <Typography component="h2" variant="h6">
@@ -371,7 +227,11 @@ export function StaffCatalogPanel({
         {t("staff.catalogDescription")}
       </Typography>
 
-      {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
+      {error ? (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      ) : null}
       {message ? (
         <Alert severity="success" sx={{ mb: 2 }}>
           {message}
@@ -412,7 +272,9 @@ export function StaffCatalogPanel({
           </Select>
         </FormControl>
         <Button
-          disabled={saving || title.trim().length === 0 || body.trim().length === 0}
+          disabled={
+            saving || title.trim().length === 0 || body.trim().length === 0
+          }
           onClick={() => void saveCatalogMessage()}
           variant="contained"
         >
@@ -423,23 +285,150 @@ export function StaffCatalogPanel({
       {rows.length === 0 ? (
         <Typography color="text.secondary">{t("staff.catalogEmpty")}</Typography>
       ) : (
-        <DataGrid
-          autoHeight
-          columns={columns}
-          density="compact"
-          disableRowSelectionOnClick
-          getRowId={(row) => row._id}
-          initialState={{
-            pagination: { paginationModel: { pageSize: 10, page: 0 } },
+        <Box
+          sx={{
+            display: "grid",
+            gap: 1.5,
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, minmax(0, 1fr))",
+              md: "repeat(4, minmax(0, 1fr))",
+            },
+            maxHeight: { xs: 420, md: 480 },
+            overflowY: "auto",
+            pr: 0.5,
           }}
-          pageSizeOptions={[10, 25]}
-          rows={rows}
-          showToolbar
-          slotProps={{
-            toolbar: { showQuickFilter: true },
-          }}
-          sx={{ border: 0 }}
-        />
+        >
+          {rows.map((row) => {
+            const busy = busyId === row._id;
+            const status = (
+              ["green", "yellow", "red", "neutral", "pending"].includes(
+                row.responseStatus,
+              )
+                ? row.responseStatus
+                : computeStaffResponseStatus(row.lastSentAt, row.repliedAt)
+            ) as StaffResponseStatus;
+            const statusLabel = t(`staff.status.${status}`);
+
+            return (
+              <Box
+                key={row._id}
+                sx={{
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 1,
+                  minHeight: 0,
+                  p: 1.5,
+                }}
+              >
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                    variant="subtitle2"
+                  >
+                    {row.title}
+                  </Typography>
+                  <Tooltip title={statusLabel}>
+                    <IconButton
+                      aria-label={statusLabel}
+                      size="small"
+                      sx={{ color: STATUS_COLOR[status] ?? STATUS_COLOR.neutral }}
+                    >
+                      <Box
+                        aria-hidden
+                        component="span"
+                        sx={{
+                          width: 10,
+                          height: 10,
+                          borderRadius: "50%",
+                          bgcolor: "currentColor",
+                          display: "inline-block",
+                        }}
+                      />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                <Tooltip title={row.body}>
+                  <Typography
+                    color="text.secondary"
+                    sx={{
+                      display: "-webkit-box",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      WebkitBoxOrient: "vertical",
+                      WebkitLineClamp: 3,
+                    }}
+                    variant="body2"
+                  >
+                    {truncateForPreview(row.body)}
+                  </Typography>
+                </Tooltip>
+
+                <Typography color="text.secondary" variant="caption">
+                  {row.assignedLabel || row.assignedPhone || "—"}
+                </Typography>
+                <Typography color="text.secondary" variant="caption">
+                  {t("staff.catalogColumns.lastSent")}:{" "}
+                  {formatStaffTimestamp(row.lastSentAt, locale)}
+                </Typography>
+                <Typography color="text.secondary" variant="caption">
+                  {t("staff.catalogColumns.repliedAt")}:{" "}
+                  {formatStaffTimestamp(row.repliedAt, locale)} ·{" "}
+                  {formatLatency(row.responseLatencyMs)}
+                </Typography>
+
+                <FormControl fullWidth size="small">
+                  <Select
+                    disabled={busy || roster.length === 0}
+                    displayEmpty
+                    onChange={(event) => {
+                      const contactId = String(event.target.value);
+                      if (contactId) {
+                        void assignRow(row, contactId);
+                      }
+                    }}
+                    value={row.assignedContactId ?? ""}
+                  >
+                    <MenuItem value="">
+                      <em>{t("staff.catalogAssignPlaceholder")}</em>
+                    </MenuItem>
+                    {roster.map((contact) => (
+                      <MenuItem key={contact._id} value={contact._id}>
+                        {contact.label || contact.phone}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <Button
+                  disabled={busy || !row.assignedContactId}
+                  fullWidth
+                  onClick={() => void sendRow(row)}
+                  size="small"
+                  variant="outlined"
+                >
+                  {t("staff.catalogSend")}
+                </Button>
+              </Box>
+            );
+          })}
+        </Box>
       )}
     </Paper>
   );

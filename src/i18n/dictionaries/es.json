@@ -170,6 +170,7 @@
     "templateBody": "Texto del mensaje",
     "templateDescription": "Plantilla de estado para responsables de área",
     "legendTitle": "Variables disponibles",
+    "widgetsHelp": "Botones, checkboxes e inputs sí se modelan en la plantilla, pero WhatsApp (Baileys) no los muestra como controles nativos: se envían como texto con instrucciones para responder (ej. «Respondé A para Sí»).",
     "saveTemplate": "Guardar mensaje",
     "templateSaved": "Plantilla guardada.",
     "templateSaveError": "No pudimos guardar la plantilla.",
