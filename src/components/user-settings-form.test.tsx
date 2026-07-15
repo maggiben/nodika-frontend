@@ -72,7 +72,9 @@ describe("UserSettingsForm", () => {
     expect(
       await screen.findByText(/Sesión iniciada como maria@example.com/i),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/Correos de seguimiento/i)).toBeNull();
+    expect(
+      screen.queryByRole("heading", { name: /Correos de seguimiento/i }),
+    ).toBeNull();
     expect(screen.getByRole("heading", { name: "Zona horaria" })).toBeInTheDocument();
   });
 
