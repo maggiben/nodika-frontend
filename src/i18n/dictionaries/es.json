@@ -17,7 +17,8 @@
     "signingOut": "Cerrando sesión…",
     "language": "Idioma",
     "project": "Proyecto",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "staff": "Equipo"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -139,6 +140,50 @@
       "thursday": "Ju",
       "friday": "Vi",
       "saturday": "Sa"
+    }
+  },
+  "staff": {
+    "title": "Equipo y WhatsApp",
+    "description": "Carga los números de los responsables de área, edita el mensaje con variables y envía una prueba.",
+    "loading": "Cargando equipo…",
+    "loadError": "No pudimos cargar el equipo.",
+    "unreachable": "No se pudo contactar el servicio de mensajería.",
+    "contactsTitle": "Responsables de área",
+    "contactsDescription": "Guarda el WhatsApp de cada responsable para contactarlo desde Nordika.",
+    "contactLabel": "Área o nombre",
+    "contactPhone": "WhatsApp (solo dígitos, con código de país)",
+    "saveContact": "Guardar contacto",
+    "contactSaved": "Contacto guardado.",
+    "contactSaveError": "No pudimos guardar el contacto.",
+    "noContacts": "Todavía no hay contactos de equipo.",
+    "templateTitle": "Mensaje de WhatsApp",
+    "templateHelp": "Usa interpolación con llaves dobles. El backend reemplaza cada variable al enviar.",
+    "templateKey": "Clave de plantilla",
+    "templateName": "Nombre de plantilla",
+    "templateBody": "Texto del mensaje",
+    "templateDescription": "Plantilla de estado para responsables de área",
+    "legendTitle": "Variables disponibles",
+    "saveTemplate": "Guardar mensaje",
+    "templateSaved": "Plantilla guardada.",
+    "templateSaveError": "No pudimos guardar la plantilla.",
+    "saving": "Guardando…",
+    "testTitle": "Prueba de envío",
+    "testDescription": "Envía el mensaje actual a un contacto para verificar que llega por WhatsApp.",
+    "testContact": "Contacto de prueba",
+    "sendTest": "Enviar prueba",
+    "testing": "Enviando…",
+    "testSent": "Mensaje de prueba enviado.",
+    "testError": "No pudimos enviar la prueba.",
+    "testNoContact": "Elige un contacto para la prueba.",
+    "tokens": {
+      "percent": "Porcentaje de avance del ciclo",
+      "duration": "Duración reportada",
+      "avance": "Texto de avance / estado",
+      "notes": "Notas adicionales",
+      "week": "Número de semana del ciclo",
+      "ciclo_name": "Nombre del ciclo",
+      "ciclo_inicio": "Fecha de inicio del ciclo",
+      "ciclo_fin": "Fecha de fin del ciclo"
     }
   }
 }

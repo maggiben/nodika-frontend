@@ -17,7 +17,8 @@
     "signingOut": "Signing out…",
     "language": "Language",
     "project": "Project",
-    "settings": "Settings"
+    "settings": "Settings",
+    "staff": "Staff"
   },
   "auth": {
     "email": "Email address",
@@ -139,6 +140,50 @@
       "thursday": "Th",
       "friday": "Fr",
       "saturday": "Sa"
+    }
+  },
+  "staff": {
+    "title": "Staff and WhatsApp",
+    "description": "Store area-lead WhatsApp numbers, edit the interpolated message, and send a test.",
+    "loading": "Loading staff…",
+    "loadError": "We could not load staff messaging.",
+    "unreachable": "The messaging service could not be reached.",
+    "contactsTitle": "Area leads",
+    "contactsDescription": "Save each lead’s WhatsApp number so Nordika can contact them.",
+    "contactLabel": "Area or name",
+    "contactPhone": "WhatsApp (digits only, with country code)",
+    "saveContact": "Save contact",
+    "contactSaved": "Contact saved.",
+    "contactSaveError": "We could not save the contact.",
+    "noContacts": "No staff contacts yet.",
+    "templateTitle": "WhatsApp message",
+    "templateHelp": "Use double-brace interpolation. The backend replaces each token when sending.",
+    "templateKey": "Template key",
+    "templateName": "Template name",
+    "templateBody": "Message text",
+    "templateDescription": "Status template for area leads",
+    "legendTitle": "Available variables",
+    "saveTemplate": "Save message",
+    "templateSaved": "Template saved.",
+    "templateSaveError": "We could not save the template.",
+    "saving": "Saving…",
+    "testTitle": "Test send",
+    "testDescription": "Send the current message to a contact to verify WhatsApp delivery.",
+    "testContact": "Test contact",
+    "sendTest": "Send test",
+    "testing": "Sending…",
+    "testSent": "Test message sent.",
+    "testError": "We could not send the test.",
+    "testNoContact": "Choose a contact for the test.",
+    "tokens": {
+      "percent": "Cycle progress percentage",
+      "duration": "Reported duration",
+      "avance": "Progress / status text",
+      "notes": "Additional notes",
+      "week": "Cycle week number",
+      "ciclo_name": "Cycle name",
+      "ciclo_inicio": "Cycle start date",
+      "ciclo_fin": "Cycle end date"
     }
   }
 }

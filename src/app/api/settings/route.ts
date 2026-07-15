@@ -5,6 +5,7 @@ import {
   CORE_REFRESH_COOKIE,
   clearSessionCookies,
   parseAccountSettings,
+  setAccountEmailCookie,
   setSessionCookies,
 } from "@/lib/core-auth";
 
@@ -62,6 +63,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = NextResponse.json(settings);
+    setAccountEmailCookie(response, settings.email);
     return upstream.refreshedSession
       ? setSessionCookies(response, upstream.refreshedSession)
       : response;

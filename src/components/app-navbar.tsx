@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { ProjectSelector } from "@/components/project-selector";
 import { emailInitials } from "@/lib/email-initials";
@@ -33,13 +33,50 @@ export function AppNavbar({
   const menuId = useId();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [fetchedEmail, setFetchedEmail] = useState<string | null>(null);
   const menuOpen = Boolean(anchorEl);
   const homeHref = `/${locale}`;
   const loginHref = `/${locale}/login`;
   const registerHref = `/${locale}/register`;
   const uploadHref = `/${locale}/upload`;
   const settingsHref = `/${locale}/settings`;
-  const avatarLabel = userEmail ? emailInitials(userEmail) : "??";
+  const staffHref = `/${locale}/staff`;
+  const resolvedEmail = userEmail ?? fetchedEmail;
+  const avatarLabel = resolvedEmail ? emailInitials(resolvedEmail) : "??";
+
+  useEffect(() => {
+    if (!authenticated || userEmail || fetchedEmail) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadEmail() {
+      try {
+        const response = await fetch("/api/settings");
+        if (!response.ok) {
+          return;
+        }
+        const body: unknown = await response.json().catch(() => null);
+        if (
+          cancelled ||
+          typeof body !== "object" ||
+          body === null ||
+          typeof (body as { email?: unknown }).email !== "string"
+        ) {
+          return;
+        }
+        setFetchedEmail((body as { email: string }).email);
+      } catch {
+        // Keep fallback initials when settings cannot be loaded.
+      }
+    }
+
+    void loadEmail();
+    return () => {
+      cancelled = true;
+    };
+  }, [authenticated, userEmail, fetchedEmail]);
 
   async function logout() {
     setIsLoggingOut(true);
@@ -105,7 +142,7 @@ export function AppNavbar({
                 size="small"
               >
                 <Avatar
-                  alt=""
+                  alt={resolvedEmail ?? ""}
                   sx={{ bgcolor: "primary.main", height: 36, width: 36 }}
                 >
                   {avatarLabel}
@@ -133,6 +170,13 @@ export function AppNavbar({
                   onClick={() => setAnchorEl(null)}
                 >
                   <ListItemText primary={t("nav.settings")} />
+                </MenuItem>
+                <MenuItem
+                  component={Link}
+                  href={staffHref}
+                  onClick={() => setAnchorEl(null)}
+                >
+                  <ListItemText primary={t("nav.staff")} />
                 </MenuItem>
                 <Box
                   component="li"

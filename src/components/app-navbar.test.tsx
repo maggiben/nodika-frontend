@@ -68,14 +68,19 @@ describe("AppNavbar", () => {
     const menuItems = screen.getAllByRole("menuitem");
     expect(menuItems[0]).toHaveTextContent("Subir snapshot");
     expect(menuItems[1]).toHaveTextContent("Configuración");
-    expect(menuItems[2]).toHaveTextContent("Cerrar sesión");
-    expect(screen.getByRole("separator")).toBeInTheDocument();
+    expect(menuItems[2]).toHaveTextContent("Equipo");
+    expect(menuItems[3]).toHaveTextContent("Cerrar sesión");
     expect(
       screen.getByRole("menuitem", { name: "Subir snapshot" }),
     ).toHaveAttribute("href", "/es/upload");
     expect(
       screen.getByRole("menuitem", { name: "Configuración" }),
     ).toHaveAttribute("href", "/es/settings");
+    expect(screen.getByRole("menuitem", { name: "Equipo" })).toHaveAttribute(
+      "href",
+      "/es/staff",
+    );
+    expect(screen.getByRole("separator")).toBeInTheDocument();
     expect(
       screen.queryByRole("menuitem", { name: "Tema oscuro" }),
     ).not.toBeInTheDocument();

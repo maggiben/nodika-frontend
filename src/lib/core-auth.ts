@@ -117,6 +117,11 @@ export function readAccountEmail(account: Account): string | null {
     : null;
 }
 
+export function setAccountEmailCookie(response: NextResponse, email: string) {
+  response.cookies.set(CORE_EMAIL_COOKIE, email.trim(), cookieOptions);
+  return response;
+}
+
 export function setSessionCookies(
   response: NextResponse,
   session: CoreSession,
@@ -130,7 +135,7 @@ export function setSessionCookies(
 
   const email = readAccountEmail(session.account);
   if (email) {
-    response.cookies.set(CORE_EMAIL_COOKIE, email, cookieOptions);
+    setAccountEmailCookie(response, email);
   }
 
   return response;
