@@ -2,7 +2,7 @@
 
 - [x] 1.1 Remove send from `createCatalogMessage` and `assignCatalogMessage`
 - [x] 1.2 Update Core unit tests that expected sendInteractive on create/assign
-- [ ] 1.3 Deploy Core
+- [x] 1.3 Deploy Core
 
 ## 2. Frontend catalog copy
 
@@ -17,4 +17,4 @@
 ## 4. Validation
 
 - [x] 4.1 Core test:cov + frontend targeted tests + openspec validate
-- [ ] 4.2 Commit, push, deploy both
+- [x] 4.2 Commit, push, deploy both

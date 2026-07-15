@@ -719,22 +719,6 @@ export function StaffMessagingForm() {
 
         <StaffCatalogPanel roster={rows} />
 
-        <Paper sx={{ p: 3 }}>
-          <Typography component="h2" variant="h6">
-            {t("staff.flow.title")}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
-            {t("staff.flow.description")}
-          </Typography>
-          <Button
-            component={Link}
-            href={`/${locale}/staff/flows`}
-            variant="outlined"
-          >
-            {t("staff.flow.openEditor")}
-          </Button>
-        </Paper>
-
         <EmailFollowUpSchedulePanel />
 
         <Paper sx={{ p: 3 }}>

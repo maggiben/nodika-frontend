@@ -4,6 +4,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   FormControl,
   IconButton,
   InputLabel,
@@ -57,6 +58,14 @@ function formatLatency(ms: number | null): string {
   return `${Math.round(hours / 24)}d`;
 }
 
+function leadInitial(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return "?";
+  }
+  return trimmed.slice(0, 1).toUpperCase();
+}
+
 export function StaffCatalogPanel({
   roster,
 }: Readonly<{ roster: StaffRosterRow[] }>) {
@@ -71,6 +80,7 @@ export function StaffCatalogPanel({
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dragCatalogId, setDragCatalogId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const leadGroups = useMemo(() => groupCatalogByLead(rows), [rows]);
 
@@ -303,6 +313,8 @@ export function StaffCatalogPanel({
   const reorderLead = useCallback(
     async (contactId: string, fromId: string, toId: string) => {
       if (fromId === toId) {
+        setDragCatalogId(null);
+        setDragOverId(null);
         return;
       }
       const group = leadGroups.find((item) => item.contactId === contactId);
@@ -346,55 +358,54 @@ export function StaffCatalogPanel({
       } finally {
         setBusyId(null);
         setDragCatalogId(null);
+        setDragOverId(null);
       }
     },
     [leadGroups, t],
   );
 
+  const isDragging = Boolean(dragCatalogId);
+
   return (
-    <Paper sx={{ p: 3 }}>
+    <Paper sx={{ p: { xs: 2, md: 2.5 } }}>
       <Typography component="h2" variant="h6">
         {t("staff.catalogTitle")}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
+      <Typography color="text.secondary" sx={{ mb: 1.5, mt: 0.25 }} variant="body2">
         {t("staff.catalogDescription")}
       </Typography>
 
       {error ? (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 1.5 }}>
           {error}
         </Alert>
       ) : null}
       {message ? (
-        <Alert severity="success" sx={{ mb: 2 }}>
+        <Alert severity="success" sx={{ mb: 1.5 }}>
           {message}
         </Alert>
       ) : null}
 
-      <Box
+      <Paper
+        variant="outlined"
         sx={{
-          display: "grid",
-          gap: 1.5,
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "repeat(2, minmax(0, 1fr))",
-            md: "repeat(4, minmax(0, 1fr))",
-          },
-          maxHeight: { xs: 480, md: 520 },
-          overflowY: "auto",
-          pr: 0.5,
-          alignItems: "stretch",
+          mb: 2,
+          p: 1.5,
+          bgcolor: "action.hover",
         }}
       >
+        <Typography sx={{ mb: 1 }} variant="subtitle2">
+          {t("staff.catalogSave")}
+        </Typography>
         <Box
           sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 1,
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
             gap: 1,
-            p: 1.5,
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "1.2fr 1.6fr 1fr 1fr auto",
+            },
+            alignItems: "start",
           }}
         >
           <TextField
@@ -405,11 +416,10 @@ export function StaffCatalogPanel({
           />
           <TextField
             label={t("staff.catalogMessageBody")}
-            minRows={3}
+            minRows={2}
             multiline
             onChange={(event) => setBody(event.target.value)}
             size="small"
-            sx={{ flex: 1 }}
             value={body}
           />
           <FormControl fullWidth size="small">
@@ -473,59 +483,118 @@ export function StaffCatalogPanel({
             disabled={
               saving || title.trim().length === 0 || body.trim().length === 0
             }
-            fullWidth
             onClick={() => void saveCatalogMessage()}
             size="small"
+            sx={{ height: 40, whiteSpace: "nowrap" }}
             variant="contained"
           >
             {saving ? t("staff.saving") : t("staff.catalogSave")}
           </Button>
         </Box>
+      </Paper>
 
-        {rows.length === 0 ? (
-          <Box
-            sx={{
-              alignItems: "center",
-              border: "1px dashed",
-              borderColor: "divider",
-              borderRadius: 1,
-              display: "flex",
-              gridColumn: { xs: "auto", md: "span 3" },
-              justifyContent: "center",
-              minHeight: 120,
-              p: 2,
-            }}
-          >
-            <Typography color="text.secondary" variant="body2">
-              {t("staff.catalogEmpty")}
-            </Typography>
-          </Box>
-        ) : (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              gridColumn: { xs: "auto", md: "span 3" },
-            }}
-          >
-            {leadGroups.map((group) => (
+      {rows.length === 0 ? (
+        <Box
+          sx={{
+            alignItems: "center",
+            border: "1px dashed",
+            borderColor: "divider",
+            borderRadius: 1,
+            display: "flex",
+            justifyContent: "center",
+            minHeight: 100,
+            p: 2,
+          }}
+        >
+          <Typography color="text.secondary" variant="body2">
+            {t("staff.catalogEmpty")}
+          </Typography>
+        </Box>
+      ) : (
+        <Stack spacing={2}>
+          {leadGroups.map((group) => {
+            const canReorder = Boolean(group.contactId);
+            return (
               <Box key={group.contactId ?? "unassigned"}>
-                <Typography sx={{ mb: 1 }} variant="subtitle2">
-                  {group.contactId
-                    ? t("staff.catalogLeadGroup", { name: group.label })
-                    : t("staff.catalogUnassignedGroup")}
-                </Typography>
-                <Typography
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                  variant="caption"
+                <Stack
+                  direction="row"
+                  spacing={1.25}
+                  sx={{
+                    alignItems: "center",
+                    bgcolor: group.contactId
+                      ? "primary.main"
+                      : "action.selected",
+                    borderRadius: 1.5,
+                    color: group.contactId
+                      ? "primary.contrastText"
+                      : "text.primary",
+                    mb: 1,
+                    px: 1.25,
+                    py: 0.85,
+                  }}
                 >
-                  {group.contactId
-                    ? t("staff.catalogOrderHint")
-                    : t("staff.catalogUnassignedHint")}
-                </Typography>
-                <Stack spacing={1}>
+                  <Box
+                    aria-hidden
+                    sx={{
+                      alignItems: "center",
+                      bgcolor: group.contactId
+                        ? "rgba(255,255,255,0.22)"
+                        : "background.paper",
+                      borderRadius: "50%",
+                      display: "inline-flex",
+                      fontWeight: 700,
+                      height: 32,
+                      justifyContent: "center",
+                      typography: "subtitle2",
+                      width: 32,
+                    }}
+                  >
+                    {leadInitial(group.label)}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography noWrap sx={{ fontWeight: 700 }} variant="subtitle2">
+                      {group.contactId
+                        ? t("staff.catalogLeadGroup", { name: group.label })
+                        : t("staff.catalogUnassignedGroup")}
+                    </Typography>
+                    <Typography
+                      noWrap
+                      sx={{
+                        opacity: 0.9,
+                        typography: "caption",
+                      }}
+                    >
+                      {canReorder
+                        ? t("staff.catalogOrderHint")
+                        : t("staff.catalogUnassignedHint")}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={t("staff.catalogLeadCount", {
+                      n: group.rows.length,
+                    })}
+                    size="small"
+                    sx={{
+                      bgcolor: group.contactId
+                        ? "rgba(255,255,255,0.2)"
+                        : "background.paper",
+                      color: "inherit",
+                      fontWeight: 600,
+                    }}
+                  />
+                </Stack>
+
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1,
+                    gridTemplateColumns: {
+                      xs: "1fr",
+                      sm: "repeat(2, minmax(0, 1fr))",
+                      md: "repeat(4, minmax(0, 1fr))",
+                    },
+                  }}
+                >
                   {group.rows.map((row) => {
                     const busy = busyId === row._id;
                     const status = (
@@ -547,20 +616,28 @@ export function StaffCatalogPanel({
                       group.contactId && row.sortOrder > 0
                         ? row.sortOrder
                         : null;
+                    const isSource = dragCatalogId === row._id;
+                    const isDropTarget =
+                      dragOverId === row._id &&
+                      dragCatalogId !== null &&
+                      dragCatalogId !== row._id;
 
                     return (
                       <Box
-                        draggable={Boolean(group.contactId)}
                         key={row._id}
-                        onDragEnd={() => setDragCatalogId(null)}
-                        onDragOver={(event) => {
-                          if (group.contactId) {
-                            event.preventDefault();
+                        onDragLeave={() => {
+                          if (dragOverId === row._id) {
+                            setDragOverId(null);
                           }
                         }}
-                        onDragStart={() => {
-                          if (group.contactId) {
-                            setDragCatalogId(row._id);
+                        onDragOver={(event) => {
+                          if (!canReorder || !dragCatalogId) {
+                            return;
+                          }
+                          event.preventDefault();
+                          event.dataTransfer.dropEffect = "move";
+                          if (dragOverId !== row._id) {
+                            setDragOverId(row._id);
                           }
                         }}
                         onDrop={(event) => {
@@ -575,58 +652,111 @@ export function StaffCatalogPanel({
                           );
                         }}
                         sx={{
+                          bgcolor: isDropTarget
+                            ? "action.selected"
+                            : "background.paper",
                           border: "1px solid",
-                          borderColor:
-                            dragCatalogId === row._id
-                              ? "primary.main"
+                          borderColor: isDropTarget
+                            ? "primary.main"
+                            : isSource
+                              ? "primary.light"
                               : "divider",
                           borderRadius: 1,
+                          boxShadow: isDropTarget ? 2 : 0,
                           display: "flex",
                           flexDirection: "column",
-                          gap: 1,
-                          opacity: dragCatalogId === row._id ? 0.7 : 1,
-                          cursor: group.contactId ? "grab" : "default",
-                          p: 1.5,
+                          gap: 0.75,
+                          minHeight: 0,
+                          opacity: isSource ? 0.45 : 1,
+                          outline: isDropTarget
+                            ? "2px solid"
+                            : undefined,
+                          outlineColor: isDropTarget
+                            ? "primary.main"
+                            : undefined,
+                          p: 1,
+                          position: "relative",
+                          transition: "border-color 120ms, box-shadow 120ms",
                         }}
                       >
                         <Stack
                           direction="row"
-                          spacing={1}
-                          sx={{ alignItems: "flex-start" }}
+                          spacing={0.75}
+                          sx={{ alignItems: "center" }}
                         >
+                          {canReorder ? (
+                            <Tooltip title={t("staff.catalogDragHandle")}>
+                              <Box
+                                aria-label={t("staff.catalogDragHandle")}
+                                draggable
+                                onDragEnd={() => {
+                                  setDragCatalogId(null);
+                                  setDragOverId(null);
+                                }}
+                                onDragStart={(event) => {
+                                  setDragCatalogId(row._id);
+                                  event.dataTransfer.effectAllowed = "move";
+                                  event.dataTransfer.setData(
+                                    "text/plain",
+                                    row._id,
+                                  );
+                                  // Avoid ghost image showing long message body.
+                                  if (event.currentTarget instanceof HTMLElement) {
+                                    event.dataTransfer.setDragImage(
+                                      event.currentTarget,
+                                      12,
+                                      12,
+                                    );
+                                  }
+                                }}
+                                sx={{
+                                  alignItems: "center",
+                                  bgcolor: "action.hover",
+                                  borderRadius: 0.75,
+                                  color: "text.secondary",
+                                  cursor: "grab",
+                                  display: "inline-flex",
+                                  flexShrink: 0,
+                                  fontSize: 14,
+                                  height: 28,
+                                  justifyContent: "center",
+                                  letterSpacing: "-1px",
+                                  lineHeight: 1,
+                                  userSelect: "none",
+                                  width: 22,
+                                  "&:active": { cursor: "grabbing" },
+                                }}
+                              >
+                                ⋮⋮
+                              </Box>
+                            </Tooltip>
+                          ) : null}
                           {order !== null ? (
                             <Box
                               aria-label={t("staff.catalogOrderBadge", {
                                 n: order,
                               })}
                               sx={{
-                                minWidth: 28,
-                                height: 28,
-                                borderRadius: "50%",
                                 bgcolor: "primary.main",
+                                borderRadius: "50%",
                                 color: "primary.contrastText",
                                 display: "inline-flex",
+                                flexShrink: 0,
+                                fontWeight: 700,
+                                height: 24,
                                 alignItems: "center",
                                 justifyContent: "center",
+                                minWidth: 24,
                                 typography: "caption",
-                                fontWeight: 700,
-                                flexShrink: 0,
                               }}
                             >
                               {order}
                             </Box>
                           ) : null}
                           <Typography
-                            sx={{
-                              flex: 1,
-                              fontWeight: 600,
-                              lineHeight: 1.3,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                            }}
+                            noWrap
+                            sx={{ flex: 1, fontWeight: 600 }}
+                            title={row.title}
                             variant="subtitle2"
                           >
                             {row.title}
@@ -638,51 +768,67 @@ export function StaffCatalogPanel({
                               sx={{
                                 color:
                                   STATUS_COLOR[status] ?? STATUS_COLOR.neutral,
+                                p: 0.25,
                               }}
                             >
                               <Box
                                 aria-hidden
                                 component="span"
                                 sx={{
-                                  width: 10,
-                                  height: 10,
-                                  borderRadius: "50%",
                                   bgcolor: "currentColor",
+                                  borderRadius: "50%",
                                   display: "inline-block",
+                                  height: 8,
+                                  width: 8,
                                 }}
                               />
                             </IconButton>
                           </Tooltip>
                         </Stack>
 
-                        <Tooltip
-                          title={
-                            <Box sx={{ whiteSpace: "pre-wrap", maxWidth: 320 }}>
-                              {row.body}
-                            </Box>
-                          }
-                        >
+                        {isDragging ? (
                           <Typography
                             color="text.secondary"
-                            sx={{
-                              display: "-webkit-box",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "pre-wrap",
-                              WebkitBoxOrient: "vertical",
-                              WebkitLineClamp: 3,
-                            }}
-                            variant="body2"
+                            sx={{ minHeight: 18 }}
+                            variant="caption"
                           >
-                            {truncateForPreview(row.body)}
+                            {isDropTarget
+                              ? t("staff.catalogDropHere")
+                              : isSource
+                                ? t("staff.catalogDragging")
+                                : " "}
                           </Typography>
-                        </Tooltip>
+                        ) : (
+                          <Tooltip
+                            title={
+                              <Box sx={{ maxWidth: 320, whiteSpace: "pre-wrap" }}>
+                                {row.body}
+                              </Box>
+                            }
+                          >
+                            <Typography
+                              color="text.secondary"
+                              sx={{
+                                WebkitBoxOrient: "vertical",
+                                WebkitLineClamp: 2,
+                                display: "-webkit-box",
+                                minHeight: 36,
+                                overflow: "hidden",
+                              }}
+                              variant="caption"
+                            >
+                              {truncateForPreview(row.body, 120)}
+                            </Typography>
+                          </Tooltip>
+                        )}
 
-                        <Typography color="text.secondary" variant="caption">
-                          {t("staff.catalogColumns.lastSent")}:{" "}
+                        <Typography
+                          color="text.secondary"
+                          noWrap
+                          title={`${formatStaffTimestamp(row.lastSentAt, locale)} · ${formatStaffTimestamp(row.repliedAt, locale)}`}
+                          variant="caption"
+                        >
                           {formatStaffTimestamp(row.lastSentAt, locale)} ·{" "}
-                          {t("staff.catalogColumns.repliedAt")}:{" "}
-                          {formatStaffTimestamp(row.repliedAt, locale)} ·{" "}
                           {formatLatency(row.responseLatencyMs)}
                         </Typography>
 
@@ -695,6 +841,11 @@ export function StaffCatalogPanel({
                               if (contactId) {
                                 void assignRow(row, contactId);
                               }
+                            }}
+                            sx={{
+                              "& .MuiSelect-select": {
+                                py: 0.75,
+                              },
                             }}
                             value={row.assignedContactId ?? ""}
                           >
@@ -709,7 +860,7 @@ export function StaffCatalogPanel({
                           </Select>
                         </FormControl>
 
-                        <Stack direction="row" spacing={1}>
+                        <Stack direction="row" spacing={0.75}>
                           <Button
                             disabled={busy || !row.assignedContactId}
                             fullWidth
@@ -732,12 +883,12 @@ export function StaffCatalogPanel({
                       </Box>
                     );
                   })}
-                </Stack>
+                </Box>
               </Box>
-            ))}
-          </Box>
-        )}
-      </Box>
+            );
+          })}
+        </Stack>
+      )}
     </Paper>
   );
 }

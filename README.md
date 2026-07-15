@@ -43,7 +43,7 @@ Sibling API: [nodika-core](https://github.com/maggiben/nodika-core) — required
 | **npm** | Install & scripts | Prefer the lockfile with `npm ci` |
 | **nodika-core** | Auth, sources, staff messaging API | Running Core URL in `NODIKA_CORE_URL` |
 
-Without `NODIKA_CORE_URL`, the UI can boot, but login, uploads, roster, catalog, and flows will fail when they hit `/api/*`.
+Without `NODIKA_CORE_URL`, the UI can boot, but login, uploads, roster, and catalog will fail when they hit `/api/*`.
 
 ### Runtime / product dependencies (via Core)
 
@@ -203,7 +203,7 @@ Then in Cursor / VS Code → **Run and Debug** → attach to port `9229`, or use
 ```bash
 npm run test:watch
 # or one file:
-npx vitest run src/lib/staff-message-flow.test.ts
+npx vitest run src/lib/staff-catalog.test.ts
 ```
 
 ### Common local failures
@@ -370,7 +370,7 @@ railway logs --build -n 300
 ```text
 src/
   app/                 App Router pages + API BFF routes (auth, messaging, snapshots, …)
-  components/          UI (navbar, staff flows, catalog, dashboards, …)
+  components/          UI (navbar, staff catalog, dashboards, …)
   i18n/                Dictionaries (es/en) + dictionary provider
   lib/                 Shared clients, parsers, staff/messaging helpers
   theme/               MUI theme
@@ -425,7 +425,7 @@ UI copy belongs in `src/i18n/dictionaries/{es,en}.json`. Server-only Core access
 
 | Layer | Where | Focus |
 | --- | --- | --- |
-| Lib / parsers | `src/lib/*.test.ts` | Pure helpers (flows, roster, auth helpers) |
+| Lib / parsers | `src/lib/*.test.ts` | Pure helpers (catalog, roster, auth helpers) |
 | API routes | `src/app/api/**/*.test.ts` | Cookie / proxy behavior with mocked `fetch` |
 | Components | Testing Library where valuable | Critical UI flows |
 | Coverage | `npm run test:coverage` | Meet the gate in `openspec/specs/test-coverage-gate` |
