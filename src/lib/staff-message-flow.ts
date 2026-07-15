@@ -1,4 +1,4 @@
-export type FlowMatchType = "equals" | "contains";
+export type FlowMatchType = "equals" | "contains" | "any";
 
 export type MessageFlowNode = {
   id: string;
@@ -93,7 +93,9 @@ function parseEdge(value: unknown): MessageFlowEdge | null {
   }
   const matchType = value.match.type;
   if (
-    (matchType !== "equals" && matchType !== "contains") ||
+    (matchType !== "equals" &&
+      matchType !== "contains" &&
+      matchType !== "any") ||
     typeof value.match.value !== "string"
   ) {
     return null;
@@ -254,7 +256,7 @@ export function validateFlowUpsertBody(body: unknown): FlowUpsertBody | null {
     if (!nodeIds.has(edge.fromNodeId) || !nodeIds.has(edge.toNodeId)) {
       return null;
     }
-    if (!edge.match.value.trim()) {
+    if (edge.match.type !== "any" && !edge.match.value.trim()) {
       return null;
     }
   }

@@ -382,7 +382,7 @@ export function StaffMessageFlowEditor() {
           id: edgeId,
           fromNodeId: connectFromId,
           toNodeId: nodeId,
-          match: { type: "contains", value: "ok" },
+          match: { type: "any", value: "" },
         },
       ],
     }));
@@ -828,6 +828,9 @@ export function StaffMessageFlowEditor() {
                         }
                         value={selectedEdge.match.type}
                       >
+                        <MenuItem value="any">
+                          {t("staff.flow.matchAny")}
+                        </MenuItem>
                         <MenuItem value="equals">
                           {t("staff.flow.matchEquals")}
                         </MenuItem>
@@ -836,26 +839,28 @@ export function StaffMessageFlowEditor() {
                         </MenuItem>
                       </Select>
                     </FormControl>
-                    <TextField
-                      label={t("staff.flow.matchValue")}
-                      onChange={(event) =>
-                        updateDraft((prev) => ({
-                          ...prev,
-                          edges: prev.edges.map((edge) =>
-                            edge.id === selectedEdge.id
-                              ? {
-                                  ...edge,
-                                  match: {
-                                    ...edge.match,
-                                    value: event.target.value,
-                                  },
-                                }
-                              : edge,
-                          ),
-                        }))
-                      }
-                      value={selectedEdge.match.value}
-                    />
+                    {selectedEdge.match.type !== "any" ? (
+                      <TextField
+                        label={t("staff.flow.matchValue")}
+                        onChange={(event) =>
+                          updateDraft((prev) => ({
+                            ...prev,
+                            edges: prev.edges.map((edge) =>
+                              edge.id === selectedEdge.id
+                                ? {
+                                    ...edge,
+                                    match: {
+                                      ...edge.match,
+                                      value: event.target.value,
+                                    },
+                                  }
+                                : edge,
+                            ),
+                          }))
+                        }
+                        value={selectedEdge.match.value}
+                      />
+                    ) : null}{" "}
                     <Button
                       color="error"
                       onClick={() => {
