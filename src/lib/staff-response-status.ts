@@ -5,14 +5,20 @@ export type StaffResponseStatus =
   | "neutral"
   | "pending";
 
-/** Days after last send without a later reply → yellow. */
-export const STAFF_YELLOW_AFTER_DAYS = 2;
+/** Reply within this many days → green. */
+export const STAFF_YELLOW_AFTER_DAYS = 1;
 
-/** Days after last send without a later reply → red. */
-export const STAFF_RED_AFTER_DAYS = 5;
+/** Reply within this many days (after green) → yellow; beyond → red (≥3 days). */
+export const STAFF_RED_AFTER_DAYS = 2;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Deduce traffic light from persisted sent/replied timestamps.
+ * - green: ≤ 1 day
+ * - yellow: ≤ 2 days
+ * - red: ≥ 3 days (or > 2 days silent)
+ */
 export function computeStaffResponseStatus(
   lastSentAt: string | null | undefined,
   lastReceivedAt: string | null | undefined,
@@ -44,6 +50,23 @@ export function computeStaffResponseStatus(
     return "green";
   }
   if (silentDays <= STAFF_RED_AFTER_DAYS) {
+    return "yellow";
+  }
+  return "red";
+}
+
+/** Prefer stored latency ms from persisted StaffMessage when available. */
+export function statusFromPersistedLatencyMs(
+  latencyMs: number | null | undefined,
+): StaffResponseStatus {
+  if (latencyMs === null || latencyMs === undefined || latencyMs < 0) {
+    return "pending";
+  }
+  const days = latencyMs / MS_PER_DAY;
+  if (days <= STAFF_YELLOW_AFTER_DAYS) {
+    return "green";
+  }
+  if (days <= STAFF_RED_AFTER_DAYS) {
     return "yellow";
   }
   return "red";

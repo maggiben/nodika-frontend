@@ -30,6 +30,7 @@ import {
 import {
   computeStaffResponseStatus,
   formatStaffTimestamp,
+  statusFromPersistedLatencyMs,
   type StaffResponseStatus,
 } from "@/lib/staff-response-status";
 
@@ -58,6 +59,32 @@ const STATUS_COLOR: Record<StaffResponseStatus, string> = {
 
 function statusLabelKey(status: StaffResponseStatus): string {
   return `staff.status.${status}`;
+}
+
+const VALID_ROSTER_STATUSES: StaffResponseStatus[] = [
+  "green",
+  "yellow",
+  "red",
+  "neutral",
+  "pending",
+];
+
+/**
+ * Prefer persisted responseStatus, then persisted latency, then derive from
+ * timestamps for the traffic-light circle.
+ */
+function resolveRosterStatus(row: StaffRosterRow): StaffResponseStatus {
+  if (
+    row.responseStatus !== undefined &&
+    VALID_ROSTER_STATUSES.includes(row.responseStatus as StaffResponseStatus) &&
+    row.responseStatus !== "neutral"
+  ) {
+    return row.responseStatus as StaffResponseStatus;
+  }
+  if (row.responseLatencyMs !== null && row.responseLatencyMs !== undefined) {
+    return statusFromPersistedLatencyMs(row.responseLatencyMs);
+  }
+  return computeStaffResponseStatus(row.lastSentAt, row.lastReceivedAt);
 }
 
 export function StaffMessagingForm() {
@@ -462,13 +489,9 @@ export function StaffMessagingForm() {
         headerName: t("staff.columns.status"),
         width: 100,
         sortable: true,
-        valueGetter: (_value, row) =>
-          computeStaffResponseStatus(row.lastSentAt, row.lastReceivedAt),
+        valueGetter: (_value, row) => resolveRosterStatus(row),
         renderCell: (params: GridRenderCellParams<StaffRosterRow>) => {
-          const status = computeStaffResponseStatus(
-            params.row.lastSentAt,
-            params.row.lastReceivedAt,
-          );
+          const status = resolveRosterStatus(params.row);
           const labelText = t(statusLabelKey(status));
           return (
             <Tooltip title={labelText}>

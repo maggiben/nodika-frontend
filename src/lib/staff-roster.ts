@@ -9,6 +9,8 @@ export type StaffRosterRow = {
   lastTemplateKey: string | null;
   messageTypes: string[];
   hasOutbound: boolean;
+  responseLatencyMs?: number | null;
+  responseStatus?: string;
 };
 
 export type StaffTemplate = {
@@ -54,5 +56,9 @@ export function parseStaffRoster(payload: unknown): StaffRosterRow[] {
         )
       : [],
     hasOutbound: Boolean(row.hasOutbound),
+    responseLatencyMs:
+      typeof row.responseLatencyMs === "number" ? row.responseLatencyMs : null,
+    responseStatus:
+      typeof row.responseStatus === "string" ? row.responseStatus : undefined,
   }));
 }

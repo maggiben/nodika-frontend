@@ -27,6 +27,7 @@ import type { StaffRosterRow } from "@/lib/staff-roster";
 import {
   computeStaffResponseStatus,
   formatStaffTimestamp,
+  statusFromPersistedLatencyMs,
   type StaffResponseStatus,
 } from "@/lib/staff-response-status";
 import { truncateForPreview } from "@/lib/text-preview";
@@ -38,6 +39,31 @@ const STATUS_COLOR: Record<string, string> = {
   pending: "#ed6c02",
   neutral: "#9e9e9e",
 };
+
+const VALID_STATUSES: StaffResponseStatus[] = [
+  "green",
+  "yellow",
+  "red",
+  "neutral",
+  "pending",
+];
+
+/**
+ * Prefer persisted responseStatus, then persisted latency, then derive from
+ * timestamps for the traffic-light circle.
+ */
+function resolveCatalogStatus(row: StaffCatalogRow): StaffResponseStatus {
+  if (
+    VALID_STATUSES.includes(row.responseStatus as StaffResponseStatus) &&
+    row.responseStatus !== "neutral"
+  ) {
+    return row.responseStatus as StaffResponseStatus;
+  }
+  if (row.responseLatencyMs !== null && row.responseLatencyMs !== undefined) {
+    return statusFromPersistedLatencyMs(row.responseLatencyMs);
+  }
+  return computeStaffResponseStatus(row.lastSentAt, row.repliedAt);
+}
 
 export function StaffCatalogPanel({
   roster,
@@ -280,16 +306,7 @@ export function StaffCatalogPanel({
         headerName: t("staff.catalogColumns.status"),
         width: 100,
         renderCell: (params) => {
-          const status = (
-            ["green", "yellow", "red", "neutral", "pending"].includes(
-              params.row.responseStatus,
-            )
-              ? params.row.responseStatus
-              : computeStaffResponseStatus(
-                  params.row.lastSentAt,
-                  params.row.repliedAt,
-                )
-          ) as StaffResponseStatus;
+          const status = resolveCatalogStatus(params.row);
           const labelText = t(`staff.status.${status}`);
           return (
             <Tooltip title={labelText}>
