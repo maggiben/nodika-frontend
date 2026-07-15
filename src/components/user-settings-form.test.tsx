@@ -73,6 +73,54 @@ describe("UserSettingsForm", () => {
       await screen.findByText(/Sesión iniciada como maria@example.com/i),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Correos de seguimiento/i)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Zona horaria" })).toBeInTheDocument();
+  });
+
+  test("saves the account timezone", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(settingsPayload)),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            emailSchedule: {
+              ...settingsPayload.emailSchedule,
+              timezone: "UTC",
+            },
+          }),
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestI18n>
+        <UserSettingsForm />
+      </TestI18n>,
+    );
+
+    await screen.findByRole("heading", { name: "Zona horaria" });
+    fireEvent.mouseDown(screen.getByLabelText("Zona horaria"));
+    fireEvent.click(screen.getByRole("option", { name: "UTC" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar zona horaria" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({ timezone: "UTC" }),
+        }),
+      );
+    });
+    expect(
+      await screen.findByText(/zona horaria se guardó/i),
+    ).toBeInTheDocument();
   });
 
   test("shows a load error when settings cannot be fetched", async () => {
