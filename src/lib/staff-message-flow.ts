@@ -5,6 +5,8 @@ export type MessageFlowNode = {
   title: string;
   body: string;
   position: { x: number; y: number };
+  /** Team catalog message id when the step reuses Mensajes. */
+  catalogMessageId?: string;
 };
 
 export type MessageFlowEdge = {
@@ -76,6 +78,10 @@ function parseNode(value: unknown): MessageFlowNode | null {
     title: value.title,
     body: value.body,
     position,
+    ...(typeof value.catalogMessageId === "string" &&
+    value.catalogMessageId.trim()
+      ? { catalogMessageId: value.catalogMessageId.trim() }
+      : {}),
   };
 }
 
@@ -303,8 +309,8 @@ export function emptyFlowDraft(name = "Nuevo flujo"): FlowUpsertBody {
     nodes: [
       {
         id: startId,
-        title: "Mensaje inicial",
-        body: "(editar mensaje)",
+        title: "Elegí un mensaje del catálogo",
+        body: "Agregá un mensaje desde Mensajes del equipo y conectalo con flechas.",
         position: { x: 40, y: 40 },
       },
     ],

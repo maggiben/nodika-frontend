@@ -181,6 +181,39 @@ describe("flow message order helpers", () => {
     ).toEqual(["a", "b", "c", "orphan"]);
   });
 
+  it("parses optional catalogMessageId on nodes", () => {
+    expect(
+      parseMessageFlow({
+        ...sampleFlow,
+        nodes: [
+          {
+            id: "a",
+            title: "Ask",
+            body: "¿Cómo fue?",
+            catalogMessageId: "cat1",
+            position: { x: 0, y: 0 },
+          },
+        ],
+      })?.nodes[0],
+    ).toMatchObject({ catalogMessageId: "cat1" });
+    expect(
+      validateFlowUpsertBody({
+        name: "F",
+        startNodeId: "a",
+        nodes: [
+          {
+            id: "a",
+            title: "T",
+            body: "B",
+            catalogMessageId: "cat1",
+            position: { x: 1, y: 2 },
+          },
+        ],
+        edges: [],
+      })?.nodes[0]?.catalogMessageId,
+    ).toBe("cat1");
+  });
+
   it("applies reorder: start, any-edges, stacked positions, renumbers 1..n", () => {
     let edgeSeq = 0;
     const reordered = applyFlowNodeOrder(

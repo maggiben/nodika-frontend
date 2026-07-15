@@ -37,12 +37,7 @@ import {
   type MessageFlowNode,
   validateFlowUpsertBody,
 } from "@/lib/staff-message-flow";
-import {
-  applyCatalogMessagePreset,
-  CATALOG_MESSAGE_PRESET_IDS,
-  type CatalogMessagePresetId,
-} from "@/lib/staff-org-chart-draft";
-import { readOrgChart } from "@/lib/staff-org-chart";
+import { parseStaffCatalog, type StaffCatalogRow } from "@/lib/staff-catalog";
 import { parseStaffRoster, type StaffRosterRow } from "@/lib/staff-roster";
 
 const NODE_WIDTH = 220;
@@ -85,6 +80,7 @@ export function StaffMessageFlowEditor() {
   const { locale, t } = useDictionary();
   const [flows, setFlows] = useState<MessageFlow[]>([]);
   const [roster, setRoster] = useState<StaffRosterRow[]>([]);
+  const [catalog, setCatalog] = useState<StaffCatalogRow[]>([]);
   const [draft, setDraft] = useState<DraftFlow | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
@@ -117,12 +113,17 @@ export function StaffMessageFlowEditor() {
 
     void (async () => {
       try {
-        const [flowsResponse, rosterResponse] = await Promise.all([
-          fetch("/api/messaging/flows", { cache: "no-store" }),
-          fetch("/api/messaging/roster", { cache: "no-store" }),
-        ]);
+        const [flowsResponse, rosterResponse, catalogResponse] =
+          await Promise.all([
+            fetch("/api/messaging/flows", { cache: "no-store" }),
+            fetch("/api/messaging/roster", { cache: "no-store" }),
+            fetch("/api/messaging/catalog", { cache: "no-store" }),
+          ]);
         const flowsBody: unknown = await flowsResponse.json().catch(() => null);
         const rosterBody: unknown = await rosterResponse
+          .json()
+          .catch(() => null);
+        const catalogBody: unknown = await catalogResponse
           .json()
           .catch(() => null);
         if (cancelled) {
@@ -138,6 +139,7 @@ export function StaffMessageFlowEditor() {
         const parsedFlows = parseMessageFlows(flowsBody);
         setFlows(parsedFlows);
         setRoster(rosterResponse.ok ? parseStaffRoster(rosterBody) : []);
+        setCatalog(catalogResponse.ok ? parseStaffCatalog(catalogBody) : []);
         setDraft((current) => {
           if (current?._id) {
             const match = parsedFlows.find((flow) => flow._id === current._id);
@@ -218,8 +220,6 @@ export function StaffMessageFlowEditor() {
     setMessage(null);
     try {
       const body = emptyFlowDraft(t("staff.flow.newName"));
-      body.nodes[0].title = t("staff.flow.nodeTitle");
-      body.nodes[0].body = t("staff.flow.nodeBodyPlaceholder");
       const response = await fetch("/api/messaging/flows", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -308,6 +308,50 @@ export function StaffMessageFlowEditor() {
     }
   }
 
+  async function deleteFlow() {
+    if (!draft?._id) {
+      return;
+    }
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(t("staff.flow.deleteConfirm"))
+    ) {
+      return;
+    }
+    const flowId = draft._id;
+    setSaving(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(
+        `/api/messaging/flows/${encodeURIComponent(flowId)}`,
+        { method: "DELETE" },
+      );
+      const payload: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(
+          typeof (payload as { message?: string })?.message === "string"
+            ? (payload as { message: string }).message
+            : t("staff.flow.deleteError"),
+        );
+      }
+      setFlows((prev) => prev.filter((flow) => flow._id !== flowId));
+      setDraft(null);
+      setSelectedNodeId(null);
+      setSelectedEdgeId(null);
+      setConnectFromId(null);
+      setMessage(t("staff.flow.deleted"));
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error
+          ? deleteError.message
+          : t("staff.flow.deleteError"),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function startFlow() {
     if (!draft?._id || !startContactId) {
       setError(t("staff.flow.startContactRequired"));
@@ -348,62 +392,47 @@ export function StaffMessageFlowEditor() {
     }
   }
 
-  function addNode() {
+  function addNodeFromCatalog(catalogId: string) {
     if (!draft) {
+      return;
+    }
+    const row = catalog.find((item) => item._id === catalogId);
+    if (!row) {
+      setError(t("staff.flow.catalogMissing"));
       return;
     }
     const id = createFlowEntityId("node");
-    const index = draft.nodes.length;
-    updateDraft((prev) => ({
-      ...prev,
-      nodes: [
-        ...prev.nodes,
-        {
-          id,
-          title: t("staff.flow.nodeTitle"),
-          body: t("staff.flow.nodeBodyPlaceholder"),
-          position: { x: 40 + index * 28, y: 40 + index * 28 },
+    updateDraft((prev) => {
+      const nextNode: MessageFlowNode = {
+        id,
+        catalogMessageId: row._id,
+        title: row.title,
+        body: row.body,
+        position: {
+          x: 40 + prev.nodes.length * 36,
+          y: 40 + prev.nodes.length * 36,
         },
-      ],
-    }));
-    setSelectedNodeId(id);
-    setSelectedEdgeId(null);
-  }
-
-  function addNodeFromPreset(presetId: CatalogMessagePresetId) {
-    if (!draft) {
-      return;
-    }
-    const lead = roster.find((row) => row._id === startContactId);
-    const leadName = lead?.label?.trim() || lead?.phone || "";
-    const chart = startContactId ? readOrgChart(startContactId) : null;
-    const applied = applyCatalogMessagePreset({
-      presetId,
-      locale,
-      leadName,
-      chart,
+      };
+      const replacePlaceholder =
+        prev.nodes.length === 1 &&
+        !prev.nodes[0].catalogMessageId &&
+        prev.edges.length === 0;
+      if (replacePlaceholder) {
+        return {
+          ...prev,
+          startNodeId: id,
+          nodes: [{ ...nextNode, position: prev.nodes[0].position }],
+          edges: [],
+        };
+      }
+      return {
+        ...prev,
+        nodes: [...prev.nodes, nextNode],
+      };
     });
-    const id = createFlowEntityId("node");
-    const index = draft.nodes.length;
-    updateDraft((prev) => ({
-      ...prev,
-      nodes: [
-        ...prev.nodes,
-        {
-          id,
-          title: applied.title,
-          body: applied.body,
-          position: { x: 40 + index * 36, y: 40 + index * 36 },
-        },
-      ],
-    }));
     setSelectedNodeId(id);
     setSelectedEdgeId(null);
-    setMessage(
-      applied.usedOrgChart
-        ? t("staff.flow.presetNodeApplied")
-        : t("staff.flow.presetNodePlaceholder"),
-    );
+    setMessage(t("staff.flow.catalogNodeAdded"));
   }
 
   function beginConnect(nodeId: string) {
@@ -555,39 +584,51 @@ export function StaffMessageFlowEditor() {
                   >
                     {saving ? t("staff.saving") : t("staff.flow.save")}
                   </Button>
-                  <Button onClick={addNode} variant="outlined">
-                    {t("staff.flow.addNode")}
+                  <Button
+                    color="error"
+                    disabled={saving || !draft._id}
+                    onClick={() => void deleteFlow()}
+                    variant="outlined"
+                  >
+                    {t("staff.flow.delete")}
                   </Button>
-                  <FormControl sx={{ minWidth: 220 }} size="small">
-                    <InputLabel id="flow-preset-node">
-                      {t("staff.flow.addPresetNode")}
+                  <FormControl sx={{ minWidth: 280 }} size="small">
+                    <InputLabel id="flow-add-catalog">
+                      {t("staff.flow.addFromCatalog")}
                     </InputLabel>
                     <Select
                       displayEmpty
-                      label={t("staff.flow.addPresetNode")}
-                      labelId="flow-preset-node"
+                      label={t("staff.flow.addFromCatalog")}
+                      labelId="flow-add-catalog"
                       onChange={(event) => {
                         const value = String(event.target.value);
-                        if (
-                          CATALOG_MESSAGE_PRESET_IDS.includes(
-                            value as CatalogMessagePresetId,
-                          )
-                        ) {
-                          addNodeFromPreset(value as CatalogMessagePresetId);
+                        if (value) {
+                          addNodeFromCatalog(value);
                         }
                       }}
                       value=""
                     >
                       <MenuItem disabled value="">
-                        <em>{t("staff.flow.addPresetNodeChoose")}</em>
+                        <em>
+                          {catalog.length
+                            ? t("staff.flow.addFromCatalogChoose")
+                            : t("staff.flow.catalogEmpty")}
+                        </em>
                       </MenuItem>
-                      {CATALOG_MESSAGE_PRESET_IDS.map((id) => (
-                        <MenuItem key={id} value={id}>
-                          {t(`staff.catalogPresets.${id}`)}
+                      {catalog.map((row) => (
+                        <MenuItem key={row._id} value={row._id}>
+                          {row.title}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
+                  <Button
+                    component={Link}
+                    href={`/${locale}/staff`}
+                    variant="text"
+                  >
+                    {t("staff.flow.openCatalog")}
+                  </Button>
                 </Stack>
 
                 <Typography color="text.secondary" variant="body2">
@@ -849,6 +890,15 @@ export function StaffMessageFlowEditor() {
                           {node.title}
                         </Typography>
                       </Stack>
+                      {node.catalogMessageId ? (
+                        <Typography
+                          color="primary"
+                          sx={{ display: "block", mb: 0.5 }}
+                          variant="caption"
+                        >
+                          {t("staff.flow.fromCatalog")}
+                        </Typography>
+                      ) : null}
                       <Typography
                         color="text.secondary"
                         sx={{
@@ -895,7 +945,20 @@ export function StaffMessageFlowEditor() {
                     <Typography variant="subtitle1">
                       {t("staff.flow.editNode")}
                     </Typography>
+                    {selectedNode.catalogMessageId ? (
+                      <Alert severity="info">
+                        {t("staff.flow.linkedCatalogHint")}{" "}
+                        <Link href={`/${locale}/staff`}>
+                          {t("staff.flow.openCatalog")}
+                        </Link>
+                      </Alert>
+                    ) : (
+                      <Alert severity="warning">
+                        {t("staff.flow.unlinkedLegacyHint")}
+                      </Alert>
+                    )}
                     <TextField
+                      disabled={Boolean(selectedNode.catalogMessageId)}
                       label={t("staff.flow.nodeTitle")}
                       onChange={(event) =>
                         updateDraft((prev) => ({
@@ -910,6 +973,7 @@ export function StaffMessageFlowEditor() {
                       value={selectedNode.title}
                     />
                     <TextField
+                      disabled={Boolean(selectedNode.catalogMessageId)}
                       label={t("staff.flow.nodeBody")}
                       minRows={3}
                       multiline
