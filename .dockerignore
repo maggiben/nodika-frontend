@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+.ai
+.cursor
+coverage
+openspec
+*.md
+.env*
+.DS_Store
