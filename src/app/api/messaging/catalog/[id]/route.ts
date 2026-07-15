@@ -37,3 +37,25 @@ export async function PATCH(
     ),
   );
 }
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { id } = await context.params;
+  if (!id) {
+    return NextResponse.json(
+      { message: "Catalog message id is required." },
+      { status: 400 },
+    );
+  }
+
+  return withMessagingSession(request, (accessToken, refreshToken) =>
+    proxyMessagingJson(
+      `/messaging/catalog/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+      accessToken,
+      refreshToken,
+    ),
+  );
+}

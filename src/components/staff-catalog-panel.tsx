@@ -218,6 +218,39 @@ export function StaffCatalogPanel({
     [loadCatalog, t],
   );
 
+  const deleteRow = useCallback(
+    async (row: StaffCatalogRow) => {
+      setBusyId(row._id);
+      setError(null);
+      setMessage(null);
+      try {
+        const response = await fetch(
+          `/api/messaging/catalog/${encodeURIComponent(row._id)}`,
+          { method: "DELETE" },
+        );
+        const payload: unknown = await response.json().catch(() => null);
+        if (!response.ok) {
+          setError(
+            typeof payload === "object" &&
+              payload !== null &&
+              "message" in payload &&
+              typeof payload.message === "string"
+              ? payload.message
+              : t("staff.catalogDeleteError"),
+          );
+          return;
+        }
+        setMessage(t("staff.catalogDeleted"));
+        setRows(await loadCatalog());
+      } catch {
+        setError(t("staff.unreachable"));
+      } finally {
+        setBusyId(null);
+      }
+    },
+    [loadCatalog, t],
+  );
+
   return (
     <Paper sx={{ p: 3 }}>
       <Typography component="h2" variant="h6">
@@ -455,15 +488,26 @@ export function StaffCatalogPanel({
                   </Select>
                 </FormControl>
 
-                <Button
-                  disabled={busy || !row.assignedContactId}
-                  fullWidth
-                  onClick={() => void sendRow(row)}
-                  size="small"
-                  variant="outlined"
-                >
-                  {t("staff.catalogSend")}
-                </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    disabled={busy || !row.assignedContactId}
+                    fullWidth
+                    onClick={() => void sendRow(row)}
+                    size="small"
+                    variant="outlined"
+                  >
+                    {t("staff.catalogSend")}
+                  </Button>
+                  <Button
+                    color="warning"
+                    disabled={busy}
+                    fullWidth
+                    onClick={() => void deleteRow(row)}
+                    size="small"
+                  >
+                    {t("staff.catalogDelete")}
+                  </Button>
+                </Stack>
               </Box>
             );
           })

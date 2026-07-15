@@ -220,6 +220,9 @@
     "catalogSend": "Enviar",
     "catalogSent": "Mensaje enviado.",
     "catalogSendError": "No pudimos enviar el mensaje.",
+    "catalogDelete": "Borrar",
+    "catalogDeleted": "Mensaje borrado.",
+    "catalogDeleteError": "No pudimos borrar el mensaje.",
     "catalogColumns": {
       "title": "Título",
       "body": "Mensaje",
