@@ -16,7 +16,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
@@ -81,8 +81,16 @@ export function StaffCatalogPanel({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dragCatalogId, setDragCatalogId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  /** Synchronous drag source — React state alone is too late for HTML5 dragover/drop. */
+  const dragCatalogIdRef = useRef<string | null>(null);
 
   const leadGroups = useMemo(() => groupCatalogByLead(rows), [rows]);
+
+  const clearDragState = useCallback(() => {
+    dragCatalogIdRef.current = null;
+    setDragCatalogId(null);
+    setDragOverId(null);
+  }, []);
 
   const loadCatalog = useCallback(async () => {
     const response = await fetch("/api/messaging/catalog", {
@@ -135,6 +143,10 @@ export function StaffCatalogPanel({
   }, [loadCatalog]);
 
   useVisibleInterval(() => {
+    // Don't clobber an in-progress drag with a background refresh.
+    if (dragCatalogIdRef.current) {
+      return;
+    }
     void refreshCatalogQuietly();
   }, 4_000);
 
@@ -192,6 +204,7 @@ export function StaffCatalogPanel({
       setTitle("");
       setBody("");
       setAssignContactId("");
+      setPresetId("");
       setMessage(t("staff.catalogSaved"));
       setRows(await loadCatalog());
     } catch {
@@ -313,23 +326,40 @@ export function StaffCatalogPanel({
   const reorderLead = useCallback(
     async (contactId: string, fromId: string, toId: string) => {
       if (fromId === toId) {
-        setDragCatalogId(null);
-        setDragOverId(null);
+        clearDragState();
         return;
       }
       const group = leadGroups.find((item) => item.contactId === contactId);
       if (!group) {
+        clearDragState();
         return;
       }
       const current = group.rows.map((row) => row._id);
       const from = current.indexOf(fromId);
       const to = current.indexOf(toId);
       if (from < 0 || to < 0) {
+        clearDragState();
         return;
       }
-      const next = [...current];
-      next.splice(from, 1);
-      next.splice(to, 0, fromId);
+      const nextIds = [...current];
+      nextIds.splice(from, 1);
+      nextIds.splice(to, 0, fromId);
+
+      // Optimistic local reorder so the grid updates immediately.
+      setRows((prev) => {
+        const byId = new Map(prev.map((row) => [row._id, row]));
+        const reordered = nextIds
+          .map((id, index) => {
+            const row = byId.get(id);
+            return row ? { ...row, sortOrder: index + 1 } : null;
+          })
+          .filter((row): row is StaffCatalogRow => row !== null);
+        const untouched = prev.filter(
+          (row) => row.assignedContactId !== contactId,
+        );
+        return [...untouched, ...reordered];
+      });
+      clearDragState();
       setBusyId(fromId);
       setError(null);
       setMessage(null);
@@ -337,7 +367,7 @@ export function StaffCatalogPanel({
         const response = await fetch("/api/messaging/catalog/reorder", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contactId, orderedIds: next }),
+          body: JSON.stringify({ contactId, orderedIds: nextIds }),
         });
         const payload: unknown = await response.json().catch(() => null);
         if (!response.ok) {
@@ -349,19 +379,24 @@ export function StaffCatalogPanel({
               ? payload.message
               : t("staff.catalogReorderError"),
           );
+          setRows(await loadCatalog());
           return;
         }
         setRows(parseStaffCatalog(payload));
         setMessage(t("staff.catalogReordered"));
       } catch {
         setError(t("staff.unreachable"));
+        try {
+          setRows(await loadCatalog());
+        } catch {
+          // Keep optimistic order if reload also fails.
+        }
       } finally {
         setBusyId(null);
-        setDragCatalogId(null);
-        setDragOverId(null);
+        clearDragState();
       }
     },
-    [leadGroups, t],
+    [clearDragState, leadGroups, loadCatalog, t],
   );
 
   const isDragging = Boolean(dragCatalogId);
@@ -386,136 +421,152 @@ export function StaffCatalogPanel({
         </Alert>
       ) : null}
 
-      <Paper
-        variant="outlined"
+      <Box
         sx={{
-          mb: 2,
-          p: 1.5,
-          bgcolor: "action.hover",
+          alignItems: "start",
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "minmax(220px, 260px) minmax(0, 1fr)",
+          },
         }}
       >
-        <Typography sx={{ mb: 1 }} variant="subtitle2">
-          {t("staff.catalogSave")}
-        </Typography>
-        <Box
+        <Paper
+          variant="outlined"
           sx={{
-            display: "grid",
-            gap: 1,
-            gridTemplateColumns: {
-              xs: "1fr",
-              md: "1.2fr 1.6fr 1fr 1fr auto",
-            },
-            alignItems: "start",
+            bgcolor: "action.hover",
+            p: 1.25,
+            position: { md: "sticky" },
+            top: { md: 12 },
+            width: "100%",
           }}
         >
-          <TextField
-            label={t("staff.catalogMessageTitle")}
-            onChange={(event) => setTitle(event.target.value)}
-            size="small"
-            value={title}
-          />
-          <TextField
-            label={t("staff.catalogMessageBody")}
-            minRows={2}
-            multiline
-            onChange={(event) => setBody(event.target.value)}
-            size="small"
-            value={body}
-          />
-          <FormControl fullWidth size="small">
-            <InputLabel id="catalog-assign-new">
-              {t("staff.catalogAssignPlaceholder")}
-            </InputLabel>
-            <Select
-              label={t("staff.catalogAssignPlaceholder")}
-              labelId="catalog-assign-new"
-              onChange={(event) => {
-                const nextContactId = String(event.target.value);
-                setAssignContactId(nextContactId);
-                if (presetId) {
-                  applyPreset(presetId, nextContactId);
-                }
-              }}
-              value={assignContactId}
-            >
-              <MenuItem value="">
-                <em>{t("staff.catalogAssignLater")}</em>
-              </MenuItem>
-              {roster.map((contact) => (
-                <MenuItem key={contact._id} value={contact._id}>
-                  {contact.label || contact.phone}
+          <Typography sx={{ mb: 1 }} variant="subtitle2">
+            {t("staff.catalogSave")}
+          </Typography>
+          <Stack spacing={1}>
+            <FormControl fullWidth size="small">
+              <InputLabel id="catalog-preset">
+                {t("staff.catalogPresetLabel")}
+              </InputLabel>
+              <Select
+                label={t("staff.catalogPresetLabel")}
+                labelId="catalog-preset"
+                onChange={(event) => {
+                  const value = String(event.target.value);
+                  if (
+                    CATALOG_MESSAGE_PRESET_IDS.includes(
+                      value as CatalogMessagePresetId,
+                    )
+                  ) {
+                    applyPreset(value as CatalogMessagePresetId);
+                  } else {
+                    setPresetId("");
+                    setTitle("");
+                    setBody("");
+                    setMessage(null);
+                  }
+                }}
+                value={presetId}
+              >
+                <MenuItem value="">
+                  <em>{t("staff.catalogPresetChoose")}</em>
                 </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <FormControl fullWidth size="small">
-            <InputLabel id="catalog-preset">
-              {t("staff.catalogPresetLabel")}
-            </InputLabel>
-            <Select
-              label={t("staff.catalogPresetLabel")}
-              labelId="catalog-preset"
+                {CATALOG_MESSAGE_PRESET_IDS.map((id) => (
+                  <MenuItem key={id} value={id}>
+                    {t(`staff.catalogPresets.${id}`)}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth size="small">
+              <InputLabel id="catalog-assign-new">
+                {t("staff.catalogAssignPlaceholder")}
+              </InputLabel>
+              <Select
+                label={t("staff.catalogAssignPlaceholder")}
+                labelId="catalog-assign-new"
+                onChange={(event) => {
+                  const nextContactId = String(event.target.value);
+                  setAssignContactId(nextContactId);
+                  if (presetId) {
+                    applyPreset(presetId, nextContactId);
+                  }
+                }}
+                value={assignContactId}
+              >
+                <MenuItem value="">
+                  <em>{t("staff.catalogAssignLater")}</em>
+                </MenuItem>
+                {roster.map((contact) => (
+                  <MenuItem key={contact._id} value={contact._id}>
+                    {contact.label || contact.phone}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label={t("staff.catalogMessageTitle")}
               onChange={(event) => {
-                const value = String(event.target.value);
-                if (
-                  CATALOG_MESSAGE_PRESET_IDS.includes(
-                    value as CatalogMessagePresetId,
-                  )
-                ) {
-                  applyPreset(value as CatalogMessagePresetId);
-                } else {
+                setTitle(event.target.value);
+                if (presetId) {
                   setPresetId("");
                 }
               }}
-              value={presetId}
+              size="small"
+              value={title}
+            />
+            <TextField
+              label={t("staff.catalogMessageBody")}
+              minRows={4}
+              multiline
+              onChange={(event) => {
+                setBody(event.target.value);
+                if (presetId) {
+                  setPresetId("");
+                }
+              }}
+              size="small"
+              value={body}
+            />
+            <Button
+              disabled={
+                saving || title.trim().length === 0 || body.trim().length === 0
+              }
+              fullWidth
+              onClick={() => void saveCatalogMessage()}
+              size="small"
+              variant="contained"
             >
-              <MenuItem value="">
-                <em>{t("staff.catalogPresetChoose")}</em>
-              </MenuItem>
-              {CATALOG_MESSAGE_PRESET_IDS.map((id) => (
-                <MenuItem key={id} value={id}>
-                  {t(`staff.catalogPresets.${id}`)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            disabled={
-              saving || title.trim().length === 0 || body.trim().length === 0
-            }
-            onClick={() => void saveCatalogMessage()}
-            size="small"
-            sx={{ height: 40, whiteSpace: "nowrap" }}
-            variant="contained"
-          >
-            {saving ? t("staff.saving") : t("staff.catalogSave")}
-          </Button>
-        </Box>
-      </Paper>
+              {saving ? t("staff.saving") : t("staff.catalogSave")}
+            </Button>
+          </Stack>
+        </Paper>
 
-      {rows.length === 0 ? (
-        <Box
-          sx={{
-            alignItems: "center",
-            border: "1px dashed",
-            borderColor: "divider",
-            borderRadius: 1,
-            display: "flex",
-            justifyContent: "center",
-            minHeight: 100,
-            p: 2,
-          }}
-        >
-          <Typography color="text.secondary" variant="body2">
-            {t("staff.catalogEmpty")}
-          </Typography>
-        </Box>
-      ) : (
-        <Stack spacing={2}>
-          {leadGroups.map((group) => {
-            const canReorder = Boolean(group.contactId);
-            return (
-              <Box key={group.contactId ?? "unassigned"}>
+        {rows.length === 0 ? (
+          <Box
+            sx={{
+              alignItems: "center",
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: 1,
+              display: "flex",
+              justifyContent: "center",
+              minHeight: 100,
+              p: 2,
+            }}
+          >
+            <Typography color="text.secondary" variant="body2">
+              {t("staff.catalogEmpty")}
+            </Typography>
+          </Box>
+        ) : (
+          <Stack spacing={2} sx={{ minWidth: 0 }}>
+            {leadGroups.map((group) => {
+              const canReorder = Boolean(group.contactId);
+              return (
+                <Box key={group.contactId ?? "unassigned"}>
                 <Stack
                   direction="row"
                   spacing={1.25}
@@ -625,13 +676,21 @@ export function StaffCatalogPanel({
                     return (
                       <Box
                         key={row._id}
-                        onDragLeave={() => {
+                        onDragLeave={(event) => {
+                          const next = event.relatedTarget;
+                          if (
+                            next instanceof Node &&
+                            event.currentTarget.contains(next)
+                          ) {
+                            return;
+                          }
                           if (dragOverId === row._id) {
                             setDragOverId(null);
                           }
                         }}
                         onDragOver={(event) => {
-                          if (!canReorder || !dragCatalogId) {
+                          const sourceId = dragCatalogIdRef.current;
+                          if (!canReorder || !sourceId || sourceId === row._id) {
                             return;
                           }
                           event.preventDefault();
@@ -642,14 +701,18 @@ export function StaffCatalogPanel({
                         }}
                         onDrop={(event) => {
                           event.preventDefault();
-                          if (!group.contactId || !dragCatalogId) {
+                          event.stopPropagation();
+                          if (!group.contactId) {
                             return;
                           }
-                          void reorderLead(
-                            group.contactId,
-                            dragCatalogId,
-                            row._id,
-                          );
+                          const sourceId =
+                            dragCatalogIdRef.current ||
+                            event.dataTransfer.getData("text/plain") ||
+                            dragCatalogId;
+                          if (!sourceId) {
+                            return;
+                          }
+                          void reorderLead(group.contactId, sourceId, row._id);
                         }}
                         sx={{
                           bgcolor: isDropTarget
@@ -685,51 +748,54 @@ export function StaffCatalogPanel({
                           sx={{ alignItems: "center" }}
                         >
                           {canReorder ? (
-                            <Tooltip title={t("staff.catalogDragHandle")}>
-                              <Box
-                                aria-label={t("staff.catalogDragHandle")}
-                                draggable
-                                onDragEnd={() => {
-                                  setDragCatalogId(null);
-                                  setDragOverId(null);
-                                }}
-                                onDragStart={(event) => {
-                                  setDragCatalogId(row._id);
-                                  event.dataTransfer.effectAllowed = "move";
-                                  event.dataTransfer.setData(
-                                    "text/plain",
-                                    row._id,
+                            <Box
+                              aria-label={t("staff.catalogDragHandle")}
+                              component="button"
+                              draggable
+                              onDragEnd={() => {
+                                clearDragState();
+                              }}
+                              onDragStart={(event) => {
+                                dragCatalogIdRef.current = row._id;
+                                setDragCatalogId(row._id);
+                                event.dataTransfer.effectAllowed = "move";
+                                event.dataTransfer.setData(
+                                  "text/plain",
+                                  row._id,
+                                );
+                                // Avoid ghost image showing long message body.
+                                if (event.currentTarget instanceof HTMLElement) {
+                                  event.dataTransfer.setDragImage(
+                                    event.currentTarget,
+                                    12,
+                                    12,
                                   );
-                                  // Avoid ghost image showing long message body.
-                                  if (event.currentTarget instanceof HTMLElement) {
-                                    event.dataTransfer.setDragImage(
-                                      event.currentTarget,
-                                      12,
-                                      12,
-                                    );
-                                  }
-                                }}
-                                sx={{
-                                  alignItems: "center",
-                                  bgcolor: "action.hover",
-                                  borderRadius: 0.75,
-                                  color: "text.secondary",
-                                  cursor: "grab",
-                                  display: "inline-flex",
-                                  flexShrink: 0,
-                                  fontSize: 14,
-                                  height: 28,
-                                  justifyContent: "center",
-                                  letterSpacing: "-1px",
-                                  lineHeight: 1,
-                                  userSelect: "none",
-                                  width: 22,
-                                  "&:active": { cursor: "grabbing" },
-                                }}
-                              >
-                                ⋮⋮
-                              </Box>
-                            </Tooltip>
+                                }
+                              }}
+                              title={t("staff.catalogDragHandle")}
+                              type="button"
+                              sx={{
+                                alignItems: "center",
+                                bgcolor: "action.hover",
+                                border: "none",
+                                borderRadius: 0.75,
+                                color: "text.secondary",
+                                cursor: "grab",
+                                display: "inline-flex",
+                                flexShrink: 0,
+                                fontSize: 14,
+                                height: 28,
+                                justifyContent: "center",
+                                letterSpacing: "-1px",
+                                lineHeight: 1,
+                                p: 0,
+                                userSelect: "none",
+                                width: 22,
+                                "&:active": { cursor: "grabbing" },
+                              }}
+                            >
+                              ⋮⋮
+                            </Box>
                           ) : null}
                           {order !== null ? (
                             <Box
@@ -887,8 +953,9 @@ export function StaffCatalogPanel({
               </Box>
             );
           })}
-        </Stack>
-      )}
+          </Stack>
+        )}
+      </Box>
     </Paper>
   );
 }
