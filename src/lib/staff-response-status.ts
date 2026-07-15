@@ -1,4 +1,9 @@
-export type StaffResponseStatus = "green" | "yellow" | "red" | "neutral";
+export type StaffResponseStatus =
+  | "green"
+  | "yellow"
+  | "red"
+  | "neutral"
+  | "pending";
 
 /** Days after last send without a later reply → yellow. */
 export const STAFF_YELLOW_AFTER_DAYS = 2;

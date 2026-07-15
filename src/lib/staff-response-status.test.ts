@@ -5,6 +5,8 @@ import {
   formatStaffTimestamp,
 } from "@/lib/staff-response-status";
 import { parseStaffRoster } from "@/lib/staff-roster";
+import { parseStaffCatalog } from "@/lib/staff-catalog";
+import { truncateForPreview } from "@/lib/text-preview";
 
 describe("computeStaffResponseStatus", () => {
   const now = new Date("2026-07-15T12:00:00.000Z");
@@ -121,5 +123,62 @@ describe("parseStaffRoster", () => {
   it("returns an empty list for non-array payloads", () => {
     expect(parseStaffRoster(null)).toEqual([]);
     expect(parseStaffRoster({ items: [] })).toEqual([]);
+  });
+});
+
+describe("truncateForPreview", () => {
+  it("keeps short text and truncates long text for UI only", () => {
+    expect(truncateForPreview("hola")).toBe("hola");
+    const long = "x".repeat(150);
+    const preview = truncateForPreview(long, 100);
+    expect(preview.endsWith("…")).toBe(true);
+    expect(preview.length).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("parseStaffCatalog", () => {
+  it("parses catalog rows with full body preserved", () => {
+    const full =
+      "Este es un mensaje largo que se guarda completo aunque la UI lo recorte.";
+    const rows = parseStaffCatalog([
+      {
+        _id: "c1",
+        title: "Avance",
+        body: full,
+        assignedContactId: "u1",
+        assignedLabel: "PM",
+        assignedPhone: "54911",
+        active: true,
+        lastSentAt: "2026-07-01T00:00:00.000Z",
+        repliedAt: "2026-07-02T00:00:00.000Z",
+        responseLatencyMs: 86400000,
+        responseStatus: "green",
+      },
+      {
+        _id: "c2",
+        title: "Otro",
+        body: "corto",
+        assignedContactId: 9,
+        assignedLabel: 1,
+        assignedPhone: false,
+        active: false,
+        lastSentAt: 1,
+        repliedAt: 2,
+        responseLatencyMs: "x",
+        responseStatus: 3,
+      },
+      { title: "bad" },
+      null,
+    ]);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.body).toBe(full);
+    expect(rows[0]?.responseLatencyMs).toBe(86400000);
+    expect(rows[1]?.assignedContactId).toBeNull();
+    expect(rows[1]?.responseStatus).toBe("neutral");
+    expect(rows[1]?.active).toBe(false);
+  });
+
+  it("returns empty for non arrays", () => {
+    expect(parseStaffCatalog(null)).toEqual([]);
   });
 });

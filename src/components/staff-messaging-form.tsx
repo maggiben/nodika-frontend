@@ -21,6 +21,7 @@ import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-dat
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import {
   parseStaffRoster,
   type StaffRosterRow,
@@ -52,6 +53,7 @@ const STATUS_COLOR: Record<StaffResponseStatus, string> = {
   yellow: "#ed6c02",
   red: "#d32f2f",
   neutral: "#9e9e9e",
+  pending: "#ed6c02",
 };
 
 function statusLabelKey(status: StaffResponseStatus): string {
@@ -626,6 +628,8 @@ export function StaffMessagingForm() {
             />
           )}
         </Paper>
+
+        <StaffCatalogPanel roster={rows} />
 
         <Paper sx={{ p: 3 }}>
           <Typography component="h2" variant="h6">

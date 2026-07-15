@@ -24,6 +24,7 @@ export default defineConfig({
         "src/app/[locale]/settings/page.tsx",
         "src/app/[locale]/staff/page.tsx",
         "src/components/staff-messaging-form.tsx",
+        "src/components/staff-catalog-panel.tsx",
         "src/lib/messaging-bff.ts",
         "src/app/api/messaging/**",
       ],
