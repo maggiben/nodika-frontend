@@ -126,15 +126,17 @@ export function buildAttendanceDraft(input: {
       );
     });
   } else {
-    const placeholders =
-      input.locale === "en"
-        ? ["Person 1", "Person 2", "Person 3"]
-        : ["Persona 1", "Persona 2", "Persona 3"];
-    placeholders.forEach((name, index) => {
-      personBlocks.push(
-        ...formatAttendancePersonBlock(input.locale, index + 1, name),
-      );
-    });
+    personBlocks.push(
+      ...(input.locale === "en"
+        ? [
+            "(No people on this lead’s org chart yet. Add them under Org chart, then re-apply the template.)",
+            "",
+          ]
+        : [
+            "(Todavía no hay personas en el organigrama de este jefe. Agregalas en Organigrama y volvé a aplicar la plantilla.)",
+            "",
+          ]),
+    );
   }
 
   if (input.locale === "en") {
@@ -158,4 +160,207 @@ export function buildAttendanceDraft(input: {
     ...personBlocks,
     "Respondé indicando la opción de cada uno. Gracias.",
   ].join("\n");
+}
+
+export function buildWorkProgressTitle(input: {
+  locale: Locale;
+  leadName?: string;
+  dateLabel?: string;
+}): string {
+  const datePart =
+    input.dateLabel?.trim() ||
+    new Intl.DateTimeFormat(input.locale === "es" ? "es-AR" : "en-US", {
+      dateStyle: "medium",
+    }).format(new Date());
+  const lead = input.leadName?.trim();
+  if (input.locale === "en") {
+    return lead
+      ? `Workday progress — ${lead} — ${datePart}`
+      : `Workday progress — ${datePart}`;
+  }
+  return lead
+    ? `Avance de jornada — ${lead} — ${datePart}`
+    : `Avance de jornada — ${datePart}`;
+}
+
+export function buildWorkProgressDraft(input: {
+  locale: Locale;
+  leadName: string;
+  chart: StaffOrgChart | null;
+}): string {
+  const lead = input.leadName.trim() || input.chart?.contactLabel?.trim() || "";
+  const roleLabels = ROLE_LABELS[input.locale];
+  const people: string[] = [];
+
+  if (input.chart && !chartHasNoReports(input.chart)) {
+    input.chart.reports.forEach((report, index) => {
+      const role = reportRoleLabel(report, roleLabels);
+      people.push(`${index + 1}. ${report.name} (${role})`);
+    });
+  } else {
+    people.push(
+      input.locale === "en"
+        ? "(No people on this lead’s org chart yet. Add them under Org chart, then re-apply the template.)"
+        : "(Todavía no hay personas en el organigrama de este jefe. Agregalas en Organigrama y volvé a aplicar la plantilla.)",
+    );
+  }
+
+  if (input.locale === "en") {
+    return [
+      `Hi ${lead || "there"},`,
+      "",
+      "Please send today’s workday progress for the site.",
+      "Reply with:",
+      "- Work time / hours worked",
+      "- Percent complete",
+      "- Duration",
+      "- Progress summary (avance)",
+      "- Notes",
+      "",
+      "Team:",
+      ...people,
+      "",
+      "Thanks.",
+    ].join("\n");
+  }
+
+  return [
+    `Hola ${lead || ""},`.trimEnd(),
+    "",
+    "Por favor reportá el avance de la jornada en obra.",
+    "Respondé con:",
+    "- Tiempo de trabajo / horas",
+    "- Porcentaje cumplido",
+    "- Duración",
+    "- Avance",
+    "- Notas",
+    "",
+    "Equipo a cargo:",
+    ...people,
+    "",
+    "Gracias.",
+  ].join("\n");
+}
+
+function buildPerformanceTitle(input: {
+  locale: Locale;
+  leadName?: string;
+  dateLabel?: string;
+}): string {
+  const datePart =
+    input.dateLabel?.trim() ||
+    new Intl.DateTimeFormat(input.locale === "es" ? "es-AR" : "en-US", {
+      dateStyle: "medium",
+    }).format(new Date());
+  const lead = input.leadName?.trim();
+  if (input.locale === "en") {
+    return lead
+      ? `Team performance — ${lead} — ${datePart}`
+      : `Team performance — ${datePart}`;
+  }
+  return lead
+    ? `Performance del equipo — ${lead} — ${datePart}`
+    : `Performance del equipo — ${datePart}`;
+}
+
+function buildPerformanceDraftOrPlaceholder(input: {
+  locale: Locale;
+  leadName: string;
+  chart: StaffOrgChart | null;
+}): string {
+  if (input.chart && !chartHasNoReports(input.chart)) {
+    return (
+      buildPerformanceDraft({
+        locale: input.locale,
+        leadName: input.leadName,
+        chart: input.chart,
+      }) ?? ""
+    );
+  }
+
+  const lead = input.leadName.trim() || input.chart?.contactLabel?.trim() || "";
+
+  if (input.locale === "en") {
+    return [
+      `Hi ${lead || "there"},`,
+      "",
+      "Could you share a short performance update for each person on your team?",
+      "",
+      "(No people on this lead’s org chart yet. Add them under Org chart, then re-apply the template.)",
+      "",
+      "For each person: how did they do this workday, any issues, and any help they need?",
+      "Thanks.",
+    ].join("\n");
+  }
+
+  return [
+    `Hola ${lead || ""},`.trimEnd(),
+    "",
+    "¿Podrías contarme cómo fue la performance de cada persona de tu equipo en la jornada?",
+    "",
+    "(Todavía no hay personas en el organigrama de este jefe. Agregalas en Organigrama y volvé a aplicar la plantilla.)",
+    "",
+    "Para cada uno: cómo les fue, si hubo problemas y si necesitan apoyo.",
+    "Gracias.",
+  ].join("\n");
+}
+
+export const CATALOG_MESSAGE_PRESET_IDS = [
+  "attendance",
+  "performance",
+  "workProgress",
+] as const;
+
+export type CatalogMessagePresetId =
+  (typeof CATALOG_MESSAGE_PRESET_IDS)[number];
+
+export function applyCatalogMessagePreset(input: {
+  presetId: CatalogMessagePresetId;
+  locale: Locale;
+  leadName: string;
+  chart: StaffOrgChart | null;
+}): { title: string; body: string; usedOrgChart: boolean } {
+  const usedOrgChart = Boolean(input.chart && !chartHasNoReports(input.chart));
+
+  switch (input.presetId) {
+    case "attendance":
+      return {
+        title: buildAttendanceTitle({
+          locale: input.locale,
+          leadName: input.leadName,
+        }),
+        body: buildAttendanceDraft({
+          locale: input.locale,
+          leadName: input.leadName,
+          chart: input.chart,
+        }),
+        usedOrgChart,
+      };
+    case "performance":
+      return {
+        title: buildPerformanceTitle({
+          locale: input.locale,
+          leadName: input.leadName,
+        }),
+        body: buildPerformanceDraftOrPlaceholder({
+          locale: input.locale,
+          leadName: input.leadName,
+          chart: input.chart,
+        }),
+        usedOrgChart,
+      };
+    case "workProgress":
+      return {
+        title: buildWorkProgressTitle({
+          locale: input.locale,
+          leadName: input.leadName,
+        }),
+        body: buildWorkProgressDraft({
+          locale: input.locale,
+          leadName: input.leadName,
+          chart: input.chart,
+        }),
+        usedOrgChart,
+      };
+  }
 }

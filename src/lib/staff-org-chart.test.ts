@@ -3,9 +3,12 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
+  applyCatalogMessagePreset,
   buildAttendanceDraft,
   buildAttendanceTitle,
   buildPerformanceDraft,
+  buildWorkProgressDraft,
+  buildWorkProgressTitle,
 } from "./staff-org-chart-draft";
 import {
   clearOrgCharts,
@@ -310,9 +313,58 @@ describe("staff-org-chart-draft", () => {
       chart: emptyOrgChart("lead_1", "Juan"),
     });
     expect(draft).toContain("Hi Juan");
-    expect(draft).toContain("1. Person 1");
-    expect(draft).toContain("Full day");
-    expect(draft).toContain("Half day");
-    expect(draft).toContain("Absent");
+    expect(draft).not.toContain("Person 1");
+    expect(draft).toContain("No people on this lead’s org chart yet");
+  });
+
+  test("builds work-progress and catalog preset drafts", () => {
+    const chart = {
+      contactId: "lead_1",
+      contactLabel: "Juan",
+      reports: [{ id: "r1", name: "Ana", role: "operario" as const }],
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    expect(
+      buildWorkProgressDraft({
+        locale: "es",
+        leadName: "Juan",
+        chart,
+      }),
+    ).toMatch(/Porcentaje cumplido[\s\S]*Duración[\s\S]*Avance[\s\S]*Notas/);
+    expect(
+      buildWorkProgressDraft({
+        locale: "es",
+        leadName: "Juan",
+        chart,
+      }),
+    ).toContain("1. Ana (operario)");
+    expect(
+      buildWorkProgressTitle({
+        locale: "es",
+        leadName: "Juan",
+        dateLabel: "15 jul 2026",
+      }),
+    ).toBe("Avance de jornada — Juan — 15 jul 2026");
+
+    const applied = applyCatalogMessagePreset({
+      presetId: "performance",
+      locale: "es",
+      leadName: "Juan",
+      chart,
+    });
+    expect(applied.usedOrgChart).toBe(true);
+    expect(applied.title).toContain("Performance del equipo — Juan");
+    expect(applied.body).toContain("Ana (operario)");
+
+    const withoutTeam = applyCatalogMessagePreset({
+      presetId: "workProgress",
+      locale: "en",
+      leadName: "",
+      chart: null,
+    });
+    expect(withoutTeam.usedOrgChart).toBe(false);
+    expect(withoutTeam.body).toContain("Percent complete");
+    expect(withoutTeam.body).not.toContain("Person 1");
+    expect(withoutTeam.body).toContain("No people on this lead’s org chart yet");
   });
 });

@@ -21,9 +21,9 @@ import { useDictionary } from "@/i18n/dictionary-provider";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import { parseStaffCatalog, type StaffCatalogRow } from "@/lib/staff-catalog";
 import {
-  buildAttendanceDraft,
-  buildAttendanceTitle,
-  chartHasNoReports,
+  applyCatalogMessagePreset,
+  CATALOG_MESSAGE_PRESET_IDS,
+  type CatalogMessagePresetId,
 } from "@/lib/staff-org-chart-draft";
 import { readOrgChart } from "@/lib/staff-org-chart";
 import type { StaffRosterRow } from "@/lib/staff-roster";
@@ -63,6 +63,7 @@ export function StaffCatalogPanel({
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [assignContactId, setAssignContactId] = useState("");
+  const [presetId, setPresetId] = useState<"" | CatalogMessagePresetId>("");
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -120,22 +121,26 @@ export function StaffCatalogPanel({
     void refreshCatalogQuietly();
   }, 4_000);
 
-  function applyAttendanceTemplate() {
-    const lead = roster.find((row) => row._id === assignContactId);
+  function applyPreset(
+    nextPreset: CatalogMessagePresetId,
+    contactId = assignContactId,
+  ) {
+    const lead = roster.find((row) => row._id === contactId);
     const leadName = lead?.label?.trim() || lead?.phone || "";
-    const chart = assignContactId ? readOrgChart(assignContactId) : null;
-    setTitle(buildAttendanceTitle({ locale, leadName }));
-    setBody(
-      buildAttendanceDraft({
-        locale,
-        leadName,
-        chart,
-      }),
-    );
+    const chart = contactId ? readOrgChart(contactId) : null;
+    const applied = applyCatalogMessagePreset({
+      presetId: nextPreset,
+      locale,
+      leadName,
+      chart,
+    });
+    setTitle(applied.title);
+    setBody(applied.body);
+    setPresetId(nextPreset);
     setMessage(
-      chart && !chartHasNoReports(chart)
-        ? t("staff.catalogAttendanceApplied")
-        : t("staff.catalogAttendancePlaceholder"),
+      applied.usedOrgChart
+        ? t("staff.catalogPresetApplied")
+        : t("staff.catalogPresetPlaceholder"),
     );
     setError(null);
   }
@@ -360,9 +365,13 @@ export function StaffCatalogPanel({
             <Select
               label={t("staff.catalogAssignPlaceholder")}
               labelId="catalog-assign-new"
-              onChange={(event) =>
-                setAssignContactId(String(event.target.value))
-              }
+              onChange={(event) => {
+                const nextContactId = String(event.target.value);
+                setAssignContactId(nextContactId);
+                if (presetId) {
+                  applyPreset(presetId, nextContactId);
+                }
+              }}
               value={assignContactId}
             >
               <MenuItem value="">
@@ -375,14 +384,37 @@ export function StaffCatalogPanel({
               ))}
             </Select>
           </FormControl>
-          <Button
-            fullWidth
-            onClick={applyAttendanceTemplate}
-            size="small"
-            variant="outlined"
-          >
-            {t("staff.catalogAttendanceTemplate")}
-          </Button>
+          <FormControl fullWidth size="small">
+            <InputLabel id="catalog-preset">
+              {t("staff.catalogPresetLabel")}
+            </InputLabel>
+            <Select
+              label={t("staff.catalogPresetLabel")}
+              labelId="catalog-preset"
+              onChange={(event) => {
+                const value = String(event.target.value);
+                if (
+                  CATALOG_MESSAGE_PRESET_IDS.includes(
+                    value as CatalogMessagePresetId,
+                  )
+                ) {
+                  applyPreset(value as CatalogMessagePresetId);
+                } else {
+                  setPresetId("");
+                }
+              }}
+              value={presetId}
+            >
+              <MenuItem value="">
+                <em>{t("staff.catalogPresetChoose")}</em>
+              </MenuItem>
+              {CATALOG_MESSAGE_PRESET_IDS.map((id) => (
+                <MenuItem key={id} value={id}>
+                  {t(`staff.catalogPresets.${id}`)}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Button
             disabled={
               saving || title.trim().length === 0 || body.trim().length === 0

@@ -21,7 +21,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("StaffCatalogPanel attendance template", () => {
+describe("StaffCatalogPanel message presets", () => {
   test("prefills the create form from the selected lead org chart", async () => {
     upsertOrgChart({
       contactId: "lead_1",
@@ -60,15 +60,14 @@ describe("StaffCatalogPanel attendance template", () => {
     );
 
     await waitFor(() => {
-      expect(
-        screen.getByRole("button", { name: "Plantilla de asistencia" }),
-      ).toBeInTheDocument();
+      expect(screen.getByLabelText("Mensaje predefinido")).toBeInTheDocument();
     });
 
     fireEvent.mouseDown(screen.getByLabelText("Asignar a…"));
     fireEvent.click(await screen.findByRole("option", { name: "Juan" }));
+    fireEvent.mouseDown(screen.getByLabelText("Mensaje predefinido"));
     fireEvent.click(
-      screen.getByRole("button", { name: "Plantilla de asistencia" }),
+      await screen.findByRole("option", { name: "Asistencia del equipo" }),
     );
 
     expect(
@@ -79,5 +78,36 @@ describe("StaffCatalogPanel attendance template", () => {
     ).toBeInTheDocument();
     expect(screen.getByDisplayValue(/Día completo/)).toBeInTheDocument();
     expect(screen.getByText(/personas del organigrama/i)).toBeInTheDocument();
+  });
+
+  test("applies work-progress preset fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
+    );
+
+    render(
+      <TestI18n>
+        <StaffCatalogPanel roster={[]} />
+      </TestI18n>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Mensaje predefinido")).toBeInTheDocument();
+    });
+
+    fireEvent.mouseDown(screen.getByLabelText("Mensaje predefinido"));
+    fireEvent.click(
+      await screen.findByRole("option", {
+        name: "Avance (%, duración, notas)",
+      }),
+    );
+
+    expect(
+      await screen.findByDisplayValue(/Avance de jornada/),
+    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Porcentaje cumplido/)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Duración/)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(/Tiempo de trabajo/)).toBeInTheDocument();
   });
 });
