@@ -65,16 +65,38 @@ describe("SnapshotUploadForm", () => {
   });
 
   test("uploads a valid snapshot with the browser session", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          createdAt: "2026-07-15T00:50:36.611Z",
-          filename: "nodika-snapshot.json",
-          id: "source_1",
-        }),
-        { status: 200 },
-      ),
-    );
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/settings") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              email: "user@example.com",
+              activeProjectId: "proj_mrjbubmw_vbds9",
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          ),
+        );
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            createdAt: "2026-07-15T00:50:36.611Z",
+            filename: "nodika-snapshot.json",
+            id: "source_1",
+          }),
+          { status: 200 },
+        ),
+      );
+    });
     vi.stubGlobal("fetch", fetchMock);
     render(
       <TestI18n locale="en">
@@ -91,6 +113,17 @@ describe("SnapshotUploadForm", () => {
         expect.objectContaining({
           body: expect.stringContaining('"nodika-snapshot-v1"'),
           headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            activeProjectId: "proj_mrjbubmw_vbds9",
+          }),
         }),
       );
     });

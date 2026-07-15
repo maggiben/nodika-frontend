@@ -213,6 +213,8 @@ export type AccountSettings = {
   email: string;
   emailSchedule: EmailSchedule;
   nextSendDates: string[];
+  language?: string;
+  activeProjectId?: string | null;
 };
 
 export function isAccountSettings(value: unknown): value is AccountSettings {
@@ -223,7 +225,7 @@ export function isAccountSettings(value: unknown): value is AccountSettings {
   const record = value as Record<string, unknown>;
   const schedule = record.emailSchedule;
 
-  return (
+  const baseOk =
     typeof record.email === "string" &&
     Array.isArray(record.nextSendDates) &&
     typeof schedule === "object" &&
@@ -231,8 +233,22 @@ export function isAccountSettings(value: unknown): value is AccountSettings {
     typeof (schedule as Record<string, unknown>).enabled === "boolean" &&
     typeof (schedule as Record<string, unknown>).frequency === "string" &&
     Array.isArray((schedule as Record<string, unknown>).daysOfWeek) &&
-    typeof (schedule as Record<string, unknown>).sendTime === "string"
-  );
+    typeof (schedule as Record<string, unknown>).sendTime === "string";
+
+  if (!baseOk) {
+    return false;
+  }
+
+  if (
+    "activeProjectId" in record &&
+    record.activeProjectId !== null &&
+    record.activeProjectId !== undefined &&
+    typeof record.activeProjectId !== "string"
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export async function parseAccountSettings(

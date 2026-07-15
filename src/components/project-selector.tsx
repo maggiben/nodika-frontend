@@ -9,6 +9,7 @@ import {
 } from "@mui/material";
 import { useSyncExternalStore } from "react";
 
+import { activateActiveProject } from "@/lib/activate-active-project";
 import {
   listStoredProjects,
   readProjectLibrary,
@@ -52,7 +53,9 @@ export function ProjectSelector() {
   }
 
   function onChange(event: SelectChangeEvent) {
-    selectStoredProject(event.target.value);
+    const projectId = event.target.value;
+    selectStoredProject(projectId);
+    void activateActiveProject(projectId);
   }
 
   const label = t("nav.project");

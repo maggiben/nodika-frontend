@@ -16,6 +16,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { activateActiveProject } from "@/lib/activate-active-project";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
 import { upsertStoredProject } from "@/lib/snapshot-storage";
 
@@ -127,7 +128,8 @@ export function SnapshotUploadForm({
         return;
       }
 
-      upsertStoredProject(values.snapshot);
+      const stored = upsertStoredProject(values.snapshot);
+      await activateActiveProject(stored.id);
       setResult(body);
       router.push(`/${locale}`);
     } catch {

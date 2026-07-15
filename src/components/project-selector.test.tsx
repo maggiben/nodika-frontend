@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 
 import {
   clearStoredSnapshotJson,
@@ -11,10 +11,17 @@ import {
 import { TestI18n } from "@/test-utils/test-i18n";
 import { ProjectSelector } from "./project-selector";
 
+vi.mock("@/lib/activate-active-project", () => ({
+  activateActiveProject: vi.fn(() => Promise.resolve({ ok: true })),
+}));
+
+import { activateActiveProject } from "@/lib/activate-active-project";
+
 afterEach(() => {
   cleanup();
   clearStoredSnapshotJson();
   window.localStorage.clear();
+  vi.mocked(activateActiveProject).mockClear();
 });
 
 describe("ProjectSelector", () => {
@@ -50,6 +57,7 @@ describe("ProjectSelector", () => {
 
     fireEvent.mouseDown(screen.getByRole("combobox"));
     fireEvent.click(screen.getByRole("option", { name: "Alpha" }));
+    expect(activateActiveProject).toHaveBeenCalledWith("proj_a");
   });
 
   test("uses empty server snapshots during SSR", () => {

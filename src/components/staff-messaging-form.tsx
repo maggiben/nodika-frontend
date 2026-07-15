@@ -35,6 +35,7 @@ import { useDictionary } from "@/i18n/dictionary-provider";
 import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
+import { readProjectLibrary } from "@/lib/snapshot-storage";
 import {
   getOrgChartsSnapshot,
   removeOrgChart,
@@ -308,6 +309,7 @@ export function StaffMessagingForm() {
     setActionMessage(null);
     setError(null);
     try {
+      const selectedProjectId = readProjectLibrary().selectedId?.trim();
       const response = await fetch("/api/messaging/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -316,6 +318,7 @@ export function StaffMessagingForm() {
           label: label.trim() || undefined,
           active: true,
           tags: ["staff"],
+          ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
         }),
       });
       const body: unknown = await response.json().catch(() => null);
@@ -525,6 +528,13 @@ export function StaffMessagingForm() {
         headerName: t("staff.columns.phone"),
         flex: 1,
         minWidth: 130,
+      },
+      {
+        field: "projectId",
+        headerName: t("staff.columns.project"),
+        flex: 1,
+        minWidth: 120,
+        valueGetter: (_value, row) => row.projectId || "—",
       },
       {
         field: "teamSize",

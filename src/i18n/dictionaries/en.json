@@ -235,6 +235,7 @@
     "columns": {
       "name": "Name",
       "phone": "WhatsApp",
+      "project": "Project",
       "teamSize": "Team",
       "messageTypes": "Message types",
       "lastSent": "Last sent",

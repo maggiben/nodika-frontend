@@ -4,6 +4,7 @@ export type StaffRosterRow = {
   label?: string;
   active: boolean;
   tags: string[];
+  projectId?: string | null;
   lastSentAt: string | null;
   lastReceivedAt: string | null;
   lastTemplateKey: string | null;
@@ -45,6 +46,7 @@ export function parseStaffRoster(payload: unknown): StaffRosterRow[] {
     label: typeof row.label === "string" ? row.label : undefined,
     active: row.active,
     tags: row.tags.filter((tag): tag is string => typeof tag === "string"),
+    projectId: typeof row.projectId === "string" ? row.projectId : null,
     lastSentAt: typeof row.lastSentAt === "string" ? row.lastSentAt : null,
     lastReceivedAt:
       typeof row.lastReceivedAt === "string" ? row.lastReceivedAt : null,
