@@ -174,15 +174,20 @@ function TaskDataGrid({
       autoHeight
       columns={columns}
       density="compact"
-      disableColumnMenu
       disableRowSelectionOnClick
       getRowHeight={() => "auto"}
       getRowId={(row) => row.id}
       hideFooter={rows.length <= 10}
-      pageSizeOptions={[10, 25, 50]}
-      rows={rows}
       initialState={{
         pagination: { paginationModel: { pageSize: 10, page: 0 } },
+      }}
+      pageSizeOptions={[10, 25, 50]}
+      rows={rows}
+      showToolbar
+      slotProps={{
+        toolbar: {
+          showQuickFilter: true,
+        },
       }}
       sx={{
         border: 0,

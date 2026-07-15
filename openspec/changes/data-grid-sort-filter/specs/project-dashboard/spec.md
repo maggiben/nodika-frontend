@@ -1,10 +1,4 @@
-# Project Dashboard
-
-## Purpose
-
-Visualize Nordika snapshot JSON on the landing page using progress labels, charts, and task grids.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Project status landing dashboard
 

@@ -80,6 +80,10 @@ describe("ProjectDashboard", () => {
     expect(screen.getByText("Steel frame")).toBeInTheDocument();
     expect(screen.getByText("Survey")).toBeInTheDocument();
     expect(screen.getAllByText("40%").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole("columnheader", { name: /Task/i }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(/search/i).length).toBeGreaterThan(0);
   });
 
   test("falls back to empty state when stored JSON is invalid", async () => {

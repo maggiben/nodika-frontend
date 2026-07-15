@@ -141,9 +141,6 @@ export function AppNavbar({ authenticated }: { authenticated: boolean }) {
                   <ListItemText primary="Upload snapshot" />
                 </MenuItem>
                 <Divider />
-                <MenuItem disabled dense>
-                  <ListItemText primary="Preferences" secondary="Appearance" />
-                </MenuItem>
                 {(
                   [
                     ["light", "Light theme"],
