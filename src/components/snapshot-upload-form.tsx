@@ -15,7 +15,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
-import { storeSnapshotJson } from "@/lib/snapshot-storage";
+import { upsertStoredProject } from "@/lib/snapshot-storage";
 
 type UploadFormValues = {
   snapshot: string;
@@ -124,7 +124,7 @@ export function SnapshotUploadForm({
         return;
       }
 
-      storeSnapshotJson(values.snapshot);
+      upsertStoredProject(values.snapshot);
       setResult(body);
       router.push("/");
     } catch {

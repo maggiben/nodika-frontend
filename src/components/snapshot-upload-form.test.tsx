@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import { clearStoredSnapshotJson } from "@/lib/snapshot-storage";
 import { SnapshotUploadForm } from "./snapshot-upload-form";
 
 const push = vi.fn();
@@ -35,6 +36,7 @@ vi.mock("@uiw/react-codemirror", () => ({
 afterEach(() => {
   cleanup();
   push.mockReset();
+  clearStoredSnapshotJson();
   window.localStorage.clear();
   vi.unstubAllGlobals();
 });
@@ -80,9 +82,11 @@ describe("SnapshotUploadForm", () => {
         }),
       );
     });
-    expect(window.localStorage.getItem("nordika.lastSnapshotJson")).toContain(
-      "nodika-snapshot-v1",
-    );
+    expect(
+      JSON.parse(
+        window.localStorage.getItem("nordika.projectLibrary.v1") ?? "{}",
+      ).projects[0].json,
+    ).toContain("nodika-snapshot-v1");
     expect(push).toHaveBeenCalledWith("/");
     expect(screen.getByText(/Uploaded/)).toBeInTheDocument();
     expect(screen.getByText(/source_1/)).toBeInTheDocument();

@@ -19,6 +19,7 @@ import { useColorScheme } from "@mui/material/styles";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
+import { ProjectSelector } from "@/components/project-selector";
 
 type ThemePreference = "light" | "dark" | "system";
 
@@ -84,7 +85,6 @@ export function AppNavbar({ authenticated }: { authenticated: boolean }) {
             href="/"
             sx={{
               color: "text.primary",
-              flexGrow: 1,
               fontWeight: 700,
               letterSpacing: 0.4,
               textDecoration: "none",
@@ -93,6 +93,10 @@ export function AppNavbar({ authenticated }: { authenticated: boolean }) {
           >
             Nordika
           </Typography>
+
+          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+            <ProjectSelector />
+          </Box>
 
           {!authenticated ? (
             <Box sx={{ display: "flex", gap: 1 }}>

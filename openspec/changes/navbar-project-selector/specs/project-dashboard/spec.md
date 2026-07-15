@@ -1,22 +1,16 @@
-# Project Dashboard
-
-## Purpose
-
-Visualize Nordika snapshot JSON on the landing page using progress labels, charts, and task grids.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Project status landing dashboard
 
-The application SHALL use `/` as a project-status landing page that visualizes the selected locally stored snapshot JSON with progress labels, MUI X Charts visualizations, and MUI X Community Data Grid task tables.
+The application SHALL use `/` as a project-status landing page that visualizes the selected locally stored snapshot JSON with progress labels, at least one graph/visualization, and a task grid.
 
 #### Scenario: Viewing a saved snapshot
 
 - **WHEN** a user opens `/` and a selected snapshot JSON is available in the local project library
 - **THEN** the page SHALL show the project name and cycle summary
-- **AND** SHALL show overall progress labeling with an MUI X Charts gauge (or equivalent chart)
-- **AND** SHALL show at least one MUI X Charts bar visualization for snapshot breakdowns
-- **AND** SHALL show objective tasks in an MUI X Community Data Grid with progress
+- **AND** SHALL show overall progress labeling
+- **AND** SHALL show a graphical progress visualization
+- **AND** SHALL show a grid/table of objective tasks with progress
 
 #### Scenario: Missing snapshot
 

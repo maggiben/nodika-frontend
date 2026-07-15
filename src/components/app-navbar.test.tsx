@@ -8,6 +8,11 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import {
+  clearStoredSnapshotJson,
+  readProjectLibrary,
+  upsertStoredProject,
+} from "@/lib/snapshot-storage";
 import { AppTheme } from "./app-theme";
 import { AppNavbar } from "./app-navbar";
 
@@ -36,6 +41,8 @@ afterEach(() => {
   cleanup();
   refresh.mockReset();
   setMode.mockReset();
+  clearStoredSnapshotJson();
+  window.localStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -58,6 +65,38 @@ describe("AppNavbar", () => {
     expect(
       screen.queryByRole("button", { name: "Open account menu" }),
     ).not.toBeInTheDocument();
+  });
+
+  test("shows a project selector for stored projects", () => {
+    upsertStoredProject(
+      JSON.stringify({
+        meta: { projectId: "proj_a", projectNombre: "Alpha Yard" },
+      }),
+    );
+    upsertStoredProject(
+      JSON.stringify({
+        meta: { projectId: "proj_b", projectNombre: "Beta Pier" },
+      }),
+    );
+
+    render(
+      <AppTheme>
+        <AppNavbar authenticated={false} />
+      </AppTheme>,
+    );
+
+    const selector = screen.getByLabelText("Project");
+    expect(selector).toBeInTheDocument();
+    expect(selector).toHaveTextContent("Beta Pier");
+    fireEvent.mouseDown(selector);
+    expect(
+      screen.getByRole("option", { name: "Alpha Yard" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "Beta Pier" }),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("option", { name: "Alpha Yard" }));
+    expect(readProjectLibrary().selectedId).toBe("proj_a");
   });
 
   test("opens preferences for theme changes and logout", async () => {

@@ -1,36 +1,24 @@
 "use client";
 
-import {
-  Box,
-  Button,
-  Chip,
-  LinearProgress,
-  Paper,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
+import { BarChart } from "@mui/x-charts/BarChart";
+import { Gauge } from "@mui/x-charts/Gauge";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
 import {
   buildSnapshotDashboard,
   type SnapshotDashboardModel,
+  type SnapshotTaskView,
 } from "@/lib/snapshot-dashboard";
-import { readStoredSnapshotJson } from "@/lib/snapshot-storage";
+import {
+  readSelectedSnapshotJson,
+  subscribeToProjectLibrary,
+} from "@/lib/snapshot-storage";
 
-function subscribeToSnapshotStorage(onStoreChange: () => void) {
-  window.addEventListener("storage", onStoreChange);
-  return () => window.removeEventListener("storage", onStoreChange);
-}
-
-function getStoredSnapshotSnapshot() {
-  return readStoredSnapshotJson();
+function getSelectedSnapshotSnapshot() {
+  return readSelectedSnapshotJson();
 }
 
 function getServerSnapshotSnapshot() {
@@ -51,79 +39,13 @@ function modelFromStoredJson(
   }
 }
 
-function ProgressRing({ value }: Readonly<{ value: number }>) {
-  const size = 140;
-  const stroke = 12;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, value));
-  const offset = circumference - (clamped / 100) * circumference;
-
-  return (
-    <Box
-      sx={{
-        position: "relative",
-        width: size,
-        height: size,
-        mx: "auto",
-      }}
-    >
-      <Box
-        component="svg"
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        sx={{ transform: "rotate(-90deg)" }}
-      >
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          opacity={0.15}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-        />
-      </Box>
-      <Stack
-        sx={{
-          position: "absolute",
-          inset: 0,
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Typography variant="h4" component="p" sx={{ fontWeight: 700 }}>
-          {Math.round(clamped)}%
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          average
-        </Typography>
-      </Stack>
-    </Box>
-  );
-}
-
-function BarChart({
+function CountBarChart({
   items,
   emptyLabel,
 }: Readonly<{
   items: { label: string; count: number }[];
   emptyLabel: string;
 }>) {
-  const max = Math.max(...items.map((item) => item.count), 1);
-
   if (items.every((item) => item.count === 0)) {
     return (
       <Typography variant="body2" color="text.secondary">
@@ -133,30 +55,149 @@ function BarChart({
   }
 
   return (
-    <Stack spacing={1.25}>
-      {items.map((item) => (
-        <Box key={item.label}>
-          <Stack
-            direction="row"
-            sx={{ mb: 0.5, justifyContent: "space-between" }}
-          >
-            <Typography variant="body2">{item.label}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              {item.count}
-            </Typography>
-          </Stack>
-          <LinearProgress
-            variant="determinate"
-            value={(item.count / max) * 100}
-            sx={{ height: 8, borderRadius: 1 }}
-          />
-        </Box>
-      ))}
-    </Stack>
+    <BarChart
+      dataset={items}
+      height={240}
+      layout="horizontal"
+      margin={{ left: 16, right: 16, top: 16, bottom: 16 }}
+      series={[{ dataKey: "count", label: "Tasks" }]}
+      yAxis={[
+        {
+          dataKey: "label",
+          scaleType: "band",
+          width: 96,
+        },
+      ]}
+    />
+  );
+}
+
+const objectiveColumns: GridColDef<SnapshotTaskView>[] = [
+  {
+    field: "label",
+    flex: 1.4,
+    headerName: "Task",
+    minWidth: 160,
+    renderCell: (params) => (
+      <Box sx={{ py: 0.5 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {params.row.label}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {params.row.id}
+        </Typography>
+      </Box>
+    ),
+  },
+  {
+    field: "sector",
+    flex: 0.7,
+    headerName: "Sector",
+    minWidth: 100,
+    valueGetter: (_value, row) => row.sector ?? "—",
+  },
+  {
+    field: "duracion",
+    headerName: "Duration",
+    minWidth: 100,
+    type: "number",
+    valueGetter: (_value, row) => (row.duracion === null ? null : row.duracion),
+    valueFormatter: (value: number | null) =>
+      value === null || value === undefined ? "—" : `${value}d`,
+  },
+  {
+    field: "avance",
+    headerName: "Progress",
+    minWidth: 110,
+    type: "number",
+    valueGetter: (_value, row) => row.avance,
+    valueFormatter: (value: number | null) =>
+      value === null || value === undefined ? "—" : `${Math.round(value)}%`,
+  },
+  {
+    field: "window",
+    flex: 1,
+    headerName: "Window",
+    minWidth: 160,
+    valueGetter: (_value, row) =>
+      [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
+  },
+];
+
+const contextColumns: GridColDef<SnapshotTaskView>[] = [
+  { field: "label", flex: 1.2, headerName: "Task", minWidth: 140 },
+  {
+    field: "sector",
+    flex: 0.7,
+    headerName: "Sector",
+    minWidth: 100,
+    valueGetter: (_value, row) => row.sector ?? "—",
+  },
+  {
+    field: "duracion",
+    headerName: "Duration",
+    minWidth: 100,
+    type: "number",
+    valueGetter: (_value, row) => (row.duracion === null ? null : row.duracion),
+    valueFormatter: (value: number | null) =>
+      value === null || value === undefined ? "—" : `${value}d`,
+  },
+  {
+    field: "window",
+    flex: 1,
+    headerName: "Window",
+    minWidth: 160,
+    valueGetter: (_value, row) =>
+      [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
+  },
+];
+
+function TaskDataGrid({
+  rows,
+  columns,
+  emptyLabel,
+}: Readonly<{
+  rows: SnapshotTaskView[];
+  columns: GridColDef<SnapshotTaskView>[];
+  emptyLabel: string;
+}>) {
+  if (rows.length === 0) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ px: 1 }}>
+        {emptyLabel}
+      </Typography>
+    );
+  }
+
+  return (
+    <DataGrid
+      autoHeight
+      columns={columns}
+      density="compact"
+      disableColumnMenu
+      disableRowSelectionOnClick
+      getRowHeight={() => "auto"}
+      getRowId={(row) => row.id}
+      hideFooter={rows.length <= 10}
+      pageSizeOptions={[10, 25, 50]}
+      rows={rows}
+      initialState={{
+        pagination: { paginationModel: { pageSize: 10, page: 0 } },
+      }}
+      sx={{
+        border: 0,
+        "& .MuiDataGrid-cell": {
+          py: 1,
+          alignItems: "flex-start",
+        },
+      }}
+    />
   );
 }
 
 function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
+  const average = Math.round(Math.max(0, Math.min(100, model.averageProgress)));
+
   return (
     <Stack spacing={3}>
       <Stack
@@ -201,18 +242,26 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
           },
         }}
       >
-        <Paper variant="outlined" sx={{ p: 2.5, color: "primary.main" }}>
+        <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
             Overall progress
           </Typography>
-          <ProgressRing value={model.averageProgress} />
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Gauge
+              height={180}
+              text={({ value }) => `${value ?? 0}%`}
+              value={average}
+              valueMax={100}
+              width={180}
+            />
+          </Box>
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
             Duration mix
           </Typography>
-          <BarChart
+          <CountBarChart
             items={model.durationBuckets}
             emptyLabel="No duration data yet."
           />
@@ -222,7 +271,7 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
             Tasks by sector
           </Typography>
-          <BarChart
+          <CountBarChart
             items={model.sectorCounts.slice(0, 8)}
             emptyLabel="No sector data yet."
           />
@@ -233,67 +282,11 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
         <Typography variant="h6" component="h2" sx={{ px: 1, pb: 1.5 }}>
           Objective tasks
         </Typography>
-        <TableContainer>
-          <Table size="small">
-            <TableHead>
-              <TableRow>
-                <TableCell>Task</TableCell>
-                <TableCell>Sector</TableCell>
-                <TableCell align="right">Duration</TableCell>
-                <TableCell sx={{ minWidth: 160 }}>Progress</TableCell>
-                <TableCell>Window</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {model.objectiveTasks.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5}>
-                    <Typography variant="body2" color="text.secondary">
-                      No objective tasks in this snapshot.
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                model.objectiveTasks.map((task) => (
-                  <TableRow key={task.id} hover>
-                    <TableCell>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                        {task.label}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {task.id}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{task.sector ?? "—"}</TableCell>
-                    <TableCell align="right">
-                      {task.duracion === null ? "—" : `${task.duracion}d`}
-                    </TableCell>
-                    <TableCell>
-                      <Stack spacing={0.5}>
-                        <Typography variant="caption" color="text.secondary">
-                          {task.avance === null
-                            ? "—"
-                            : `${Math.round(task.avance)}%`}
-                        </Typography>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.max(0, Math.min(100, task.avance ?? 0))}
-                          sx={{ height: 6, borderRadius: 1 }}
-                        />
-                      </Stack>
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="caption" color="text.secondary">
-                        {[task.ini, task.fin].filter(Boolean).join(" → ") ||
-                          "—"}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <TaskDataGrid
+          columns={objectiveColumns}
+          emptyLabel="No objective tasks in this snapshot."
+          rows={model.objectiveTasks}
+        />
       </Paper>
 
       {model.contextTasks.length > 0 ? (
@@ -301,32 +294,11 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
           <Typography variant="h6" component="h2" sx={{ px: 1, pb: 1.5 }}>
             Context tasks
           </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Task</TableCell>
-                  <TableCell>Sector</TableCell>
-                  <TableCell align="right">Duration</TableCell>
-                  <TableCell>Window</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {model.contextTasks.map((task) => (
-                  <TableRow key={task.id} hover>
-                    <TableCell>{task.label}</TableCell>
-                    <TableCell>{task.sector ?? "—"}</TableCell>
-                    <TableCell align="right">
-                      {task.duracion === null ? "—" : `${task.duracion}d`}
-                    </TableCell>
-                    <TableCell>
-                      {[task.ini, task.fin].filter(Boolean).join(" → ") || "—"}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <TaskDataGrid
+            columns={contextColumns}
+            emptyLabel="No context tasks in this snapshot."
+            rows={model.contextTasks}
+          />
         </Paper>
       ) : null}
     </Stack>
@@ -361,8 +333,8 @@ function EmptyDashboard() {
 
 export function ProjectDashboard() {
   const raw = useSyncExternalStore(
-    subscribeToSnapshotStorage,
-    getStoredSnapshotSnapshot,
+    subscribeToProjectLibrary,
+    getSelectedSnapshotSnapshot,
     getServerSnapshotSnapshot,
   );
   const model = modelFromStoredJson(raw);

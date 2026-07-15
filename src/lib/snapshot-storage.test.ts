@@ -3,29 +3,63 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   clearStoredSnapshotJson,
+  listStoredProjects,
+  readProjectLibrary,
+  readSelectedSnapshotJson,
   readStoredSnapshotJson,
+  selectStoredProject,
   storeSnapshotJson,
+  upsertStoredProject,
 } from "./snapshot-storage";
 
 afterEach(() => {
+  clearStoredSnapshotJson();
   window.localStorage.clear();
   vi.restoreAllMocks();
 });
 
 describe("snapshot-storage", () => {
-  test("stores and reads snapshot JSON", () => {
-    expect(readStoredSnapshotJson()).toBeNull();
+  test("upserts multiple projects and reads the selected snapshot", () => {
+    expect(readSelectedSnapshotJson()).toBeNull();
 
-    storeSnapshotJson('{"meta":{}}');
-    expect(readStoredSnapshotJson()).toBe('{"meta":{}}');
+    upsertStoredProject(
+      JSON.stringify({
+        meta: { projectId: "proj_a", projectNombre: "Alpha" },
+      }),
+    );
+    upsertStoredProject(
+      JSON.stringify({
+        meta: { projectId: "proj_b", projectNombre: "Beta" },
+      }),
+    );
 
-    clearStoredSnapshotJson();
-    expect(readStoredSnapshotJson()).toBeNull();
+    expect(listStoredProjects().map((project) => project.name)).toEqual([
+      "Beta",
+      "Alpha",
+    ]);
+    expect(readProjectLibrary().selectedId).toBe("proj_b");
+    expect(readSelectedSnapshotJson()).toContain("Beta");
+
+    selectStoredProject("proj_a");
+    expect(readSelectedSnapshotJson()).toContain("Alpha");
   });
 
-  test("treats blank storage as missing", () => {
-    window.localStorage.setItem("nordika.lastSnapshotJson", "   ");
-    expect(readStoredSnapshotJson()).toBeNull();
+  test("migrates a legacy single snapshot into the library", () => {
+    window.localStorage.setItem(
+      "nordika.lastSnapshotJson",
+      JSON.stringify({
+        meta: { projectId: "legacy_1", projectNombre: "Legacy" },
+      }),
+    );
+
+    expect(readSelectedSnapshotJson()).toContain("Legacy");
+    expect(listStoredProjects()).toHaveLength(1);
+    expect(window.localStorage.getItem("nordika.lastSnapshotJson")).toBeNull();
+  });
+
+  test("keeps deprecated helpers working", () => {
+    storeSnapshotJson('{"meta":{"projectNombre":"Compat"}}');
+    expect(readStoredSnapshotJson()).toContain("Compat");
   });
 
   test("ignores localStorage failures", () => {

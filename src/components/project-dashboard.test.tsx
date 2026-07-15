@@ -2,11 +2,16 @@
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
+import {
+  clearStoredSnapshotJson,
+  upsertStoredProject,
+} from "@/lib/snapshot-storage";
 import { AppTheme } from "./app-theme";
 import { ProjectDashboard } from "./project-dashboard";
 
 afterEach(() => {
   cleanup();
+  clearStoredSnapshotJson();
   window.localStorage.clear();
 });
 
@@ -27,11 +32,11 @@ describe("ProjectDashboard", () => {
   });
 
   test("renders charts and grid from stored snapshot JSON", async () => {
-    window.localStorage.setItem(
-      "nordika.lastSnapshotJson",
+    upsertStoredProject(
       JSON.stringify({
         meta: {
           projectNombre: "North Quay",
+          projectId: "proj_north",
           ciclo_inicio: "2026-07-01",
           ciclo_fin: "2026-07-21",
         },
@@ -77,11 +82,37 @@ describe("ProjectDashboard", () => {
     expect(screen.getAllByText("40%").length).toBeGreaterThan(0);
   });
 
-  test("shows empty charts and task table for a sparse snapshot", async () => {
+  test("falls back to empty state when stored JSON is invalid", async () => {
     window.localStorage.setItem(
-      "nordika.lastSnapshotJson",
+      "nordika.projectLibrary.v1",
       JSON.stringify({
-        meta: { projectNombre: "Sparse" },
+        selectedId: "bad",
+        projects: [
+          {
+            id: "bad",
+            name: "Broken",
+            json: "{not-json",
+            updatedAt: "2026-07-15T00:00:00.000Z",
+          },
+        ],
+      }),
+    );
+
+    render(
+      <AppTheme>
+        <ProjectDashboard />
+      </AppTheme>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Project status" }),
+    ).toBeInTheDocument();
+  });
+
+  test("shows empty charts and task table for a sparse snapshot", async () => {
+    upsertStoredProject(
+      JSON.stringify({
+        meta: { projectNombre: "Sparse", projectId: "proj_sparse" },
         tareas_con_objetivo: [],
       }),
     );
