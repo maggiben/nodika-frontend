@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
 
-import { groupCatalogByLead, parseStaffCatalog } from "@/lib/staff-catalog";
+import {
+  groupCatalogByLead,
+  moveIdInOrder,
+  parseStaffCatalog,
+} from "@/lib/staff-catalog";
 
 describe("staff-catalog order helpers", () => {
+  it("moves an id within the same ordered list", () => {
+    expect(moveIdInOrder(["a", "b", "c"], "c", "a")).toEqual(["c", "a", "b"]);
+    expect(moveIdInOrder(["a", "b", "c"], "a", "c")).toEqual(["b", "c", "a"]);
+    expect(moveIdInOrder(["a", "b"], "a", "a")).toBeNull();
+    expect(moveIdInOrder(["a", "b"], "a", "z")).toBeNull();
+  });
+
   it("parses sortOrder and groups by lead with restarting numbers", () => {
     const rows = parseStaffCatalog([
       {

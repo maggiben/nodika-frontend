@@ -22,6 +22,7 @@ import { useDictionary } from "@/i18n/dictionary-provider";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
 import {
   groupCatalogByLead,
+  moveIdInOrder,
   parseStaffCatalog,
   type StaffCatalogRow,
 } from "@/lib/staff-catalog";
@@ -81,15 +82,34 @@ export function StaffCatalogPanel({
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dragCatalogId, setDragCatalogId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
-  /** Synchronous drag source — React state alone is too late for HTML5 dragover/drop. */
-  const dragCatalogIdRef = useRef<string | null>(null);
+  /** Pointer DnD session (HTML5 drag is unreliable with React re-renders). */
+  const dragSessionRef = useRef<{
+    catalogId: string;
+    contactId: string;
+    pointerId: number;
+  } | null>(null);
 
   const leadGroups = useMemo(() => groupCatalogByLead(rows), [rows]);
 
   const clearDragState = useCallback(() => {
-    dragCatalogIdRef.current = null;
+    dragSessionRef.current = null;
     setDragCatalogId(null);
     setDragOverId(null);
+  }, []);
+
+  const cardAtPoint = useCallback((clientX: number, clientY: number) => {
+    const el = document.elementFromPoint(clientX, clientY);
+    const card =
+      el instanceof Element ? el.closest("[data-catalog-card]") : null;
+    if (!(card instanceof HTMLElement)) {
+      return null;
+    }
+    const catalogId = card.dataset.catalogId?.trim() ?? "";
+    const contactId = card.dataset.contactId?.trim() ?? "";
+    if (!catalogId || !contactId) {
+      return null;
+    }
+    return { catalogId, contactId };
   }, []);
 
   const loadCatalog = useCallback(async () => {
@@ -144,7 +164,7 @@ export function StaffCatalogPanel({
 
   useVisibleInterval(() => {
     // Don't clobber an in-progress drag with a background refresh.
-    if (dragCatalogIdRef.current) {
+    if (dragSessionRef.current) {
       return;
     }
     void refreshCatalogQuietly();
@@ -325,25 +345,20 @@ export function StaffCatalogPanel({
 
   const reorderLead = useCallback(
     async (contactId: string, fromId: string, toId: string) => {
-      if (fromId === toId) {
-        clearDragState();
-        return;
-      }
       const group = leadGroups.find((item) => item.contactId === contactId);
       if (!group) {
         clearDragState();
         return;
       }
-      const current = group.rows.map((row) => row._id);
-      const from = current.indexOf(fromId);
-      const to = current.indexOf(toId);
-      if (from < 0 || to < 0) {
+      const nextIds = moveIdInOrder(
+        group.rows.map((row) => row._id),
+        fromId,
+        toId,
+      );
+      if (!nextIds) {
         clearDragState();
         return;
       }
-      const nextIds = [...current];
-      nextIds.splice(from, 1);
-      nextIds.splice(to, 0, fromId);
 
       // Optimistic local reorder so the grid updates immediately.
       setRows((prev) => {
@@ -676,44 +691,9 @@ export function StaffCatalogPanel({
                     return (
                       <Box
                         key={row._id}
-                        onDragLeave={(event) => {
-                          const next = event.relatedTarget;
-                          if (
-                            next instanceof Node &&
-                            event.currentTarget.contains(next)
-                          ) {
-                            return;
-                          }
-                          if (dragOverId === row._id) {
-                            setDragOverId(null);
-                          }
-                        }}
-                        onDragOver={(event) => {
-                          const sourceId = dragCatalogIdRef.current;
-                          if (!canReorder || !sourceId || sourceId === row._id) {
-                            return;
-                          }
-                          event.preventDefault();
-                          event.dataTransfer.dropEffect = "move";
-                          if (dragOverId !== row._id) {
-                            setDragOverId(row._id);
-                          }
-                        }}
-                        onDrop={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          if (!group.contactId) {
-                            return;
-                          }
-                          const sourceId =
-                            dragCatalogIdRef.current ||
-                            event.dataTransfer.getData("text/plain") ||
-                            dragCatalogId;
-                          if (!sourceId) {
-                            return;
-                          }
-                          void reorderLead(group.contactId, sourceId, row._id);
-                        }}
+                        data-catalog-card=""
+                        data-catalog-id={row._id}
+                        data-contact-id={group.contactId ?? ""}
                         sx={{
                           bgcolor: isDropTarget
                             ? "action.selected"
@@ -738,6 +718,8 @@ export function StaffCatalogPanel({
                             ? "primary.main"
                             : undefined,
                           p: 1,
+                          // Let elementFromPoint hit sibling cards under the dragged one.
+                          pointerEvents: isSource ? "none" : "auto",
                           position: "relative",
                           transition: "border-color 120ms, box-shadow 120ms",
                         }}
@@ -747,40 +729,101 @@ export function StaffCatalogPanel({
                           spacing={0.75}
                           sx={{ alignItems: "center" }}
                         >
-                          {canReorder ? (
+                          {canReorder && group.contactId ? (
                             <Box
                               aria-label={t("staff.catalogDragHandle")}
-                              component="button"
-                              draggable
-                              onDragEnd={() => {
+                              onPointerCancel={() => {
                                 clearDragState();
                               }}
-                              onDragStart={(event) => {
-                                dragCatalogIdRef.current = row._id;
-                                setDragCatalogId(row._id);
-                                event.dataTransfer.effectAllowed = "move";
-                                event.dataTransfer.setData(
-                                  "text/plain",
-                                  row._id,
+                              onPointerDown={(event) => {
+                                if (event.button !== 0 || busy) {
+                                  return;
+                                }
+                                event.preventDefault();
+                                event.stopPropagation();
+                                const contactId = group.contactId;
+                                if (!contactId) {
+                                  return;
+                                }
+                                event.currentTarget.setPointerCapture(
+                                  event.pointerId,
                                 );
-                                // Avoid ghost image showing long message body.
-                                if (event.currentTarget instanceof HTMLElement) {
-                                  event.dataTransfer.setDragImage(
-                                    event.currentTarget,
-                                    12,
-                                    12,
-                                  );
+                                dragSessionRef.current = {
+                                  catalogId: row._id,
+                                  contactId,
+                                  pointerId: event.pointerId,
+                                };
+                                setDragCatalogId(row._id);
+                                setDragOverId(null);
+                              }}
+                              onPointerMove={(event) => {
+                                const session = dragSessionRef.current;
+                                if (
+                                  !session ||
+                                  session.pointerId !== event.pointerId
+                                ) {
+                                  return;
+                                }
+                                const hit = cardAtPoint(
+                                  event.clientX,
+                                  event.clientY,
+                                );
+                                if (
+                                  !hit ||
+                                  hit.contactId !== session.contactId ||
+                                  hit.catalogId === session.catalogId
+                                ) {
+                                  if (dragOverId !== null) {
+                                    setDragOverId(null);
+                                  }
+                                  return;
+                                }
+                                if (dragOverId !== hit.catalogId) {
+                                  setDragOverId(hit.catalogId);
                                 }
                               }}
+                              onPointerUp={(event) => {
+                                const session = dragSessionRef.current;
+                                if (
+                                  !session ||
+                                  session.pointerId !== event.pointerId
+                                ) {
+                                  return;
+                                }
+                                try {
+                                  event.currentTarget.releasePointerCapture(
+                                    event.pointerId,
+                                  );
+                                } catch {
+                                  // Capture may already be released.
+                                }
+                                const hit = cardAtPoint(
+                                  event.clientX,
+                                  event.clientY,
+                                );
+                                if (
+                                  hit &&
+                                  hit.contactId === session.contactId &&
+                                  hit.catalogId !== session.catalogId
+                                ) {
+                                  void reorderLead(
+                                    session.contactId,
+                                    session.catalogId,
+                                    hit.catalogId,
+                                  );
+                                  return;
+                                }
+                                clearDragState();
+                              }}
+                              role="button"
+                              tabIndex={0}
                               title={t("staff.catalogDragHandle")}
-                              type="button"
                               sx={{
                                 alignItems: "center",
                                 bgcolor: "action.hover",
-                                border: "none",
                                 borderRadius: 0.75,
                                 color: "text.secondary",
-                                cursor: "grab",
+                                cursor: isSource ? "grabbing" : "grab",
                                 display: "inline-flex",
                                 flexShrink: 0,
                                 fontSize: 14,
@@ -788,10 +831,11 @@ export function StaffCatalogPanel({
                                 justifyContent: "center",
                                 letterSpacing: "-1px",
                                 lineHeight: 1,
-                                p: 0,
+                                // Keep receiving captured pointer events while the card ignores hits.
+                                pointerEvents: "auto",
+                                touchAction: "none",
                                 userSelect: "none",
                                 width: 22,
-                                "&:active": { cursor: "grabbing" },
                               }}
                             >
                               ⋮⋮
@@ -898,9 +942,15 @@ export function StaffCatalogPanel({
                           {formatLatency(row.responseLatencyMs)}
                         </Typography>
 
-                        <FormControl fullWidth size="small">
+                        <FormControl
+                          fullWidth
+                          size="small"
+                          sx={{
+                            pointerEvents: isDragging ? "none" : "auto",
+                          }}
+                        >
                           <Select
-                            disabled={busy || roster.length === 0}
+                            disabled={busy || roster.length === 0 || isDragging}
                             displayEmpty
                             onChange={(event) => {
                               const contactId = String(event.target.value);

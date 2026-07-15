@@ -65,6 +65,26 @@ export function parseStaffCatalog(payload: unknown): StaffCatalogRow[] {
     }));
 }
 
+/** Move `fromId` before/onto `toId` inside an ordered id list. */
+export function moveIdInOrder(
+  orderedIds: string[],
+  fromId: string,
+  toId: string,
+): string[] | null {
+  if (fromId === toId) {
+    return null;
+  }
+  const from = orderedIds.indexOf(fromId);
+  const to = orderedIds.indexOf(toId);
+  if (from < 0 || to < 0) {
+    return null;
+  }
+  const next = [...orderedIds];
+  next.splice(from, 1);
+  next.splice(to, 0, fromId);
+  return next;
+}
+
 /** Group catalog rows by assignee; assigned leads first (by label), unassigned last. */
 export function groupCatalogByLead(
   rows: StaffCatalogRow[],
