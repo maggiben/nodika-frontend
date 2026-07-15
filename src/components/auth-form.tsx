@@ -13,37 +13,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+import { useDictionary } from "@/i18n/dictionary-provider";
+
 type FieldName = "email" | "password" | "token";
+type AuthAction =
+  "login" | "register" | "forgot-password" | "reset-password" | "verify-email";
 
 type AuthFormProps = {
-  action: string;
+  action: AuthAction;
   fields: FieldName[];
-  heading: string;
-  submitLabel: string;
-  successMessage: string;
 };
 
 type AuthFormValues = Record<FieldName, string>;
 
-function labelFor(field: FieldName) {
-  switch (field) {
-    case "email":
-      return "Email address";
-    case "password":
-      return "Password";
-    case "token":
-      return "Token";
-  }
-}
-
-export function AuthForm({
-  action,
-  fields,
-  heading,
-  submitLabel,
-  successMessage,
-}: AuthFormProps) {
+export function AuthForm({ action, fields }: AuthFormProps) {
   const router = useRouter();
+  const { locale, t } = useDictionary();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const {
@@ -53,6 +38,10 @@ export function AuthForm({
   } = useForm<AuthFormValues>({
     defaultValues: { email: "", password: "", token: "" },
   });
+
+  const heading = t(`auth.${actionKey(action)}.heading`);
+  const submitLabel = t(`auth.${actionKey(action)}.submit`);
+  const successMessage = t(`auth.${actionKey(action)}.success`);
 
   async function submit(values: AuthFormValues) {
     setError(null);
@@ -75,23 +64,25 @@ export function AuthForm({
             "message" in body &&
             typeof body.message === "string"
             ? body.message
-            : "We could not complete your request.",
+            : t("auth.genericError"),
         );
         return;
       }
 
       if (action === "login" || action === "register") {
-        router.push("/");
+        router.push(`/${locale}`);
         router.refresh();
         return;
       }
 
       setMessage(successMessage);
     } catch {
-      setError(
-        "The authentication service could not be reached. Try again later.",
-      );
+      setError(t("auth.unreachable"));
     }
+  }
+
+  function fieldLabel(field: FieldName) {
+    return t(`auth.${field}`);
   }
 
   return (
@@ -108,11 +99,11 @@ export function AuthForm({
           {fields.map((field) => (
             <TextField
               {...register(field, {
-                required: `${labelFor(field)} is required.`,
+                required: t("auth.required", { field: fieldLabel(field) }),
                 ...(field === "email"
                   ? {
                       pattern: {
-                        message: "Enter a valid email address.",
+                        message: t("auth.invalidEmail"),
                         value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                       },
                     }
@@ -129,7 +120,7 @@ export function AuthForm({
               fullWidth
               helperText={errors[field]?.message}
               key={field}
-              label={labelFor(field)}
+              label={fieldLabel(field)}
               type={field === "password" ? "password" : "text"}
             />
           ))}
@@ -149,10 +140,23 @@ export function AuthForm({
             type="submit"
             variant="contained"
           >
-            {isSubmitting ? "Submitting…" : submitLabel}
+            {isSubmitting ? t("auth.submitting") : submitLabel}
           </Button>
         </Stack>
       </Paper>
     </Box>
   );
+}
+
+function actionKey(action: AuthAction) {
+  switch (action) {
+    case "forgot-password":
+      return "forgotPassword";
+    case "reset-password":
+      return "resetPassword";
+    case "verify-email":
+      return "verifyEmail";
+    default:
+      return action;
+  }
 }

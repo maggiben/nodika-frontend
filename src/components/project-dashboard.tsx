@@ -7,6 +7,7 @@ import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
+import { useDictionary } from "@/i18n/dictionary-provider";
 import {
   buildSnapshotDashboard,
   type SnapshotDashboardModel,
@@ -42,9 +43,11 @@ function modelFromStoredJson(
 function CountBarChart({
   items,
   emptyLabel,
+  seriesLabel,
 }: Readonly<{
   items: { label: string; count: number }[];
   emptyLabel: string;
+  seriesLabel: string;
 }>) {
   if (items.every((item) => item.count === 0)) {
     return (
@@ -60,7 +63,7 @@ function CountBarChart({
       height={240}
       layout="horizontal"
       margin={{ left: 16, right: 16, top: 16, bottom: 16 }}
-      series={[{ dataKey: "count", label: "Tasks" }]}
+      series={[{ dataKey: "count", label: seriesLabel }]}
       yAxis={[
         {
           dataKey: "label",
@@ -72,85 +75,100 @@ function CountBarChart({
   );
 }
 
-const objectiveColumns: GridColDef<SnapshotTaskView>[] = [
-  {
-    field: "label",
-    flex: 1.4,
-    headerName: "Task",
-    minWidth: 160,
-    renderCell: (params) => (
-      <Box sx={{ py: 0.5 }}>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-          {params.row.label}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {params.row.id}
-        </Typography>
-      </Box>
-    ),
-  },
-  {
-    field: "sector",
-    flex: 0.7,
-    headerName: "Sector",
-    minWidth: 100,
-    valueGetter: (_value, row) => row.sector ?? "—",
-  },
-  {
-    field: "duracion",
-    headerName: "Duration",
-    minWidth: 100,
-    type: "number",
-    valueGetter: (_value, row) => (row.duracion === null ? null : row.duracion),
-    valueFormatter: (value: number | null) =>
-      value === null || value === undefined ? "—" : `${value}d`,
-  },
-  {
-    field: "avance",
-    headerName: "Progress",
-    minWidth: 110,
-    type: "number",
-    valueGetter: (_value, row) => row.avance,
-    valueFormatter: (value: number | null) =>
-      value === null || value === undefined ? "—" : `${Math.round(value)}%`,
-  },
-  {
-    field: "window",
-    flex: 1,
-    headerName: "Window",
-    minWidth: 160,
-    valueGetter: (_value, row) =>
-      [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
-  },
-];
+function buildObjectiveColumns(
+  t: (path: string) => string,
+): GridColDef<SnapshotTaskView>[] {
+  return [
+    {
+      field: "label",
+      flex: 1.4,
+      headerName: t("dashboard.columns.task"),
+      minWidth: 160,
+      renderCell: (params) => (
+        <Box sx={{ py: 0.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            {params.row.label}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {params.row.id}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      field: "sector",
+      flex: 0.7,
+      headerName: t("dashboard.columns.sector"),
+      minWidth: 100,
+      valueGetter: (_value, row) => row.sector ?? "—",
+    },
+    {
+      field: "duracion",
+      headerName: t("dashboard.columns.duration"),
+      minWidth: 100,
+      type: "number",
+      valueGetter: (_value, row) =>
+        row.duracion === null ? null : row.duracion,
+      valueFormatter: (value: number | null) =>
+        value === null || value === undefined ? "—" : `${value}d`,
+    },
+    {
+      field: "avance",
+      headerName: t("dashboard.columns.progress"),
+      minWidth: 110,
+      type: "number",
+      valueGetter: (_value, row) => row.avance,
+      valueFormatter: (value: number | null) =>
+        value === null || value === undefined ? "—" : `${Math.round(value)}%`,
+    },
+    {
+      field: "window",
+      flex: 1,
+      headerName: t("dashboard.columns.window"),
+      minWidth: 160,
+      valueGetter: (_value, row) =>
+        [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
+    },
+  ];
+}
 
-const contextColumns: GridColDef<SnapshotTaskView>[] = [
-  { field: "label", flex: 1.2, headerName: "Task", minWidth: 140 },
-  {
-    field: "sector",
-    flex: 0.7,
-    headerName: "Sector",
-    minWidth: 100,
-    valueGetter: (_value, row) => row.sector ?? "—",
-  },
-  {
-    field: "duracion",
-    headerName: "Duration",
-    minWidth: 100,
-    type: "number",
-    valueGetter: (_value, row) => (row.duracion === null ? null : row.duracion),
-    valueFormatter: (value: number | null) =>
-      value === null || value === undefined ? "—" : `${value}d`,
-  },
-  {
-    field: "window",
-    flex: 1,
-    headerName: "Window",
-    minWidth: 160,
-    valueGetter: (_value, row) =>
-      [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
-  },
-];
+function buildContextColumns(
+  t: (path: string) => string,
+): GridColDef<SnapshotTaskView>[] {
+  return [
+    {
+      field: "label",
+      flex: 1.2,
+      headerName: t("dashboard.columns.task"),
+      minWidth: 140,
+    },
+    {
+      field: "sector",
+      flex: 0.7,
+      headerName: t("dashboard.columns.sector"),
+      minWidth: 100,
+      valueGetter: (_value, row) => row.sector ?? "—",
+    },
+    {
+      field: "duracion",
+      headerName: t("dashboard.columns.duration"),
+      minWidth: 100,
+      type: "number",
+      valueGetter: (_value, row) =>
+        row.duracion === null ? null : row.duracion,
+      valueFormatter: (value: number | null) =>
+        value === null || value === undefined ? "—" : `${value}d`,
+    },
+    {
+      field: "window",
+      flex: 1,
+      headerName: t("dashboard.columns.window"),
+      minWidth: 160,
+      valueGetter: (_value, row) =>
+        [row.ini, row.fin].filter(Boolean).join(" → ") || "—",
+    },
+  ];
+}
 
 function TaskDataGrid({
   rows,
@@ -201,7 +219,10 @@ function TaskDataGrid({
 }
 
 function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
+  const { t } = useDictionary();
   const average = Math.round(Math.max(0, Math.min(100, model.averageProgress)));
+  const objectiveColumns = buildObjectiveColumns(t);
+  const contextColumns = buildContextColumns(t);
 
   return (
     <Stack spacing={3}>
@@ -216,23 +237,29 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
           </Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>
             {[model.cicloInicio, model.cicloFin].filter(Boolean).join(" → ") ||
-              "Cycle dates not set"}
+              t("dashboard.cycleDatesMissing")}
             {model.projectId ? ` · ${model.projectId}` : ""}
           </Typography>
         </Box>
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
           <Chip
             color="primary"
-            label={`${model.totalObjectiveTasks} objective tasks`}
+            label={t("dashboard.objectiveTasks", {
+              count: model.totalObjectiveTasks,
+            })}
           />
           <Chip
             color="secondary"
             variant="outlined"
-            label={`${model.completedCount} at 100%`}
+            label={t("dashboard.completedAt100", {
+              count: model.completedCount,
+            })}
           />
           <Chip
             variant="outlined"
-            label={`${model.contextTasks.length} context tasks`}
+            label={t("dashboard.contextTasksCount", {
+              count: model.contextTasks.length,
+            })}
           />
         </Stack>
       </Stack>
@@ -249,7 +276,7 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
       >
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Overall progress
+            {t("dashboard.overallProgress")}
           </Typography>
           <Box sx={{ display: "flex", justifyContent: "center" }}>
             <Gauge
@@ -264,32 +291,34 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
 
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Duration mix
+            {t("dashboard.durationMix")}
           </Typography>
           <CountBarChart
+            emptyLabel={t("dashboard.noDurationData")}
             items={model.durationBuckets}
-            emptyLabel="No duration data yet."
+            seriesLabel={t("dashboard.tasksSeries")}
           />
         </Paper>
 
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-            Tasks by sector
+            {t("dashboard.tasksBySector")}
           </Typography>
           <CountBarChart
+            emptyLabel={t("dashboard.noSectorData")}
             items={model.sectorCounts.slice(0, 8)}
-            emptyLabel="No sector data yet."
+            seriesLabel={t("dashboard.tasksSeries")}
           />
         </Paper>
       </Box>
 
       <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 } }}>
         <Typography variant="h6" component="h2" sx={{ px: 1, pb: 1.5 }}>
-          Objective tasks
+          {t("dashboard.objectiveTasksHeading")}
         </Typography>
         <TaskDataGrid
           columns={objectiveColumns}
-          emptyLabel="No objective tasks in this snapshot."
+          emptyLabel={t("dashboard.noObjectiveTasks")}
           rows={model.objectiveTasks}
         />
       </Paper>
@@ -297,11 +326,11 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
       {model.contextTasks.length > 0 ? (
         <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 } }}>
           <Typography variant="h6" component="h2" sx={{ px: 1, pb: 1.5 }}>
-            Context tasks
+            {t("dashboard.contextTasksHeading")}
           </Typography>
           <TaskDataGrid
             columns={contextColumns}
-            emptyLabel="No context tasks in this snapshot."
+            emptyLabel={t("dashboard.noContextTasks")}
             rows={model.contextTasks}
           />
         </Paper>
@@ -311,6 +340,8 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
 }
 
 function EmptyDashboard() {
+  const { locale, t } = useDictionary();
+
   return (
     <Paper
       variant="outlined"
@@ -320,17 +351,16 @@ function EmptyDashboard() {
       }}
     >
       <Typography variant="h5" component="h1" gutterBottom>
-        Project status
+        {t("dashboard.emptyTitle")}
       </Typography>
       <Typography
         color="text.secondary"
         sx={{ mb: 3, maxWidth: 420, mx: "auto" }}
       >
-        Upload a Nordika snapshot JSON from the avatar menu to see progress,
-        duration mix, and task grids on this home page.
+        {t("dashboard.emptyDescription")}
       </Typography>
-      <Button component={Link} href="/upload" variant="contained">
-        Upload snapshot
+      <Button component={Link} href={`/${locale}/upload`} variant="contained">
+        {t("dashboard.uploadCta")}
       </Button>
     </Paper>
   );

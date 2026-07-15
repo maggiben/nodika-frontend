@@ -6,7 +6,7 @@ import {
   clearStoredSnapshotJson,
   upsertStoredProject,
 } from "@/lib/snapshot-storage";
-import { AppTheme } from "./app-theme";
+import { TestI18n } from "@/test-utils/test-i18n";
 import { ProjectDashboard } from "./project-dashboard";
 
 afterEach(() => {
@@ -18,17 +18,17 @@ afterEach(() => {
 describe("ProjectDashboard", () => {
   test("shows empty state when no snapshot is stored", async () => {
     render(
-      <AppTheme>
+      <TestI18n>
         <ProjectDashboard />
-      </AppTheme>,
+      </TestI18n>,
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Project status" }),
+      await screen.findByRole("heading", { name: "Estado del proyecto" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Upload snapshot" }),
-    ).toHaveAttribute("href", "/upload");
+      screen.getByRole("link", { name: "Subir snapshot" }),
+    ).toHaveAttribute("href", "/es/upload");
   });
 
   test("renders charts and grid from stored snapshot JSON", async () => {
@@ -65,9 +65,9 @@ describe("ProjectDashboard", () => {
     );
 
     render(
-      <AppTheme>
+      <TestI18n>
         <ProjectDashboard />
-      </AppTheme>,
+      </TestI18n>,
     );
 
     await waitFor(() => {
@@ -75,13 +75,13 @@ describe("ProjectDashboard", () => {
         screen.getByRole("heading", { name: "North Quay" }),
       ).toBeInTheDocument();
     });
-    expect(screen.getByText("Overall progress")).toBeInTheDocument();
-    expect(screen.getByText("Duration mix")).toBeInTheDocument();
+    expect(screen.getByText("Progreso general")).toBeInTheDocument();
+    expect(screen.getByText("Mezcla de duración")).toBeInTheDocument();
     expect(screen.getByText("Steel frame")).toBeInTheDocument();
     expect(screen.getByText("Survey")).toBeInTheDocument();
     expect(screen.getAllByText("40%").length).toBeGreaterThan(0);
     expect(
-      screen.getAllByRole("columnheader", { name: /Task/i }).length,
+      screen.getAllByRole("columnheader", { name: /Tarea/i }).length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByLabelText(/search/i).length).toBeGreaterThan(0);
   });
@@ -103,13 +103,13 @@ describe("ProjectDashboard", () => {
     );
 
     render(
-      <AppTheme>
+      <TestI18n>
         <ProjectDashboard />
-      </AppTheme>,
+      </TestI18n>,
     );
 
     expect(
-      await screen.findByRole("heading", { name: "Project status" }),
+      await screen.findByRole("heading", { name: "Estado del proyecto" }),
     ).toBeInTheDocument();
   });
 
@@ -122,18 +122,20 @@ describe("ProjectDashboard", () => {
     );
 
     render(
-      <AppTheme>
+      <TestI18n>
         <ProjectDashboard />
-      </AppTheme>,
+      </TestI18n>,
     );
 
     expect(
       await screen.findByRole("heading", { name: "Sparse" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("No duration data yet.")).toBeInTheDocument();
-    expect(screen.getByText("No sector data yet.")).toBeInTheDocument();
     expect(
-      screen.getByText("No objective tasks in this snapshot."),
+      screen.getByText("Aún no hay datos de duración."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Aún no hay datos de sector.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No hay tareas con objetivo en este snapshot."),
     ).toBeInTheDocument();
   });
 });

@@ -16,6 +16,7 @@ import {
   subscribeToProjectLibrary,
   type StoredProject,
 } from "@/lib/snapshot-storage";
+import { useDictionary } from "@/i18n/dictionary-provider";
 
 function getProjectsSnapshot(): StoredProject[] {
   return listStoredProjects();
@@ -34,6 +35,7 @@ function getServerEmptyId(): string {
 }
 
 export function ProjectSelector() {
+  const { t } = useDictionary();
   const projects = useSyncExternalStore(
     subscribeToProjectLibrary,
     getProjectsSnapshot,
@@ -53,11 +55,13 @@ export function ProjectSelector() {
     selectStoredProject(event.target.value);
   }
 
+  const label = t("nav.project");
+
   return (
     <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 220 } }}>
-      <InputLabel id="nordika-project-selector-label">Project</InputLabel>
+      <InputLabel id="nordika-project-selector-label">{label}</InputLabel>
       <Select
-        label="Project"
+        label={label}
         labelId="nordika-project-selector-label"
         onChange={onChange}
         value={selectedId || projects[0]?.id || ""}

@@ -9,24 +9,28 @@ import {
 } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { clearStoredSnapshotJson } from "@/lib/snapshot-storage";
+import { TestI18n } from "@/test-utils/test-i18n";
 import { SnapshotUploadForm } from "./snapshot-upload-form";
 
 const push = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
+  usePathname: () => "/en/upload",
 }));
 
 vi.mock("@uiw/react-codemirror", () => ({
   default: ({
     onChange,
     value,
+    "aria-label": ariaLabel,
   }: {
     onChange: (value: string) => void;
     value: string;
+    "aria-label"?: string;
   }) => (
     <textarea
-      aria-label="Nodika snapshot JSON"
+      aria-label={ariaLabel ?? "Snapshot JSON"}
       onChange={(event) => onChange(event.target.value)}
       value={value}
     />
@@ -43,9 +47,13 @@ afterEach(() => {
 
 describe("SnapshotUploadForm", () => {
   test("shows JSON validation errors and prevents upload", () => {
-    render(<SnapshotUploadForm authenticated />);
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
 
-    fireEvent.change(screen.getByLabelText("Nodika snapshot JSON"), {
+    fireEvent.change(screen.getByLabelText("Snapshot JSON"), {
       target: { value: "{" },
     });
 
@@ -68,7 +76,11 @@ describe("SnapshotUploadForm", () => {
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
-    render(<SnapshotUploadForm authenticated />);
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /validate and upload/i }),
     );
@@ -87,7 +99,7 @@ describe("SnapshotUploadForm", () => {
         window.localStorage.getItem("nordika.projectLibrary.v1") ?? "{}",
       ).projects[0].json,
     ).toContain("nodika-snapshot-v1");
-    expect(push).toHaveBeenCalledWith("/");
+    expect(push).toHaveBeenCalledWith("/en");
     expect(screen.getByText(/Uploaded/)).toBeInTheDocument();
     expect(screen.getByText(/source_1/)).toBeInTheDocument();
   });
@@ -104,7 +116,11 @@ describe("SnapshotUploadForm", () => {
         ),
       ),
     );
-    render(<SnapshotUploadForm authenticated />);
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /validate and upload/i }),
     );
@@ -115,7 +131,11 @@ describe("SnapshotUploadForm", () => {
   });
 
   test("requires sign-in before enabling uploads", () => {
-    render(<SnapshotUploadForm authenticated={false} />);
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated={false} />
+      </TestI18n>,
+    );
 
     expect(
       screen.getByText(/Sign in to upload a snapshot/),

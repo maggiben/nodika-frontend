@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "title": "Nordika",
+    "description": "Consulta el estado de proyectos Nordika y sube snapshots."
+  },
+  "nav": {
+    "brand": "Nordika",
+    "signIn": "Iniciar sesión",
+    "register": "Registrarse",
+    "openAccountMenu": "Abrir menú de cuenta",
+    "accountPreferences": "Preferencias de la cuenta",
+    "uploadSnapshot": "Subir snapshot",
+    "lightTheme": "Tema claro",
+    "darkTheme": "Tema oscuro",
+    "systemTheme": "Tema del sistema",
+    "signOut": "Cerrar sesión",
+    "signingOut": "Cerrando sesión…",
+    "language": "Idioma",
+    "project": "Proyecto"
+  },
+  "auth": {
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "token": "Token",
+    "required": "{field} es obligatorio.",
+    "invalidEmail": "Introduce un correo válido.",
+    "genericError": "No pudimos completar tu solicitud.",
+    "unreachable": "No se pudo contactar el servicio de autenticación. Inténtalo más tarde.",
+    "submitting": "Enviando…",
+    "login": {
+      "heading": "Iniciar sesión",
+      "submit": "Iniciar sesión",
+      "success": ""
+    },
+    "register": {
+      "heading": "Crear una cuenta",
+      "submit": "Registrarse",
+      "success": ""
+    },
+    "forgotPassword": {
+      "heading": "Restablecer tu contraseña",
+      "submit": "Enviar enlace",
+      "success": "Si la cuenta existe, recibirás instrucciones por correo."
+    },
+    "resetPassword": {
+      "heading": "Elige una nueva contraseña",
+      "submit": "Actualizar contraseña",
+      "success": "Tu contraseña se actualizó. Ya puedes iniciar sesión."
+    },
+    "verifyEmail": {
+      "heading": "Verifica tu correo",
+      "submit": "Verificar correo",
+      "success": "Tu correo quedó verificado. Ya puedes iniciar sesión."
+    }
+  },
+  "upload": {
+    "title": "Subir un snapshot de proyecto",
+    "description": "Pega el JSON del snapshot, revisa la sintaxis y envíalo a Nordika Core. Una carga exitosa también actualiza el panel del proyecto en inicio.",
+    "editorTitle": "JSON del snapshot",
+    "editorHelp": "El editor valida la sintaxis JSON antes de subir. Tras una carga exitosa, el panel de inicio se actualiza con este snapshot.",
+    "signInPrompt": "Inicia sesión para subir un snapshot. Tu sesión la gestiona Nordika de forma segura y no necesitas pegar ningún token aquí.",
+    "fixIssues": "Corrige {count} problema(s) de sintaxis JSON",
+    "correctSyntax": "Corrige los errores de sintaxis JSON antes de subir.",
+    "uploadFailed": "No se pudo subir el snapshot.",
+    "unexpectedResponse": "Core devolvió una respuesta de subida inesperada.",
+    "unreachable": "No se pudo contactar el servicio de carga. Inténtalo más tarde.",
+    "uploaded": "Se subió {filename} como fuente {id} el {date}.",
+    "submit": "Validar y subir snapshot",
+    "submitting": "Subiendo…"
+  },
+  "dashboard": {
+    "emptyTitle": "Estado del proyecto",
+    "emptyDescription": "Sube un JSON de snapshot Nordika desde el menú del avatar para ver el progreso, la duración y las tablas de tareas en esta página de inicio.",
+    "uploadCta": "Subir snapshot",
+    "cycleDatesMissing": "Fechas de ciclo no definidas",
+    "objectiveTasks": "{count} tareas con objetivo",
+    "completedAt100": "{count} al 100%",
+    "contextTasksCount": "{count} tareas de contexto",
+    "overallProgress": "Progreso general",
+    "durationMix": "Mezcla de duración",
+    "tasksBySector": "Tareas por sector",
+    "noDurationData": "Aún no hay datos de duración.",
+    "noSectorData": "Aún no hay datos de sector.",
+    "objectiveTasksHeading": "Tareas con objetivo",
+    "contextTasksHeading": "Tareas de contexto",
+    "noObjectiveTasks": "No hay tareas con objetivo en este snapshot.",
+    "noContextTasks": "No hay tareas de contexto en este snapshot.",
+    "columns": {
+      "task": "Tarea",
+      "sector": "Sector",
+      "duration": "Duración",
+      "progress": "Progreso",
+      "window": "Ventana"
+    },
+    "tasksSeries": "Tareas"
+  }
+}

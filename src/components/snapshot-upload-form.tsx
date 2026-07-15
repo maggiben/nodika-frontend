@@ -14,6 +14,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+
+import { useDictionary } from "@/i18n/dictionary-provider";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
 import { upsertStoredProject } from "@/lib/snapshot-storage";
 
@@ -72,6 +74,7 @@ export function SnapshotUploadForm({
   authenticated: boolean;
 }) {
   const router = useRouter();
+  const { locale, t } = useDictionary();
   const {
     control,
     formState: { isSubmitting },
@@ -92,7 +95,7 @@ export function SnapshotUploadForm({
     setSubmissionError(null);
 
     if (!parseNodikaSnapshot(values.snapshot).success) {
-      setSubmissionError("Correct the JSON syntax errors before uploading.");
+      setSubmissionError(t("upload.correctSyntax"));
       return;
     }
 
@@ -113,24 +116,22 @@ export function SnapshotUploadForm({
           "message" in body &&
           typeof body.message === "string"
             ? body.message
-            : "The snapshot could not be uploaded.";
+            : t("upload.uploadFailed");
 
         setSubmissionError(message);
         return;
       }
 
       if (!isUploadResult(body)) {
-        setSubmissionError("Core returned an unexpected upload response.");
+        setSubmissionError(t("upload.unexpectedResponse"));
         return;
       }
 
       upsertStoredProject(values.snapshot);
       setResult(body);
-      router.push("/");
+      router.push(`/${locale}`);
     } catch {
-      setSubmissionError(
-        "The upload service could not be reached. Try again later.",
-      );
+      setSubmissionError(t("upload.unreachable"));
     }
   }
 
@@ -139,11 +140,10 @@ export function SnapshotUploadForm({
       <Stack component="form" spacing={3} onSubmit={handleSubmit(submit)}>
         <Box>
           <Typography component="h2" variant="h6">
-            Snapshot JSON
+            {t("upload.editorTitle")}
           </Typography>
           <Typography color="text.secondary" sx={{ mb: 1 }} variant="body2">
-            The editor checks JSON syntax before upload. After a successful
-            upload, the home dashboard updates from this snapshot.
+            {t("upload.editorHelp")}
           </Typography>
           <Controller
             control={control}
@@ -160,7 +160,7 @@ export function SnapshotUploadForm({
                 }}
               >
                 <CodeMirror
-                  aria-label="Nodika snapshot JSON"
+                  aria-label={t("upload.editorTitle")}
                   basicSetup={{ lineNumbers: true, foldGutter: false }}
                   extensions={[json()]}
                   height="420px"
@@ -178,16 +178,13 @@ export function SnapshotUploadForm({
         </Box>
 
         {!authenticated && (
-          <Alert severity="info">
-            Sign in to upload a snapshot. Your session is managed securely by
-            Nordika and no token needs to be pasted here.
-          </Alert>
+          <Alert severity="info">{t("upload.signInPrompt")}</Alert>
         )}
 
         {!validation.success && (
           <Alert aria-live="polite" severity="error">
             <AlertTitle>
-              Fix {validation.errors.length} JSON syntax issue(s)
+              {t("upload.fixIssues", { count: validation.errors.length })}
             </AlertTitle>
             <Box component="ul" sx={{ mb: 0, pl: 2.5 }}>
               {validation.errors.map((issue) => (
@@ -210,9 +207,11 @@ export function SnapshotUploadForm({
 
         {result && (
           <Alert aria-live="polite" severity="success">
-            Uploaded <code>{result.filename}</code> as source{" "}
-            <code>{result.id}</code> at{" "}
-            {new Date(result.createdAt).toLocaleString()}.
+            {t("upload.uploaded", {
+              filename: result.filename,
+              id: result.id,
+              date: new Date(result.createdAt).toLocaleString(locale),
+            })}
           </Alert>
         )}
 
@@ -222,7 +221,7 @@ export function SnapshotUploadForm({
           type="submit"
           variant="contained"
         >
-          {isSubmitting ? "Uploading…" : "Validate and upload snapshot"}
+          {isSubmitting ? t("upload.submitting") : t("upload.submit")}
         </Button>
       </Stack>
     </Paper>

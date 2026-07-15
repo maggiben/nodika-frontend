@@ -13,7 +13,7 @@ The application SHALL render every App Router route inside the root layout at `s
 #### Scenario: Rendering a route
 
 - **WHEN** a user requests an application route
-- **THEN** the response SHALL include an `html` element with `lang="en"`
+- **THEN** the response SHALL include an `html` element with a language attribute
 - **AND** the route content SHALL render inside the document body
 
 ### Requirement: Global typography and theme tokens
@@ -34,17 +34,18 @@ The application SHALL load the Geist Sans and Geist Mono font variables and prov
 
 ### Requirement: Shared application navbar
 
-The application SHALL render a shared navbar from the root layout on every route, including a Nordika brand mark and session-aware controls. When one or more locally stored projects exist, the navbar SHALL include a project selector that switches the active dashboard project. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to `/upload`, theme preferences, and logout.
+The application SHALL render a shared navbar from the locale layout on every localized route, including a Nordika brand mark, a language switcher (Spanish/English), session-aware controls, and a project selector when locally stored projects exist. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to the localized `/upload` route, theme preferences, and logout.
 
 #### Scenario: Viewing any route while signed out
 
-- **WHEN** an unauthenticated user opens any application route
-- **THEN** the navbar SHALL show Sign in and Register actions
+- **WHEN** an unauthenticated user opens any localized application route
+- **THEN** the navbar SHALL show Sign in and Register actions targeting the active locale
 - **AND** SHALL not show an avatar menu
+- **AND** SHALL show a language switcher
 
 #### Scenario: Viewing any route while signed in
 
-- **WHEN** an authenticated user opens any application route
+- **WHEN** an authenticated user opens any localized application route
 - **THEN** the navbar SHALL show an avatar control that opens a menu
 - **AND** the menu SHALL include Upload snapshot, theme preferences, and a logout action that posts to the BFF logout route
 

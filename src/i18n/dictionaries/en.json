@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "title": "Nordika",
+    "description": "View Nordika project status and upload snapshots."
+  },
+  "nav": {
+    "brand": "Nordika",
+    "signIn": "Sign in",
+    "register": "Register",
+    "openAccountMenu": "Open account menu",
+    "accountPreferences": "Account preferences",
+    "uploadSnapshot": "Upload snapshot",
+    "lightTheme": "Light theme",
+    "darkTheme": "Dark theme",
+    "systemTheme": "System theme",
+    "signOut": "Sign out",
+    "signingOut": "Signing out…",
+    "language": "Language",
+    "project": "Project"
+  },
+  "auth": {
+    "email": "Email address",
+    "password": "Password",
+    "token": "Token",
+    "required": "{field} is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "genericError": "We could not complete your request.",
+    "unreachable": "The authentication service could not be reached. Try again later.",
+    "submitting": "Submitting…",
+    "login": {
+      "heading": "Sign in",
+      "submit": "Sign in",
+      "success": ""
+    },
+    "register": {
+      "heading": "Create an account",
+      "submit": "Register",
+      "success": ""
+    },
+    "forgotPassword": {
+      "heading": "Reset your password",
+      "submit": "Send reset link",
+      "success": "If the account exists, you will receive email instructions."
+    },
+    "resetPassword": {
+      "heading": "Choose a new password",
+      "submit": "Update password",
+      "success": "Your password was updated. You can sign in now."
+    },
+    "verifyEmail": {
+      "heading": "Verify your email",
+      "submit": "Verify email",
+      "success": "Your email is verified. You can sign in now."
+    }
+  },
+  "upload": {
+    "title": "Upload a project snapshot",
+    "description": "Paste snapshot JSON, check syntax, then send it to Nordika Core. A successful upload also refreshes the home project dashboard.",
+    "editorTitle": "Snapshot JSON",
+    "editorHelp": "The editor checks JSON syntax before upload. After a successful upload, the home dashboard updates from this snapshot.",
+    "signInPrompt": "Sign in to upload a snapshot. Your session is managed securely by Nordika and no token needs to be pasted here.",
+    "fixIssues": "Fix {count} JSON syntax issue(s)",
+    "correctSyntax": "Correct the JSON syntax errors before uploading.",
+    "uploadFailed": "The snapshot could not be uploaded.",
+    "unexpectedResponse": "Core returned an unexpected upload response.",
+    "unreachable": "The upload service could not be reached. Try again later.",
+    "uploaded": "Uploaded {filename} as source {id} at {date}.",
+    "submit": "Validate and upload snapshot",
+    "submitting": "Uploading…"
+  },
+  "dashboard": {
+    "emptyTitle": "Project status",
+    "emptyDescription": "Upload a Nordika snapshot JSON from the avatar menu to see progress, duration mix, and task grids on this home page.",
+    "uploadCta": "Upload snapshot",
+    "cycleDatesMissing": "Cycle dates not set",
+    "objectiveTasks": "{count} objective tasks",
+    "completedAt100": "{count} at 100%",
+    "contextTasksCount": "{count} context tasks",
+    "overallProgress": "Overall progress",
+    "durationMix": "Duration mix",
+    "tasksBySector": "Tasks by sector",
+    "noDurationData": "No duration data yet.",
+    "noSectorData": "No sector data yet.",
+    "objectiveTasksHeading": "Objective tasks",
+    "contextTasksHeading": "Context tasks",
+    "noObjectiveTasks": "No objective tasks in this snapshot.",
+    "noContextTasks": "No context tasks in this snapshot.",
+    "columns": {
+      "task": "Task",
+      "sector": "Sector",
+      "duration": "Duration",
+      "progress": "Progress",
+      "window": "Window"
+    },
+    "tasksSeries": "Tasks"
+  }
+}

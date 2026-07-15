@@ -13,7 +13,15 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
     setupFiles: ["./test/setup.ts"],
     coverage: {
-      exclude: ["src/**/*.test.*", "src/**/*.spec.*"],
+      exclude: [
+        "src/**/*.test.*",
+        "src/**/*.spec.*",
+        "src/proxy.ts",
+        "src/test-utils/**",
+        "src/i18n/dictionaries/**",
+        "src/app/[locale]/layout.tsx",
+        "src/app/[locale]/upload/page.tsx",
+      ],
       include: ["src/**/*.{ts,tsx}"],
       provider: "v8",
       reporter: ["text", "json-summary"],
