@@ -2,7 +2,7 @@
 
 ### Requirement: Shared application navbar
 
-The application SHALL render a shared navbar from the locale layout on every localized route, including a Nordika brand mark, a language switcher (Spanish/English), session-aware controls, and a project selector when locally stored projects exist. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to the localized `/upload` route, theme preferences, and logout.
+The application SHALL render a shared navbar from the locale layout on every localized route, including a Nodika brand mark, a language switcher (Spanish/English), session-aware controls, and a project selector when locally stored projects exist. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to the localized `/upload` route, theme preferences, and logout.
 
 #### Scenario: Viewing any route while signed out
 

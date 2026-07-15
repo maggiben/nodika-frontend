@@ -4,7 +4,7 @@ The Staff page today is a form: add phone/label, edit a weekly template, pick a 
 
 Operators need a roster grid (MUI X Data Grid Community, already used on the dashboard) that answers: who is on staff messaging, when did we last message them, did they reply, and can we nudge them.
 
-Core work for message history lives in `nordika-core` and is consumed only through the existing BFF pattern. This frontend design describes the UI and BFF shapes without treating Core schemas as OpenSpec frontend capabilities.
+Core work for message history lives in `nodika-core` and is consumed only through the existing BFF pattern. This frontend design describes the UI and BFF shapes without treating Core schemas as OpenSpec frontend capabilities.
 
 ## Goals / Non-Goals
 

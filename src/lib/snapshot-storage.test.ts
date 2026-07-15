@@ -46,7 +46,7 @@ describe("snapshot-storage", () => {
 
   test("migrates a legacy single snapshot into the library", () => {
     window.localStorage.setItem(
-      "nordika.lastSnapshotJson",
+      "nodika.lastSnapshotJson",
       JSON.stringify({
         meta: { projectId: "legacy_1", projectNombre: "Legacy" },
       }),
@@ -54,7 +54,29 @@ describe("snapshot-storage", () => {
 
     expect(readSelectedSnapshotJson()).toContain("Legacy");
     expect(listStoredProjects()).toHaveLength(1);
-    expect(window.localStorage.getItem("nordika.lastSnapshotJson")).toBeNull();
+    expect(window.localStorage.getItem("nodika.lastSnapshotJson")).toBeNull();
+    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).not.toBeNull();
+  });
+
+  test("migrates previous-brand library keys into the new store", () => {
+    window.localStorage.setItem(
+      "nordika.projectLibrary.v1",
+      JSON.stringify({
+        projects: [
+          {
+            id: "old_1",
+            name: "Old brand",
+            json: '{"meta":{"projectNombre":"Old brand"}}',
+            updatedAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        selectedId: "old_1",
+      }),
+    );
+
+    expect(readSelectedSnapshotJson()).toContain("Old brand");
+    expect(window.localStorage.getItem("nordika.projectLibrary.v1")).toBeNull();
+    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).not.toBeNull();
   });
 
   test("keeps deprecated helpers working", () => {

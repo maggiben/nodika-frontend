@@ -1,10 +1,10 @@
 {
   "meta": {
-    "title": "Nordika",
-    "description": "View Nordika project status and upload snapshots."
+    "title": "Nodika",
+    "description": "View Nodika project status and upload snapshots."
   },
   "nav": {
-    "brand": "Nordika",
+    "brand": "Nodika",
     "signIn": "Sign in",
     "register": "Register",
     "openAccountMenu": "Open account menu",
@@ -57,10 +57,10 @@
   },
   "upload": {
     "title": "Upload a project snapshot",
-    "description": "Paste snapshot JSON, check syntax, then send it to Nordika Core. A successful upload also refreshes the home project dashboard.",
+    "description": "Paste snapshot JSON, check syntax, then send it to Nodika Core. A successful upload also refreshes the home project dashboard.",
     "editorTitle": "Snapshot JSON",
     "editorHelp": "The editor checks JSON syntax before upload. After a successful upload, the home dashboard updates from this snapshot.",
-    "signInPrompt": "Sign in to upload a snapshot. Your session is managed securely by Nordika and no token needs to be pasted here.",
+    "signInPrompt": "Sign in to upload a snapshot. Your session is managed securely by Nodika and no token needs to be pasted here.",
     "fixIssues": "Fix {count} JSON syntax issue(s)",
     "correctSyntax": "Correct the JSON syntax errors before uploading.",
     "uploadFailed": "The snapshot could not be uploaded.",
@@ -72,7 +72,7 @@
   },
   "dashboard": {
     "emptyTitle": "Project status",
-    "emptyDescription": "Upload a Nordika snapshot JSON from the avatar menu to see progress, duration mix, and task grids on this home page.",
+    "emptyDescription": "Upload a Nodika snapshot JSON from the avatar menu to see progress, duration mix, and task grids on this home page.",
     "uploadCta": "Upload snapshot",
     "cycleDatesMissing": "Cycle dates not set",
     "objectiveTasks": "{count} objective tasks",
@@ -104,7 +104,7 @@
     "loadError": "We could not load your settings.",
     "unreachable": "The settings service could not be reached. Try again later.",
     "appearanceTitle": "Appearance",
-    "appearanceDescription": "Choose how Nordika looks on this device.",
+    "appearanceDescription": "Choose how Nodika looks on this device.",
     "languageTitle": "Language",
     "languageDescription": "Change the interface language.",
     "passwordTitle": "Password",
@@ -151,7 +151,7 @@
     "rosterTitle": "Team roster",
     "rosterDescription": "Add or remove employees as the project progresses. Sort and filter the grid; send tests or reminders per row.",
     "contactsTitle": "Area leads",
-    "contactsDescription": "Save each lead’s WhatsApp number so Nordika can contact them.",
+    "contactsDescription": "Save each lead’s WhatsApp number so Nodika can contact them.",
     "contactLabel": "Area or name",
     "contactPhone": "WhatsApp (digits only, with country code)",
     "addEmployee": "Add",

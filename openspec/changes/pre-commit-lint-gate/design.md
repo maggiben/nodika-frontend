@@ -11,4 +11,4 @@ Fail fast on lint so contributors see style/rule violations before the longer co
 
 ## Notes
 
-The Git root may be the parent monorepo; local clones still opt in with `git config core.hooksPath nordika-frontend/.githooks` (or the frontend root when the frontend is the git root).
+The Git root may be the parent monorepo; local clones still opt in with `git config core.hooksPath nodika-frontend/.githooks` (or the frontend root when the frontend is the git root).

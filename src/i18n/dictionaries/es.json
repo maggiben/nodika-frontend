@@ -1,10 +1,10 @@
 {
   "meta": {
-    "title": "Nordika",
-    "description": "Consulta el estado de proyectos Nordika y sube snapshots."
+    "title": "Nodika",
+    "description": "Consulta el estado de proyectos Nodika y sube snapshots."
   },
   "nav": {
-    "brand": "Nordika",
+    "brand": "Nodika",
     "signIn": "Iniciar sesión",
     "register": "Registrarse",
     "openAccountMenu": "Abrir menú de cuenta",
@@ -57,10 +57,10 @@
   },
   "upload": {
     "title": "Subir un snapshot de proyecto",
-    "description": "Pega el JSON del snapshot, revisa la sintaxis y envíalo a Nordika Core. Una carga exitosa también actualiza el panel del proyecto en inicio.",
+    "description": "Pega el JSON del snapshot, revisa la sintaxis y envíalo a Nodika Core. Una carga exitosa también actualiza el panel del proyecto en inicio.",
     "editorTitle": "JSON del snapshot",
     "editorHelp": "El editor valida la sintaxis JSON antes de subir. Tras una carga exitosa, el panel de inicio se actualiza con este snapshot.",
-    "signInPrompt": "Inicia sesión para subir un snapshot. Tu sesión la gestiona Nordika de forma segura y no necesitas pegar ningún token aquí.",
+    "signInPrompt": "Inicia sesión para subir un snapshot. Tu sesión la gestiona Nodika de forma segura y no necesitas pegar ningún token aquí.",
     "fixIssues": "Corrige {count} problema(s) de sintaxis JSON",
     "correctSyntax": "Corrige los errores de sintaxis JSON antes de subir.",
     "uploadFailed": "No se pudo subir el snapshot.",
@@ -72,7 +72,7 @@
   },
   "dashboard": {
     "emptyTitle": "Estado del proyecto",
-    "emptyDescription": "Sube un JSON de snapshot Nordika desde el menú del avatar para ver el progreso, la duración y las tablas de tareas en esta página de inicio.",
+    "emptyDescription": "Sube un JSON de snapshot Nodika desde el menú del avatar para ver el progreso, la duración y las tablas de tareas en esta página de inicio.",
     "uploadCta": "Subir snapshot",
     "cycleDatesMissing": "Fechas de ciclo no definidas",
     "objectiveTasks": "{count} tareas con objetivo",
@@ -104,7 +104,7 @@
     "loadError": "No pudimos cargar tu configuración.",
     "unreachable": "No se pudo contactar el servicio. Inténtalo más tarde.",
     "appearanceTitle": "Apariencia",
-    "appearanceDescription": "Elige cómo quieres ver Nordika en este dispositivo.",
+    "appearanceDescription": "Elige cómo quieres ver Nodika en este dispositivo.",
     "languageTitle": "Idioma",
     "languageDescription": "Cambia el idioma de la interfaz.",
     "passwordTitle": "Contraseña",
@@ -151,7 +151,7 @@
     "rosterTitle": "Equipo",
     "rosterDescription": "Agregá o quitá empleados según avance la obra. Ordená y filtrá la grilla; enviá pruebas o recordatorios por fila.",
     "contactsTitle": "Responsables de área",
-    "contactsDescription": "Guarda el WhatsApp de cada responsable para contactarlo desde Nordika.",
+    "contactsDescription": "Guarda el WhatsApp de cada responsable para contactarlo desde Nodika.",
     "contactLabel": "Área o nombre",
     "contactPhone": "WhatsApp (solo dígitos, con código de país)",
     "addEmployee": "Agregar",

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Define the frontend BFF authentication boundary and browser account-management flows for Nordika Core.
+Define the frontend BFF authentication boundary and browser account-management flows for Nodika Core.
 
 ## Requirements
 

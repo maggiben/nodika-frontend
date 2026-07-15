@@ -2,7 +2,7 @@
 
 ## Current architecture
 
-Nordika Frontend is a newly bootstrapped, single-route Next.js 16.2.10 application. The App Router lives at `src/app/`: `layout.tsx` supplies fonts, root HTML/body, and metadata; `page.tsx` is the only route. There are no route handlers, server actions, data-access modules, API clients, databases, auth providers, payment integrations, or shared component directories.
+Nodika Frontend is a newly bootstrapped, single-route Next.js 16.2.10 application. The App Router lives at `src/app/`: `layout.tsx` supplies fonts, root HTML/body, and metadata; `page.tsx` is the only route. There are no route handlers, server actions, data-access modules, API clients, databases, auth providers, payment integrations, or shared component directories.
 
 The parent repository contains a sibling `nodika-core` backend, but this frontend has no workspace link, shared contract, environment configuration, fetch call, or API client connecting to it. Treat any future integration as a new, explicitly documented server boundary.
 

@@ -6,7 +6,7 @@ Routes already share Material UI theming with light and dark color schemes enabl
 
 **Goals:**
 
-- Global navbar on all routes with Nordika branding.
+- Global navbar on all routes with Nodika branding.
 - Avatar dropdown for authenticated users: theme light/dark/system and logout.
 - Unauthenticated navbar actions for sign-in and register.
 - Persist theme preference with Material UI color-scheme storage/scripts to avoid flash.

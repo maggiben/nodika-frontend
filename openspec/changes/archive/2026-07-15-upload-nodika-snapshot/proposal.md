@@ -1,6 +1,6 @@
 ## Why
 
-Project snapshot data is currently exported as JSON but cannot be reviewed, validated, and stored through Nordika Frontend. Uploading malformed snapshots would create unusable source records, while sending the Core credential directly across origins is blocked by the backend’s current CORS configuration.
+Project snapshot data is currently exported as JSON but cannot be reviewed, validated, and stored through Nodika Frontend. Uploading malformed snapshots would create unusable source records, while sending the Core credential directly across origins is blocked by the backend’s current CORS configuration.
 
 ## What Changes
 

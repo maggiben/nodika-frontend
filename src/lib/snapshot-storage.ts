@@ -1,6 +1,9 @@
-const LEGACY_STORAGE_KEY = "nordika.lastSnapshotJson";
-const LIBRARY_STORAGE_KEY = "nordika.projectLibrary.v1";
-export const PROJECT_LIBRARY_CHANGED_EVENT = "nordika:project-library-changed";
+/** Pre-rebrand keys; migrated once into LIBRARY_STORAGE_KEY. */
+const PREVIOUS_BRAND_LIBRARY_KEY = "nordika.projectLibrary.v1";
+const PREVIOUS_BRAND_SNAPSHOT_KEY = "nordika.lastSnapshotJson";
+const LEGACY_STORAGE_KEY = "nodika.lastSnapshotJson";
+const LIBRARY_STORAGE_KEY = "nodika.projectLibrary.v1";
+export const PROJECT_LIBRARY_CHANGED_EVENT = "nodika:project-library-changed";
 
 export type StoredProject = {
   id: string;
@@ -123,32 +126,52 @@ function writeLibrary(library: ProjectLibrary): void {
   }
 }
 
+function migrateSingleSnapshot(raw: string | null): ProjectLibrary {
+  if (!raw || raw.trim().length === 0) {
+    return EMPTY_LIBRARY;
+  }
+
+  const identity = projectIdentityFromSnapshotJson(raw);
+  const library: ProjectLibrary = {
+    projects: [
+      {
+        id: identity.id,
+        name: identity.name,
+        json: raw,
+        updatedAt: new Date().toISOString(),
+      },
+    ],
+    selectedId: identity.id,
+  };
+  writeLibrary(library);
+  return library;
+}
+
 function migrateLegacySnapshot(): ProjectLibrary {
   if (typeof window === "undefined") {
     return EMPTY_LIBRARY;
   }
 
   try {
-    const legacy = window.localStorage.getItem(LEGACY_STORAGE_KEY);
-    if (!legacy || legacy.trim().length === 0) {
-      return EMPTY_LIBRARY;
+    const previousLibrary = parseLibrary(
+      window.localStorage.getItem(PREVIOUS_BRAND_LIBRARY_KEY),
+    );
+    if (previousLibrary && previousLibrary.projects.length > 0) {
+      writeLibrary(previousLibrary);
+      window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
+      window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
+      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+      return previousLibrary;
     }
 
-    const identity = projectIdentityFromSnapshotJson(legacy);
-    const library: ProjectLibrary = {
-      projects: [
-        {
-          id: identity.id,
-          name: identity.name,
-          json: legacy,
-          updatedAt: new Date().toISOString(),
-        },
-      ],
-      selectedId: identity.id,
-    };
-    writeLibrary(library);
+    const legacy =
+      window.localStorage.getItem(LEGACY_STORAGE_KEY) ??
+      window.localStorage.getItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
+    const migrated = migrateSingleSnapshot(legacy);
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    return library;
+    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
+    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
+    return migrated;
   } catch {
     return EMPTY_LIBRARY;
   }
@@ -246,6 +269,8 @@ export function clearStoredSnapshotJson(): void {
   try {
     window.localStorage.removeItem(LIBRARY_STORAGE_KEY);
     window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
+    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
     notifyLibraryChanged();
   } catch {
     // Ignore storage failures.

@@ -1,4 +1,4 @@
-# Nordika Frontend Constitution
+# Nodika Frontend Constitution
 
 ## Mission
 

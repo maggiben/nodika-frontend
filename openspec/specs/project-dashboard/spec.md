@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Visualize Nordika snapshot JSON on the landing page using progress labels, charts, and task grids.
+Visualize Nodika snapshot JSON on the landing page using progress labels, charts, and task grids.
 
 ## Requirements
 

@@ -59,10 +59,10 @@ export function ProjectSelector() {
 
   return (
     <FormControl size="small" sx={{ minWidth: { xs: 140, sm: 220 } }}>
-      <InputLabel id="nordika-project-selector-label">{label}</InputLabel>
+      <InputLabel id="nodika-project-selector-label">{label}</InputLabel>
       <Select
         label={label}
-        labelId="nordika-project-selector-label"
+        labelId="nodika-project-selector-label"
         onChange={onChange}
         value={selectedId || projects[0]?.id || ""}
       >

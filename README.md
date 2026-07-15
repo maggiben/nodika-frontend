@@ -1,6 +1,6 @@
-# Nordika Frontend
+# Nodika Frontend
 
-Nordika Frontend is a [Next.js](https://nextjs.org) BFF for the Nordika Core
+Nodika Frontend is a [Next.js](https://nextjs.org) BFF for the Nodika Core
 snapshot upload workflow.
 
 ## Getting Started
@@ -79,4 +79,4 @@ This repository uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) as the s
 
 The installed Cursor commands require an IDE restart before they appear.
 
-# nordika-frontend
+# nodika-frontend

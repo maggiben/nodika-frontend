@@ -17,7 +17,7 @@ The scripts are in `package.json`. A pnpm installation can run the same scripts,
 
 ## Environment variables and external services
 
-`NODIKA_CORE_URL` is a required server-only base URL for the snapshot upload proxy. It must point to an available Nordika Core instance, such as `http://localhost:3001` in local development when the frontend uses port 3000. Never prefix it with `NEXT_PUBLIC_`, commit its value, or expose it to the browser.
+`NODIKA_CORE_URL` is a required server-only base URL for the snapshot upload proxy. It must point to an available Nodika Core instance, such as `http://localhost:3001` in local development when the frontend uses port 3000. Never prefix it with `NEXT_PUBLIC_`, commit its value, or expose it to the browser.
 
 The snapshot upload route forwards an uploader-supplied Core JWT only for the duration of the request. Core requires a JWT containing the `source_writer` role for `POST /sources`. The frontend does not store, log, or issue these tokens. There are no other frontend environment variables, external APIs, databases, Stripe integration, Docker configuration, CI workflow, or deployment manifest.
 

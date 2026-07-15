@@ -1,4 +1,4 @@
-## 1. Core message history (nordika-core sibling)
+## 1. Core message history (nodika-core sibling)
 
 - [x] 1.1 Add a message collection (outbound/inbound) linked to WhatsApp contacts with templateKey, body, provider ids, and timestamps
 - [x] 1.2 Record outbound messages on test-send, weekly dispatch, and remind

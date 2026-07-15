@@ -30,7 +30,7 @@ Input: changed behavior. Output: focused tests plus reproducible command results
 
 ```ts
 import { expect, test } from "vitest";
-test("formats a label", () => expect("Nordika").toBe("Nordika"));
+test("formats a label", () => expect("Nodika").toBe("Nodika"));
 ```
 
 ## Related files

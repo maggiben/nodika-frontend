@@ -1,6 +1,6 @@
 ## Why
 
-Nordika’s primary users need Spanish UI copy, with English available as a second language. The app currently hardcodes English strings across the shell, auth forms, upload, and dashboard.
+Nodika’s primary users need Spanish UI copy, with English available as a second language. The app currently hardcodes English strings across the shell, auth forms, upload, and dashboard.
 
 ## What Changes
 

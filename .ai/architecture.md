@@ -1,4 +1,4 @@
-# Nordika Frontend Architecture
+# Nodika Frontend Architecture
 
 The application is a Next.js 16.2.10 App Router project rooted at `src/app`. `layout.tsx` owns the document shell, Geist fonts, global metadata, and the shared Material UI provider; `page.tsx` owns the current `/` route. Styling uses Material UI components and theme tokens. TypeScript is strict and `@/*` maps to `src/*`.
 

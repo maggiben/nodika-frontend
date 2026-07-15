@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Persist multiple uploaded Nordika snapshot projects in the browser and track which project the dashboard should visualize.
+Persist multiple uploaded Nodika snapshot projects in the browser and track which project the dashboard should visualize.
 
 ## Requirements
 
