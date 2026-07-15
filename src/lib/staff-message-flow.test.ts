@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  applyFlowNodeOrder,
   emptyFlowDraft,
+  orderedFlowNodeIds,
   parseMessageFlow,
   parseMessageFlows,
   parseMessageFlowRun,
@@ -162,5 +164,80 @@ describe("staff-message-flow parsers", () => {
         ],
       }),
     ).toBeNull();
+  });
+});
+
+describe("flow message order helpers", () => {
+  it("walks the linear chain then leftovers", () => {
+    expect(
+      orderedFlowNodeIds({
+        startNodeId: "a",
+        nodes: [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "orphan" }],
+        edges: [
+          { fromNodeId: "a", toNodeId: "b" },
+          { fromNodeId: "b", toNodeId: "c" },
+        ],
+      }),
+    ).toEqual(["a", "b", "c", "orphan"]);
+  });
+
+  it("applies reorder: start, any-edges, stacked positions, renumbers 1..n", () => {
+    let edgeSeq = 0;
+    const reordered = applyFlowNodeOrder(
+      {
+        startNodeId: "a",
+        nodes: [
+          {
+            id: "a",
+            title: "Uno",
+            body: "1",
+            position: { x: 10, y: 10 },
+          },
+          {
+            id: "b",
+            title: "Dos",
+            body: "2",
+            position: { x: 20, y: 20 },
+          },
+          {
+            id: "c",
+            title: "Tres",
+            body: "3",
+            position: { x: 30, y: 30 },
+          },
+        ],
+        edges: [
+          {
+            id: "old",
+            fromNodeId: "a",
+            toNodeId: "b",
+            match: { type: "equals", value: "x" },
+          },
+        ],
+      },
+      ["c", "a", "b"],
+      () => `edge_${(edgeSeq += 1)}`,
+    );
+
+    expect(reordered.startNodeId).toBe("c");
+    expect(reordered.nodes.map((node) => node.id)).toEqual(["c", "a", "b"]);
+    expect(reordered.nodes.map((node) => node.position.y)).toEqual([
+      40, 180, 320,
+    ]);
+    expect(reordered.edges).toEqual([
+      {
+        id: "edge_1",
+        fromNodeId: "c",
+        toNodeId: "a",
+        match: { type: "any", value: "" },
+      },
+      {
+        id: "edge_2",
+        fromNodeId: "a",
+        toNodeId: "b",
+        match: { type: "any", value: "" },
+      },
+    ]);
+    expect(orderedFlowNodeIds(reordered)).toEqual(["c", "a", "b"]);
   });
 });

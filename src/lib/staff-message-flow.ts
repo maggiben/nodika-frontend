@@ -200,6 +200,97 @@ export function createFlowEntityId(prefix: string): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** Walk start → unique next edges, then append any leftover nodes. */
+export function orderedFlowNodeIds(input: {
+  startNodeId: string;
+  nodes: Array<{ id: string }>;
+  edges: Array<{ fromNodeId: string; toNodeId: string }>;
+}): string[] {
+  const nodeIds = input.nodes.map((node) => node.id);
+  if (!nodeIds.length) {
+    return [];
+  }
+
+  const outgoing = new Map<string, string[]>();
+  for (const edge of input.edges) {
+    const list = outgoing.get(edge.fromNodeId) ?? [];
+    list.push(edge.toNodeId);
+    outgoing.set(edge.fromNodeId, list);
+  }
+
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+  let current: string | undefined = nodeIds.includes(input.startNodeId)
+    ? input.startNodeId
+    : nodeIds[0];
+
+  while (current && !seen.has(current)) {
+    ordered.push(current);
+    seen.add(current);
+    const nexts = (outgoing.get(current) ?? []).filter((id) =>
+      nodeIds.includes(id),
+    );
+    current = nexts.length === 1 ? nexts[0] : undefined;
+  }
+
+  for (const id of nodeIds) {
+    if (!seen.has(id)) {
+      ordered.push(id);
+    }
+  }
+  return ordered;
+}
+
+export type ReorderableFlow = {
+  startNodeId: string;
+  nodes: MessageFlowNode[];
+  edges: MessageFlowEdge[];
+};
+
+/** Apply a new node order: renumber start, linear any-edges, stacked positions. */
+export function applyFlowNodeOrder(
+  flow: ReorderableFlow,
+  orderedIds: string[],
+  newEdgeId: () => string = () => createFlowEntityId("edge"),
+): ReorderableFlow {
+  const byId = new Map(flow.nodes.map((node) => [node.id, node]));
+  const uniqueOrdered = orderedIds.filter((id, index, all) => {
+    return byId.has(id) && all.indexOf(id) === index;
+  });
+  for (const node of flow.nodes) {
+    if (!uniqueOrdered.includes(node.id)) {
+      uniqueOrdered.push(node.id);
+    }
+  }
+  if (!uniqueOrdered.length) {
+    return flow;
+  }
+
+  const nodes = uniqueOrdered.map((id, index) => {
+    const node = byId.get(id)!;
+    return {
+      ...node,
+      position: { x: 40, y: 40 + index * 140 },
+    };
+  });
+
+  const edges: MessageFlowEdge[] = [];
+  for (let index = 0; index < uniqueOrdered.length - 1; index += 1) {
+    edges.push({
+      id: newEdgeId(),
+      fromNodeId: uniqueOrdered[index],
+      toNodeId: uniqueOrdered[index + 1],
+      match: { type: "any", value: "" },
+    });
+  }
+
+  return {
+    startNodeId: uniqueOrdered[0],
+    nodes,
+    edges,
+  };
+}
+
 export function emptyFlowDraft(name = "Nuevo flujo"): FlowUpsertBody {
   const startId = createFlowEntityId("node");
   return {

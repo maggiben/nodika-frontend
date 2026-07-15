@@ -25,8 +25,10 @@ import {
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import {
+  applyFlowNodeOrder,
   createFlowEntityId,
   emptyFlowDraft,
+  orderedFlowNodeIds,
   parseMessageFlow,
   parseMessageFlows,
   type FlowMatchType,
@@ -99,6 +101,8 @@ export function StaffMessageFlowEditor() {
     offsetY: number;
   } | null>(null);
 
+  const [dragListId, setDragListId] = useState<string | null>(null);
+
   const selectedNode = useMemo(
     () => draft?.nodes.find((node) => node.id === selectedNodeId) ?? null,
     [draft, selectedNodeId],
@@ -165,6 +169,48 @@ export function StaffMessageFlowEditor() {
     setDraft((prev) => (prev ? updater(prev) : prev));
     setMessage(null);
   }, []);
+
+  const orderedNodeIds = useMemo(() => {
+    if (!draft) {
+      return [] as string[];
+    }
+    return orderedFlowNodeIds(draft);
+  }, [draft]);
+
+  const orderByNodeId = useMemo(() => {
+    const map = new Map<string, number>();
+    orderedNodeIds.forEach((id, index) => {
+      map.set(id, index + 1);
+    });
+    return map;
+  }, [orderedNodeIds]);
+
+  function reorderNodes(nextOrder: string[]) {
+    updateDraft((prev) => {
+      const reordered = applyFlowNodeOrder(prev, nextOrder);
+      return { ...prev, ...reordered };
+    });
+    setMessage(t("staff.flow.orderUpdated"));
+  }
+
+  function onListDrop(targetId: string) {
+    if (!dragListId || !draft || dragListId === targetId) {
+      setDragListId(null);
+      return;
+    }
+    const current = orderedFlowNodeIds(draft);
+    const from = current.indexOf(dragListId);
+    const to = current.indexOf(targetId);
+    if (from < 0 || to < 0) {
+      setDragListId(null);
+      return;
+    }
+    const next = [...current];
+    next.splice(from, 1);
+    next.splice(to, 0, dragListId);
+    reorderNodes(next);
+    setDragListId(null);
+  }
 
   async function createFlow() {
     setSaving(true);
@@ -547,6 +593,114 @@ export function StaffMessageFlowEditor() {
                 <Typography color="text.secondary" variant="body2">
                   {t("staff.flow.chainHint")}
                 </Typography>
+                <Typography color="text.secondary" variant="body2">
+                  {t("staff.flow.orderHint")}
+                </Typography>
+
+                <Paper variant="outlined" sx={{ p: 1.5 }}>
+                  <Typography sx={{ mb: 1 }} variant="subtitle2">
+                    {t("staff.flow.orderTitle")}
+                  </Typography>
+                  {orderedNodeIds.length === 0 ? (
+                    <Typography color="text.secondary" variant="body2">
+                      {t("staff.flow.orderEmpty")}
+                    </Typography>
+                  ) : (
+                    <Stack
+                      component="ol"
+                      spacing={0.75}
+                      sx={{ m: 0, pl: 0, listStyle: "none" }}
+                    >
+                      {orderedNodeIds.map((nodeId) => {
+                        const node = draft.nodes.find(
+                          (item) => item.id === nodeId,
+                        );
+                        if (!node) {
+                          return null;
+                        }
+                        const order = orderByNodeId.get(nodeId) ?? 0;
+                        return (
+                          <Box
+                            component="li"
+                            draggable
+                            key={nodeId}
+                            onDragEnd={() => setDragListId(null)}
+                            onDragOver={(event) => {
+                              event.preventDefault();
+                            }}
+                            onDragStart={(event) => {
+                              setDragListId(nodeId);
+                              event.dataTransfer.effectAllowed = "move";
+                              event.dataTransfer.setData("text/plain", nodeId);
+                            }}
+                            onDrop={(event) => {
+                              event.preventDefault();
+                              onListDrop(nodeId);
+                            }}
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              px: 1,
+                              py: 0.75,
+                              borderRadius: 1,
+                              border: "1px solid",
+                              borderColor:
+                                dragListId === nodeId
+                                  ? "primary.main"
+                                  : "divider",
+                              bgcolor:
+                                selectedNodeId === nodeId
+                                  ? "action.selected"
+                                  : "background.paper",
+                              cursor: "grab",
+                              opacity: dragListId === nodeId ? 0.7 : 1,
+                            }}
+                            onClick={() => {
+                              setSelectedNodeId(nodeId);
+                              setSelectedEdgeId(null);
+                            }}
+                          >
+                            <Box
+                              aria-hidden
+                              sx={{
+                                color: "text.secondary",
+                                fontSize: 14,
+                                lineHeight: 1,
+                                userSelect: "none",
+                              }}
+                            >
+                              ⋮⋮
+                            </Box>
+                            <Box
+                              aria-label={t("staff.flow.orderBadge", {
+                                n: order,
+                              })}
+                              sx={{
+                                minWidth: 28,
+                                height: 28,
+                                borderRadius: "50%",
+                                bgcolor: "primary.main",
+                                color: "primary.contrastText",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                typography: "caption",
+                                fontWeight: 700,
+                                flexShrink: 0,
+                              }}
+                            >
+                              {order}
+                            </Box>
+                            <Typography noWrap sx={{ flex: 1 }} variant="body2">
+                              {node.title}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  )}
+                </Paper>
 
                 <Box
                   onPointerLeave={() => setDrag(null)}
@@ -666,9 +820,36 @@ export function StaffMessageFlowEditor() {
                             : undefined,
                       }}
                     >
-                      <Typography noWrap variant="subtitle2">
-                        {node.title}
-                      </Typography>
+                      <Stack
+                        alignItems="center"
+                        direction="row"
+                        spacing={0.75}
+                        sx={{ mb: 0.5 }}
+                      >
+                        <Box
+                          aria-label={t("staff.flow.orderBadge", {
+                            n: orderByNodeId.get(node.id) ?? 0,
+                          })}
+                          sx={{
+                            minWidth: 24,
+                            height: 24,
+                            borderRadius: "50%",
+                            bgcolor: "primary.main",
+                            color: "primary.contrastText",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            typography: "caption",
+                            fontWeight: 700,
+                            flexShrink: 0,
+                          }}
+                        >
+                          {orderByNodeId.get(node.id) ?? "?"}
+                        </Box>
+                        <Typography noWrap variant="subtitle2">
+                          {node.title}
+                        </Typography>
+                      </Stack>
                       <Typography
                         color="text.secondary"
                         sx={{
@@ -694,10 +875,12 @@ export function StaffMessageFlowEditor() {
                         <Button
                           onClick={(event) => {
                             event.stopPropagation();
-                            updateDraft((prev) => ({
-                              ...prev,
-                              startNodeId: node.id,
-                            }));
+                            const current = orderedFlowNodeIds(draft);
+                            const next = [
+                              node.id,
+                              ...current.filter((id) => id !== node.id),
+                            ];
+                            reorderNodes(next);
                           }}
                           size="small"
                         >
