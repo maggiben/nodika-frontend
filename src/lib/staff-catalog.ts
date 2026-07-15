@@ -5,11 +5,18 @@ export type StaffCatalogRow = {
   assignedContactId: string | null;
   assignedLabel: string | null;
   assignedPhone: string | null;
+  sortOrder: number;
   active: boolean;
   lastSentAt: string | null;
   repliedAt: string | null;
   responseLatencyMs: number | null;
   responseStatus: string;
+};
+
+export type CatalogLeadGroup = {
+  contactId: string | null;
+  label: string;
+  rows: StaffCatalogRow[];
 };
 
 export function parseStaffCatalog(payload: unknown): StaffCatalogRow[] {
@@ -40,6 +47,10 @@ export function parseStaffCatalog(payload: unknown): StaffCatalogRow[] {
         typeof item.assignedLabel === "string" ? item.assignedLabel : null,
       assignedPhone:
         typeof item.assignedPhone === "string" ? item.assignedPhone : null,
+      sortOrder:
+        typeof item.sortOrder === "number" && Number.isFinite(item.sortOrder)
+          ? item.sortOrder
+          : 0,
       active: item.active !== false,
       lastSentAt: typeof item.lastSentAt === "string" ? item.lastSentAt : null,
       repliedAt: typeof item.repliedAt === "string" ? item.repliedAt : null,
@@ -52,4 +63,44 @@ export function parseStaffCatalog(payload: unknown): StaffCatalogRow[] {
           ? item.responseStatus
           : "neutral",
     }));
+}
+
+/** Group catalog rows by assignee; assigned leads first (by label), unassigned last. */
+export function groupCatalogByLead(
+  rows: StaffCatalogRow[],
+): CatalogLeadGroup[] {
+  const groups = new Map<string, CatalogLeadGroup>();
+  for (const row of rows) {
+    const key = row.assignedContactId ?? "__unassigned__";
+    const existing = groups.get(key);
+    if (existing) {
+      existing.rows.push(row);
+      continue;
+    }
+    groups.set(key, {
+      contactId: row.assignedContactId,
+      label:
+        row.assignedLabel?.trim() ||
+        row.assignedPhone ||
+        (row.assignedContactId ? row.assignedContactId : "Unassigned"),
+      rows: [row],
+    });
+  }
+  const list = [...groups.values()];
+  for (const group of list) {
+    group.rows.sort(
+      (left, right) =>
+        left.sortOrder - right.sortOrder || left._id.localeCompare(right._id),
+    );
+  }
+  list.sort((left, right) => {
+    if (!left.contactId && right.contactId) {
+      return 1;
+    }
+    if (left.contactId && !right.contactId) {
+      return -1;
+    }
+    return left.label.localeCompare(right.label);
+  });
+  return list;
 }
