@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import {
-  proxyMessagingJson,
-  withMessagingSession,
-} from "@/lib/messaging-bff";
+import { proxyMessagingJson, withMessagingSession } from "@/lib/messaging-bff";
 
 export async function POST(request: NextRequest) {
   const body: unknown = await request.json().catch(() => null);

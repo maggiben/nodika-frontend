@@ -1,8 +1,5 @@
 import { NextRequest } from "next/server";
-import {
-  proxyMessagingJson,
-  withMessagingSession,
-} from "@/lib/messaging-bff";
+import { proxyMessagingJson, withMessagingSession } from "@/lib/messaging-bff";
 
 export async function GET(request: NextRequest) {
   return withMessagingSession(request, (accessToken, refreshToken) =>
@@ -18,7 +15,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body: unknown = await request.json().catch(() => null);
   if (typeof body !== "object" || body === null) {
-    return Response.json({ message: "Invalid contact payload." }, { status: 400 });
+    return Response.json(
+      { message: "Invalid contact payload." },
+      { status: 400 },
+    );
   }
 
   return withMessagingSession(request, (accessToken, refreshToken) =>

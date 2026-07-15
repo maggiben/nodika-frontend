@@ -54,7 +54,11 @@ export function safeCoreError(status: number) {
 }
 
 export function readCoreErrorMessage(payload: unknown): string | null {
-  if (typeof payload !== "object" || payload === null || !("message" in payload)) {
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("message" in payload)
+  ) {
     return null;
   }
 
@@ -95,7 +99,10 @@ export async function coreRequest(
     });
 
     if (!response.ok) {
-      const payload: unknown = await response.clone().json().catch(() => null);
+      const payload: unknown = await response
+        .clone()
+        .json()
+        .catch(() => null);
       const coreMessage =
         response.status < 500 ? readCoreErrorMessage(payload) : null;
       return {

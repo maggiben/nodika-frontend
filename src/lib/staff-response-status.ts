@@ -1,9 +1,5 @@
 export type StaffResponseStatus =
-  | "green"
-  | "yellow"
-  | "red"
-  | "neutral"
-  | "pending";
+  "green" | "yellow" | "red" | "neutral" | "pending";
 
 /** Reply within this many days → green. */
 export const STAFF_YELLOW_AFTER_DAYS = 1;

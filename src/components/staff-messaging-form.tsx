@@ -17,11 +17,29 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRenderCellParams,
+} from "@mui/x-data-grid";
+import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
+import { useVisibleInterval } from "@/hooks/use-visible-interval";
+import {
+  getOrgChartsSnapshot,
+  removeOrgChart,
+  subscribeToOrgCharts,
+} from "@/lib/staff-org-chart";
 import {
   parseStaffRoster,
   type StaffRosterRow,
@@ -107,9 +125,38 @@ export function StaffMessagingForm() {
 
   const [busyRowId, setBusyRowId] = useState<string | null>(null);
   const [remindTarget, setRemindTarget] = useState<StaffRosterRow | null>(null);
+  const orgChartsSnapshot = useSyncExternalStore(
+    subscribeToOrgCharts,
+    getOrgChartsSnapshot,
+    () => "{}",
+  );
+  const teamSizeByContactId = useMemo(() => {
+    try {
+      const parsed: unknown = JSON.parse(orgChartsSnapshot);
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        !("charts" in parsed) ||
+        typeof parsed.charts !== "object" ||
+        parsed.charts === null
+      ) {
+        return {} as Record<string, number>;
+      }
+      const charts = parsed.charts as Record<string, { reports?: unknown }>;
+      const counts: Record<string, number> = {};
+      for (const [id, chart] of Object.entries(charts)) {
+        counts[id] = Array.isArray(chart?.reports) ? chart.reports.length : 0;
+      }
+      return counts;
+    } catch {
+      return {} as Record<string, number>;
+    }
+  }, [orgChartsSnapshot]);
 
   const loadRoster = useCallback(async () => {
-    const rosterResponse = await fetch("/api/messaging/roster");
+    const rosterResponse = await fetch("/api/messaging/roster", {
+      cache: "no-store",
+    });
     const rosterBody: unknown = await rosterResponse.json().catch(() => null);
 
     if (rosterResponse.ok) {
@@ -117,7 +164,9 @@ export function StaffMessagingForm() {
     }
 
     // Degraded mode: fall back to contacts list.
-    const contactsResponse = await fetch("/api/messaging/contacts");
+    const contactsResponse = await fetch("/api/messaging/contacts", {
+      cache: "no-store",
+    });
     const contactsBody: unknown = await contactsResponse
       .json()
       .catch(() => null);
@@ -143,7 +192,15 @@ export function StaffMessagingForm() {
 
     return contactsBody
       .filter(
-        (item): item is { _id: string; phone: string; label?: string; active?: boolean; tags?: string[] } =>
+        (
+          item,
+        ): item is {
+          _id: string;
+          phone: string;
+          label?: string;
+          active?: boolean;
+          tags?: string[];
+        } =>
           typeof item === "object" &&
           item !== null &&
           typeof (item as { _id?: unknown })._id === "string" &&
@@ -151,8 +208,7 @@ export function StaffMessagingForm() {
       )
       .filter(
         (item) =>
-          item.active !== false &&
-          (item.tags?.includes("staff") ?? true),
+          item.active !== false && (item.tags?.includes("staff") ?? true),
       )
       .map((item) => ({
         _id: item._id,
@@ -234,6 +290,19 @@ export function StaffMessagingForm() {
     };
   }, [loadRoster, locale, t]);
 
+  const refreshRosterQuietly = useCallback(async () => {
+    try {
+      const roster = await loadRoster();
+      setRows(roster);
+    } catch {
+      // Keep the last good roster during background polls.
+    }
+  }, [loadRoster]);
+
+  useVisibleInterval(() => {
+    void refreshRosterQuietly();
+  }, 4_000);
+
   async function saveContact() {
     setSavingContact(true);
     setActionMessage(null);
@@ -300,6 +369,7 @@ export function StaffMessagingForm() {
           return;
         }
         setActionMessage(t("staff.removed"));
+        removeOrgChart(row._id);
         setRows(await loadRoster());
       } catch {
         setError(t("staff.unreachable"));
@@ -457,6 +527,12 @@ export function StaffMessagingForm() {
         minWidth: 130,
       },
       {
+        field: "teamSize",
+        headerName: t("staff.columns.teamSize"),
+        width: 100,
+        valueGetter: (_value, row) => teamSizeByContactId[row._id] ?? 0,
+      },
+      {
         field: "messageTypes",
         headerName: t("staff.columns.messageTypes"),
         flex: 1,
@@ -521,11 +597,21 @@ export function StaffMessagingForm() {
         headerName: t("staff.columns.actions"),
         sortable: false,
         filterable: false,
-        width: 280,
+        width: 340,
         renderCell: (params: GridRenderCellParams<StaffRosterRow>) => {
           const busy = busyRowId === params.row._id;
           return (
             <Stack direction="row" spacing={1} sx={{ py: 0.5 }}>
+              <Button
+                aria-label={t("staff.edit")}
+                component={Link}
+                disabled={busy}
+                href={`/${locale}/staff/${encodeURIComponent(params.row._id)}/org`}
+                size="small"
+                variant="outlined"
+              >
+                {t("staff.edit")}
+              </Button>
               <Button
                 disabled={busy}
                 onClick={() => void sendTest(params.row)}
@@ -555,7 +641,7 @@ export function StaffMessagingForm() {
         },
       },
     ],
-    [busyRowId, locale, removeContact, sendTest, t],
+    [busyRowId, locale, removeContact, sendTest, t, teamSizeByContactId],
   );
 
   if (loading) {
@@ -620,7 +706,9 @@ export function StaffMessagingForm() {
           </Stack>
 
           {rows.length === 0 ? (
-            <Typography color="text.secondary">{t("staff.noContacts")}</Typography>
+            <Typography color="text.secondary">
+              {t("staff.noContacts")}
+            </Typography>
           ) : (
             <DataGrid
               autoHeight
@@ -654,6 +742,8 @@ export function StaffMessagingForm() {
 
         <StaffCatalogPanel roster={rows} />
 
+        <EmailFollowUpSchedulePanel />
+
         <Paper sx={{ p: 3 }}>
           <Typography component="h2" variant="h6">
             {t("staff.templateTitle")}
@@ -662,6 +752,50 @@ export function StaffMessagingForm() {
             {t("staff.templateHelp")}
           </Typography>
           <Stack spacing={2}>
+            <Box>
+              <Typography variant="subtitle2">
+                {t("staff.legendTitle")}
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gap: 1,
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                    md: "repeat(4, minmax(0, 1fr))",
+                  },
+                  mt: 1,
+                }}
+              >
+                {TEMPLATE_TOKENS.map((token) => (
+                  <Typography
+                    key={token}
+                    color="text.secondary"
+                    sx={{ fontFamily: "ui-monospace, monospace" }}
+                    variant="body2"
+                  >
+                    {`{{${token}}}`}
+                    <Box
+                      component="span"
+                      sx={{
+                        color: "text.secondary",
+                        display: "block",
+                        fontFamily: "inherit",
+                        fontSize: "0.8rem",
+                        mt: 0.25,
+                        opacity: 0.85,
+                      }}
+                    >
+                      {t(`staff.tokens.${token}`)}
+                    </Box>
+                  </Typography>
+                ))}
+              </Box>
+            </Box>
+            <Alert severity="info" variant="outlined">
+              {t("staff.widgetsHelp")}
+            </Alert>
             <TextField
               label={t("staff.templateKey")}
               onChange={(event) => setTemplateKey(event.target.value)}
@@ -679,16 +813,6 @@ export function StaffMessagingForm() {
               onChange={(event) => setTemplateBody(event.target.value)}
               value={templateBody}
             />
-            <Box>
-              <Typography variant="subtitle2">{t("staff.legendTitle")}</Typography>
-              <Stack spacing={0.5} sx={{ mt: 1 }}>
-                {TEMPLATE_TOKENS.map((token) => (
-                  <Typography key={token} color="text.secondary">
-                    {`{{${token}}}`} — {t(`staff.tokens.${token}`)}
-                  </Typography>
-                ))}
-              </Stack>
-            </Box>
             <Button
               disabled={savingTemplate || templateBody.trim().length === 0}
               onClick={() => void saveTemplate()}
