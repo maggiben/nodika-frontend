@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nordika",
-  description: "Consulta el estado de proyectos Nordika y sube snapshots.",
+  title: "Nodika",
+  description: "Consulta el estado de proyectos Nodika y sube snapshots.",
 };
 
 export default function RootLayout({

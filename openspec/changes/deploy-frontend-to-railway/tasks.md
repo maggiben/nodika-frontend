@@ -1,7 +1,7 @@
 ## 1. Railway frontend configuration
 
 - [x] 1.1 Add a Railway service manifest with production build, start, restart, and root health-check settings.
-- [x] 1.2 Create the `nordika-frontend` service in the existing production project and configure its server-only Core URL.
+- [x] 1.2 Create the `nodika-frontend` service in the existing production project and configure its server-only Core URL.
 
 ## 2. Production deployment
 

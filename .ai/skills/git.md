@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Keep changes reviewable in a repository currently rooted above `nordika-frontend`.
+Keep changes reviewable in a repository currently rooted above `nodika-frontend`.
 
 ## Responsibilities
 

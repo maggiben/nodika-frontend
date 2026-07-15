@@ -2,7 +2,7 @@
 
 ## Implement a feature
 
-“Implement `<requirement>` in Nordika Frontend. Inspect `src/app` and `.ai/constraints/` first. Keep Server Components by default, define typed boundaries, avoid inventing backend services, and finish with lint, format check, tests, and build results.”
+“Implement `<requirement>` in Nodika Frontend. Inspect `src/app` and `.ai/constraints/` first. Keep Server Components by default, define typed boundaries, avoid inventing backend services, and finish with lint, format check, tests, and build results.”
 
 ## Fix a bug
 
@@ -10,7 +10,7 @@
 
 ## Review code
 
-“Review this Nordika Frontend diff using `.ai/checks/code-review.md`, `security.md`, and `accessibility.md`. Only report evidence-backed findings; account for the fact that no API, database, auth, or design system exists yet.”
+“Review this Nodika Frontend diff using `.ai/checks/code-review.md`, `security.md`, and `accessibility.md`. Only report evidence-backed findings; account for the fact that no API, database, auth, or design system exists yet.”
 
 ## Explain code
 

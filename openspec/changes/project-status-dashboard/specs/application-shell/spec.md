@@ -2,7 +2,7 @@
 
 ### Requirement: Shared application navbar
 
-The application SHALL render a shared navbar from the root layout on every route, including a Nordika brand mark and session-aware controls. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to `/upload`, theme preferences, and logout.
+The application SHALL render a shared navbar from the root layout on every route, including a Nodika brand mark and session-aware controls. When authenticated, the avatar menu SHALL include an Upload snapshot action that navigates to `/upload`, theme preferences, and logout.
 
 #### Scenario: Viewing any route while signed out
 

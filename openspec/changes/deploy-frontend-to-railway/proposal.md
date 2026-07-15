@@ -13,7 +13,7 @@ The snapshot upload interface needs a public runtime and a configured Core conne
 
 ### New Capabilities
 
-- `railway-deployment`: Public Railway deployment and operational configuration for Nordika Frontend.
+- `railway-deployment`: Public Railway deployment and operational configuration for Nodika Frontend.
 
 ### Modified Capabilities
 
@@ -22,5 +22,5 @@ The snapshot upload interface needs a public runtime and a configured Core conne
 ## Impact
 
 - Adds Railway configuration and operational documentation.
-- Creates a `nordika-frontend` Railway service in the existing `nordika-core` project.
+- Creates a `nodika-frontend` Railway service in the existing `nodika-core` project.
 - Sets a server-only frontend Core URL; Core continues to own MongoDB writes.

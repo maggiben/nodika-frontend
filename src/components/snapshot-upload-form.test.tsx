@@ -96,7 +96,7 @@ describe("SnapshotUploadForm", () => {
     });
     expect(
       JSON.parse(
-        window.localStorage.getItem("nordika.projectLibrary.v1") ?? "{}",
+        window.localStorage.getItem("nodika.projectLibrary.v1") ?? "{}",
       ).projects[0].json,
     ).toContain("nodika-snapshot-v1");
     expect(push).toHaveBeenCalledWith("/en");

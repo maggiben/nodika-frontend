@@ -88,7 +88,7 @@ describe("ProjectDashboard", () => {
 
   test("falls back to empty state when stored JSON is invalid", async () => {
     window.localStorage.setItem(
-      "nordika.projectLibrary.v1",
+      "nodika.projectLibrary.v1",
       JSON.stringify({
         selectedId: "bad",
         projects: [

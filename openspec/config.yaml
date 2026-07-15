@@ -1,7 +1,7 @@
 schema: spec-driven
 
 context: |
-  Nordika Frontend is a Next.js 16.2.10 App Router application using React 19,
+  Nodika Frontend is a Next.js 16.2.10 App Router application using React 19,
   strict TypeScript, Material UI, React Hook Form, CodeMirror JSON editing,
   ESLint, Prettier, and Vitest. Application code is in src/app; routes are Server Components by
   default. The project currently has only the / route and no API routes,
