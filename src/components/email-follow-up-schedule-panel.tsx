@@ -22,6 +22,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { computeNextSendDates } from "@/lib/compute-next-send-dates";
 import type { AccountSettings, EmailSchedule } from "@/lib/core-auth";
 import type { Locale } from "@/i18n/config";
 
@@ -35,10 +36,15 @@ const weekdayKeys = [
   "saturday",
 ] as const;
 
-function formatPreviewDate(value: string, locale: Locale) {
+function formatPreviewDate(
+  value: string,
+  locale: Locale,
+  timeZone: string,
+) {
   return new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone,
   }).format(new Date(value));
 }
 
@@ -97,8 +103,8 @@ export function EmailFollowUpSchedulePanel() {
   }, [t]);
 
   const previewDates = useMemo(
-    () => settings?.nextSendDates ?? [],
-    [settings?.nextSendDates],
+    () => (schedule ? computeNextSendDates(schedule) : []),
+    [schedule],
   );
 
   function toggleWeekday(day: number) {
@@ -269,7 +275,11 @@ export function EmailFollowUpSchedulePanel() {
               <Stack spacing={0.5} sx={{ mt: 1 }}>
                 {previewDates.map((date) => (
                   <Typography key={date} color="text.secondary">
-                    {formatPreviewDate(date, locale)}
+                    {formatPreviewDate(
+                      date,
+                      locale,
+                      schedule.timezone || "America/Argentina/Buenos_Aires",
+                    )}
                   </Typography>
                 ))}
               </Stack>
