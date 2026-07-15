@@ -72,9 +72,9 @@ describe("formatStaffTimestamp", () => {
   it("formats valid ISO dates and falls back for empty values", () => {
     expect(formatStaffTimestamp(null, "es")).toBe("—");
     expect(formatStaffTimestamp("not-a-date", "es")).toBe("—");
-    expect(
-      formatStaffTimestamp("2026-07-15T12:00:00.000Z", "en"),
-    ).not.toBe("—");
+    expect(formatStaffTimestamp("2026-07-15T12:00:00.000Z", "en")).not.toBe(
+      "—",
+    );
   });
 });
 

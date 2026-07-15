@@ -36,12 +36,12 @@ Reuse `@mui/x-data-grid` patterns from `ProjectDashboard`: compact density, sort
 
 Computed on the client from `lastSentAt` / `lastReceivedAt` (or from a Core-provided `responseStatus` if present):
 
-| Status | Meaning | Default rule |
-|--------|---------|--------------|
-| Green | Replied promptly | Last receive ≥ last send, or reply within **2** days of last send |
-| Yellow | Slow | No reply yet and age of last send is **> 2 and ≤ 5** days |
-| Red | Overdue / silent | Sent and no reply after **> 5** days, or failed last send with no later success |
-| Neutral | No traffic yet | Never sent |
+| Status  | Meaning          | Default rule                                                                    |
+| ------- | ---------------- | ------------------------------------------------------------------------------- |
+| Green   | Replied promptly | Last receive ≥ last send, or reply within **2** days of last send               |
+| Yellow  | Slow             | No reply yet and age of last send is **> 2 and ≤ 5** days                       |
+| Red     | Overdue / silent | Sent and no reply after **> 5** days, or failed last send with no later success |
+| Neutral | No traffic yet   | Never sent                                                                      |
 
 Thresholds stay as named constants so they can be tweaked later.
 

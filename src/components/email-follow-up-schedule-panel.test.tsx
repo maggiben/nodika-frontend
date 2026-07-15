@@ -64,9 +64,7 @@ describe("EmailFollowUpSchedulePanel", () => {
       </TestI18n>,
     );
 
-    expect(
-      await screen.findByText(/Correos de seguimiento/i),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Envíos programados/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Mi" }));
     fireEvent.click(
@@ -80,7 +78,7 @@ describe("EmailFollowUpSchedulePanel", () => {
       );
     });
     expect(
-      await screen.findByText(/periodicidad de correos se guardó/i),
+      await screen.findByText(/periodicidad se guardó/i),
     ).toBeInTheDocument();
   });
 });

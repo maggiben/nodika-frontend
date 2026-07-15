@@ -19,10 +19,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
-import {
-  parseStaffCatalog,
-  type StaffCatalogRow,
-} from "@/lib/staff-catalog";
+import { parseStaffCatalog, type StaffCatalogRow } from "@/lib/staff-catalog";
 import type { StaffRosterRow } from "@/lib/staff-roster";
 import {
   computeStaffResponseStatus,
@@ -209,9 +206,7 @@ export function StaffCatalogPanel({
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(
-              row.assignedContactId
-                ? { contactId: row.assignedContactId }
-                : {},
+              row.assignedContactId ? { contactId: row.assignedContactId } : {},
             ),
           },
         );

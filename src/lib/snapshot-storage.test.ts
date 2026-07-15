@@ -55,7 +55,9 @@ describe("snapshot-storage", () => {
     expect(readSelectedSnapshotJson()).toContain("Legacy");
     expect(listStoredProjects()).toHaveLength(1);
     expect(window.localStorage.getItem("nodika.lastSnapshotJson")).toBeNull();
-    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).not.toBeNull();
+    expect(
+      window.localStorage.getItem("nodika.projectLibrary.v1"),
+    ).not.toBeNull();
   });
 
   test("keeps deprecated helpers working", () => {

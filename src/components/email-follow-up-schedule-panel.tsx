@@ -36,11 +36,7 @@ const weekdayKeys = [
   "saturday",
 ] as const;
 
-function formatPreviewDate(
-  value: string,
-  locale: Locale,
-  timeZone: string,
-) {
+function formatPreviewDate(value: string, locale: Locale, timeZone: string) {
   return new Intl.DateTimeFormat(locale === "es" ? "es-AR" : "en-US", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -50,7 +46,6 @@ function formatPreviewDate(
 
 export function EmailFollowUpSchedulePanel() {
   const { locale, t } = useDictionary();
-  const [settings, setSettings] = useState<AccountSettings | null>(null);
   const [schedule, setSchedule] = useState<EmailSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -82,7 +77,6 @@ export function EmailFollowUpSchedulePanel() {
         }
         if (!cancelled && body && typeof body === "object") {
           const next = body as AccountSettings;
-          setSettings(next);
           setSchedule(next.emailSchedule);
         }
       } catch {
@@ -147,7 +141,6 @@ export function EmailFollowUpSchedulePanel() {
       }
       if (body && typeof body === "object") {
         const next = body as AccountSettings;
-        setSettings(next);
         setSchedule(next.emailSchedule);
       }
       setSaveMessage(t("settings.scheduleSaved"));
@@ -270,7 +263,9 @@ export function EmailFollowUpSchedulePanel() {
           <Divider />
 
           <Box>
-            <Typography variant="subtitle2">{t("settings.nextSends")}</Typography>
+            <Typography variant="subtitle2">
+              {t("settings.nextSends")}
+            </Typography>
             {schedule.enabled && previewDates.length > 0 ? (
               <Stack spacing={0.5} sx={{ mt: 1 }}>
                 {previewDates.map((date) => (
@@ -291,18 +286,14 @@ export function EmailFollowUpSchedulePanel() {
           </Box>
 
           {saveError ? <Alert severity="error">{saveError}</Alert> : null}
-          {saveMessage ? (
-            <Alert severity="success">{saveMessage}</Alert>
-          ) : null}
+          {saveMessage ? <Alert severity="success">{saveMessage}</Alert> : null}
 
           <Button
             disabled={savingSchedule}
             onClick={() => void saveSchedule()}
             variant="contained"
           >
-            {savingSchedule
-              ? t("settings.saving")
-              : t("settings.saveSchedule")}
+            {savingSchedule ? t("settings.saving") : t("settings.saveSchedule")}
           </Button>
         </Stack>
       ) : null}

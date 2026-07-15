@@ -17,13 +17,29 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { DataGrid, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DataGrid,
+  type GridColDef,
+  type GridRenderCellParams,
+} from "@mui/x-data-grid";
+import Link from "next/link";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
+import {
+  getOrgChartsSnapshot,
+  removeOrgChart,
+  subscribeToOrgCharts,
+} from "@/lib/staff-org-chart";
 import {
   parseStaffRoster,
   type StaffRosterRow,
@@ -82,6 +98,33 @@ export function StaffMessagingForm() {
 
   const [busyRowId, setBusyRowId] = useState<string | null>(null);
   const [remindTarget, setRemindTarget] = useState<StaffRosterRow | null>(null);
+  const orgChartsSnapshot = useSyncExternalStore(
+    subscribeToOrgCharts,
+    getOrgChartsSnapshot,
+    () => "{}",
+  );
+  const teamSizeByContactId = useMemo(() => {
+    try {
+      const parsed: unknown = JSON.parse(orgChartsSnapshot);
+      if (
+        typeof parsed !== "object" ||
+        parsed === null ||
+        !("charts" in parsed) ||
+        typeof parsed.charts !== "object" ||
+        parsed.charts === null
+      ) {
+        return {} as Record<string, number>;
+      }
+      const charts = parsed.charts as Record<string, { reports?: unknown }>;
+      const counts: Record<string, number> = {};
+      for (const [id, chart] of Object.entries(charts)) {
+        counts[id] = Array.isArray(chart?.reports) ? chart.reports.length : 0;
+      }
+      return counts;
+    } catch {
+      return {} as Record<string, number>;
+    }
+  }, [orgChartsSnapshot]);
 
   const loadRoster = useCallback(async () => {
     const rosterResponse = await fetch("/api/messaging/roster", {
@@ -122,7 +165,15 @@ export function StaffMessagingForm() {
 
     return contactsBody
       .filter(
-        (item): item is { _id: string; phone: string; label?: string; active?: boolean; tags?: string[] } =>
+        (
+          item,
+        ): item is {
+          _id: string;
+          phone: string;
+          label?: string;
+          active?: boolean;
+          tags?: string[];
+        } =>
           typeof item === "object" &&
           item !== null &&
           typeof (item as { _id?: unknown })._id === "string" &&
@@ -130,8 +181,7 @@ export function StaffMessagingForm() {
       )
       .filter(
         (item) =>
-          item.active !== false &&
-          (item.tags?.includes("staff") ?? true),
+          item.active !== false && (item.tags?.includes("staff") ?? true),
       )
       .map((item) => ({
         _id: item._id,
@@ -292,6 +342,7 @@ export function StaffMessagingForm() {
           return;
         }
         setActionMessage(t("staff.removed"));
+        removeOrgChart(row._id);
         setRows(await loadRoster());
       } catch {
         setError(t("staff.unreachable"));
@@ -449,6 +500,12 @@ export function StaffMessagingForm() {
         minWidth: 130,
       },
       {
+        field: "teamSize",
+        headerName: t("staff.columns.teamSize"),
+        width: 100,
+        valueGetter: (_value, row) => teamSizeByContactId[row._id] ?? 0,
+      },
+      {
         field: "messageTypes",
         headerName: t("staff.columns.messageTypes"),
         flex: 1,
@@ -517,11 +574,21 @@ export function StaffMessagingForm() {
         headerName: t("staff.columns.actions"),
         sortable: false,
         filterable: false,
-        width: 280,
+        width: 340,
         renderCell: (params: GridRenderCellParams<StaffRosterRow>) => {
           const busy = busyRowId === params.row._id;
           return (
             <Stack direction="row" spacing={1} sx={{ py: 0.5 }}>
+              <Button
+                aria-label={t("staff.edit")}
+                component={Link}
+                disabled={busy}
+                href={`/${locale}/staff/${encodeURIComponent(params.row._id)}/org`}
+                size="small"
+                variant="outlined"
+              >
+                {t("staff.edit")}
+              </Button>
               <Button
                 disabled={busy}
                 onClick={() => void sendTest(params.row)}
@@ -551,7 +618,7 @@ export function StaffMessagingForm() {
         },
       },
     ],
-    [busyRowId, locale, removeContact, sendTest, t],
+    [busyRowId, locale, removeContact, sendTest, t, teamSizeByContactId],
   );
 
   if (loading) {
@@ -616,7 +683,9 @@ export function StaffMessagingForm() {
           </Stack>
 
           {rows.length === 0 ? (
-            <Typography color="text.secondary">{t("staff.noContacts")}</Typography>
+            <Typography color="text.secondary">
+              {t("staff.noContacts")}
+            </Typography>
           ) : (
             <DataGrid
               autoHeight
@@ -661,7 +730,9 @@ export function StaffMessagingForm() {
           </Typography>
           <Stack spacing={2}>
             <Box>
-              <Typography variant="subtitle2">{t("staff.legendTitle")}</Typography>
+              <Typography variant="subtitle2">
+                {t("staff.legendTitle")}
+              </Typography>
               <Box
                 sx={{
                   display: "grid",

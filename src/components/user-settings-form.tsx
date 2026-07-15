@@ -327,11 +327,11 @@ export function UserSettingsForm() {
                 onChange={(event) => setTimezone(event.target.value)}
                 value={timezone}
               >
-                {TIMEZONE_OPTIONS.some((option) => option.value === timezone)
-                  ? null
-                  : (
-                      <MenuItem value={timezone}>{timezone}</MenuItem>
-                    )}
+                {TIMEZONE_OPTIONS.some(
+                  (option) => option.value === timezone,
+                ) ? null : (
+                  <MenuItem value={timezone}>{timezone}</MenuItem>
+                )}
                 {TIMEZONE_OPTIONS.map((option) => (
                   <MenuItem key={option.value} value={option.value}>
                     {option.label}

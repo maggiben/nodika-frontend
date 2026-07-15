@@ -75,15 +75,15 @@ describe("UserSettingsForm", () => {
     expect(
       screen.queryByRole("heading", { name: /Correos de seguimiento/i }),
     ).toBeNull();
-    expect(screen.getByRole("heading", { name: "Zona horaria" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Zona horaria" }),
+    ).toBeInTheDocument();
   });
 
   test("saves the account timezone", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(settingsPayload)),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(settingsPayload)))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -128,12 +128,14 @@ describe("UserSettingsForm", () => {
   test("shows a load error when settings cannot be fetched", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({ message: "Core is temporarily unavailable." }),
-          { status: 503 },
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ message: "Core is temporarily unavailable." }),
+            { status: 503 },
+          ),
         ),
-      ),
     );
 
     render(
@@ -150,9 +152,7 @@ describe("UserSettingsForm", () => {
   test("validates password confirmation before submitting", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(settingsPayload)),
-      ),
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(settingsPayload))),
     );
 
     render(
@@ -181,9 +181,7 @@ describe("UserSettingsForm", () => {
   test("supports theme, language, and password changes", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(settingsPayload)),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(settingsPayload)))
       .mockResolvedValueOnce(new Response(JSON.stringify({ ok: true })));
 
     vi.stubGlobal("fetch", fetchMock);
@@ -239,9 +237,7 @@ describe("UserSettingsForm", () => {
 
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(
-        new Response(JSON.stringify(settingsPayload)),
-      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(settingsPayload)))
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({ message: "Invalid email or password." }),
