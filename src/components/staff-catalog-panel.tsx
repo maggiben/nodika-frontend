@@ -238,68 +238,102 @@ export function StaffCatalogPanel({
         </Alert>
       ) : null}
 
-      <Stack spacing={2} sx={{ mb: 2, maxWidth: 720 }}>
-        <TextField
-          label={t("staff.catalogMessageTitle")}
-          onChange={(event) => setTitle(event.target.value)}
-          value={title}
-        />
-        <TextField
-          label={t("staff.catalogMessageBody")}
-          minRows={3}
-          multiline
-          onChange={(event) => setBody(event.target.value)}
-          value={body}
-        />
-        <FormControl size="small">
-          <InputLabel id="catalog-assign-new">
-            {t("staff.catalogAssignPlaceholder")}
-          </InputLabel>
-          <Select
-            label={t("staff.catalogAssignPlaceholder")}
-            labelId="catalog-assign-new"
-            onChange={(event) => setAssignContactId(String(event.target.value))}
-            value={assignContactId}
-          >
-            <MenuItem value="">
-              <em>{t("staff.catalogAssignLater")}</em>
-            </MenuItem>
-            {roster.map((contact) => (
-              <MenuItem key={contact._id} value={contact._id}>
-                {contact.label || contact.phone}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <Button
-          disabled={
-            saving || title.trim().length === 0 || body.trim().length === 0
-          }
-          onClick={() => void saveCatalogMessage()}
-          variant="contained"
-        >
-          {saving ? t("staff.saving") : t("staff.catalogSave")}
-        </Button>
-      </Stack>
-
-      {rows.length === 0 ? (
-        <Typography color="text.secondary">{t("staff.catalogEmpty")}</Typography>
-      ) : (
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, minmax(0, 1fr))",
+            md: "repeat(4, minmax(0, 1fr))",
+          },
+          maxHeight: { xs: 480, md: 520 },
+          overflowY: "auto",
+          pr: 0.5,
+          alignItems: "stretch",
+        }}
+      >
         <Box
           sx={{
-            display: "grid",
-            gap: 1.5,
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, minmax(0, 1fr))",
-              md: "repeat(4, minmax(0, 1fr))",
-            },
-            maxHeight: { xs: 420, md: 480 },
-            overflowY: "auto",
-            pr: 0.5,
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: 1,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            p: 1.5,
           }}
         >
-          {rows.map((row) => {
+          <TextField
+            label={t("staff.catalogMessageTitle")}
+            onChange={(event) => setTitle(event.target.value)}
+            size="small"
+            value={title}
+          />
+          <TextField
+            label={t("staff.catalogMessageBody")}
+            minRows={3}
+            multiline
+            onChange={(event) => setBody(event.target.value)}
+            size="small"
+            sx={{ flex: 1 }}
+            value={body}
+          />
+          <FormControl fullWidth size="small">
+            <InputLabel id="catalog-assign-new">
+              {t("staff.catalogAssignPlaceholder")}
+            </InputLabel>
+            <Select
+              label={t("staff.catalogAssignPlaceholder")}
+              labelId="catalog-assign-new"
+              onChange={(event) =>
+                setAssignContactId(String(event.target.value))
+              }
+              value={assignContactId}
+            >
+              <MenuItem value="">
+                <em>{t("staff.catalogAssignLater")}</em>
+              </MenuItem>
+              {roster.map((contact) => (
+                <MenuItem key={contact._id} value={contact._id}>
+                  {contact.label || contact.phone}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            disabled={
+              saving || title.trim().length === 0 || body.trim().length === 0
+            }
+            fullWidth
+            onClick={() => void saveCatalogMessage()}
+            size="small"
+            variant="contained"
+          >
+            {saving ? t("staff.saving") : t("staff.catalogSave")}
+          </Button>
+        </Box>
+
+        {rows.length === 0 ? (
+          <Box
+            sx={{
+              alignItems: "center",
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: 1,
+              display: "flex",
+              gridColumn: { xs: "auto", md: "span 3" },
+              justifyContent: "center",
+              minHeight: 120,
+              p: 2,
+            }}
+          >
+            <Typography color="text.secondary" variant="body2">
+              {t("staff.catalogEmpty")}
+            </Typography>
+          </Box>
+        ) : (
+          rows.map((row) => {
             const busy = busyId === row._id;
             const status = (
               ["green", "yellow", "red", "neutral", "pending"].includes(
@@ -327,7 +361,10 @@ export function StaffCatalogPanel({
                 <Stack
                   direction="row"
                   spacing={1}
-                  sx={{ alignItems: "flex-start", justifyContent: "space-between" }}
+                  sx={{
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                  }}
                 >
                   <Typography
                     sx={{
@@ -347,7 +384,9 @@ export function StaffCatalogPanel({
                     <IconButton
                       aria-label={statusLabel}
                       size="small"
-                      sx={{ color: STATUS_COLOR[status] ?? STATUS_COLOR.neutral }}
+                      sx={{
+                        color: STATUS_COLOR[status] ?? STATUS_COLOR.neutral,
+                      }}
                     >
                       <Box
                         aria-hidden
@@ -427,9 +466,9 @@ export function StaffCatalogPanel({
                 </Button>
               </Box>
             );
-          })}
-        </Box>
-      )}
+          })
+        )}
+      </Box>
     </Paper>
   );
 }
