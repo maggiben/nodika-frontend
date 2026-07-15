@@ -189,14 +189,13 @@ export function EmailFollowUpSchedulePanel() {
           </FormControl>
 
           {schedule.frequency === "weekly" ? (
-            <Box>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <FormLabel>{t("settings.weekdays")}</FormLabel>
               <ToggleButtonGroup
                 aria-label={t("settings.weekdays")}
                 color="primary"
                 disabled={!schedule.enabled}
                 size="small"
-                sx={{ mt: 1 }}
                 value={schedule.daysOfWeek}
                 onChange={(_, days: number[]) => {
                   if (days.length === 0) {
