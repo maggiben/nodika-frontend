@@ -533,8 +533,11 @@ export function StaffMessagingForm() {
         field: "projectId",
         headerName: t("staff.columns.project"),
         flex: 1,
-        minWidth: 120,
-        valueGetter: (_value, row) => row.projectId || "—",
+        minWidth: 140,
+        valueGetter: (_value, row) =>
+          (row.projectIds && row.projectIds.length > 0
+            ? row.projectIds.join(", ")
+            : row.projectId) || "—",
       },
       {
         field: "teamSize",
