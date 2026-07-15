@@ -65,12 +65,16 @@ describe("AppNavbar", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Abrir menú de cuenta" }),
     );
-    expect(
-      screen.getByRole("menuitem", { name: "Configuración" }),
-    ).toHaveAttribute("href", "/es/settings");
+    const menuItems = screen.getAllByRole("menuitem");
+    expect(menuItems[0]).toHaveTextContent("Subir snapshot");
+    expect(menuItems[1]).toHaveTextContent("Configuración");
+    expect(menuItems[2]).toHaveTextContent("Cerrar sesión");
     expect(
       screen.getByRole("menuitem", { name: "Subir snapshot" }),
     ).toHaveAttribute("href", "/es/upload");
+    expect(
+      screen.getByRole("menuitem", { name: "Configuración" }),
+    ).toHaveAttribute("href", "/es/settings");
     expect(
       screen.queryByRole("menuitem", { name: "Tema oscuro" }),
     ).not.toBeInTheDocument();

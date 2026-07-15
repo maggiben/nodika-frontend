@@ -123,17 +123,17 @@ export function AppNavbar({
               >
                 <MenuItem
                   component={Link}
-                  href={settingsHref}
-                  onClick={() => setAnchorEl(null)}
-                >
-                  <ListItemText primary={t("nav.settings")} />
-                </MenuItem>
-                <MenuItem
-                  component={Link}
                   href={uploadHref}
                   onClick={() => setAnchorEl(null)}
                 >
                   <ListItemText primary={t("nav.uploadSnapshot")} />
+                </MenuItem>
+                <MenuItem
+                  component={Link}
+                  href={settingsHref}
+                  onClick={() => setAnchorEl(null)}
+                >
+                  <ListItemText primary={t("nav.settings")} />
                 </MenuItem>
                 <Divider />
                 <MenuItem disabled={isLoggingOut} onClick={logout}>
