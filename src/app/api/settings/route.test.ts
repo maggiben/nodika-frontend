@@ -37,20 +37,16 @@ function requestWithCookie(
   method: "GET" | "PATCH",
   body?: unknown,
 ): NextRequest {
-  const init: RequestInit = {
-    method,
-    headers: { cookie: `${CORE_ACCESS_COOKIE}=token` },
-  };
-
+  const headers = new Headers({ cookie: `${CORE_ACCESS_COOKIE}=token` });
   if (body) {
-    init.body = JSON.stringify(body);
-    init.headers = {
-      ...init.headers,
-      "content-type": "application/json",
-    };
+    headers.set("content-type", "application/json");
   }
 
-  return new NextRequest("http://localhost/api/settings", init);
+  return new NextRequest("http://localhost/api/settings", {
+    method,
+    headers,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
 }
 
 beforeEach(() => {

@@ -16,20 +16,16 @@ vi.mock("@/lib/core-auth", async () => {
 import { authenticatedCoreRequest, CORE_ACCESS_COOKIE } from "@/lib/core-auth";
 
 function requestWithCookie(body?: unknown): NextRequest {
-  const init: RequestInit = {
-    method: "POST",
-    headers: { cookie: `${CORE_ACCESS_COOKIE}=token` },
-  };
-
+  const headers = new Headers({ cookie: `${CORE_ACCESS_COOKIE}=token` });
   if (body) {
-    init.body = JSON.stringify(body);
-    init.headers = {
-      ...init.headers,
-      "content-type": "application/json",
-    };
+    headers.set("content-type", "application/json");
   }
 
-  return new NextRequest("http://localhost/api/settings/change-password", init);
+  return new NextRequest("http://localhost/api/settings/change-password", {
+    method: "POST",
+    headers,
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
 }
 
 beforeEach(() => {

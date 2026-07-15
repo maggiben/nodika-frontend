@@ -18,10 +18,10 @@ The project SHALL enforce at least 80% global line, function, branch, and statem
 
 ### Requirement: Pre-commit coverage gate
 
-The project SHALL run the coverage suite before a Git commit completes.
+The project SHALL run lint and the coverage suite before a Git commit completes.
 
 #### Scenario: Committing tested changes
 
 - **WHEN** a contributor creates a Git commit
-- **THEN** the pre-commit hook SHALL run `npm run test:coverage`
-- **AND** Git SHALL block the commit when the coverage command fails
+- **THEN** the pre-commit hook SHALL run `npm run lint` and then `npm run test:coverage`
+- **AND** Git SHALL block the commit when either command fails
