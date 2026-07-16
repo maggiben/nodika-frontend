@@ -1,12 +1,20 @@
 "use client";
 
-import { Chip, Tooltip } from "@mui/material";
+import { ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 import { useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { hasUsableOverallProgress } from "@/lib/obra-progress";
 import {
+  readProgressViewMode,
+  setProgressViewMode,
+  subscribeToProgressViewMode,
+  type ProgressViewMode,
+} from "@/lib/progress-view-mode";
+import { buildSnapshotDashboard } from "@/lib/snapshot-dashboard";
+import {
   readProjectLibrary,
+  readSelectedSnapshotJson,
   subscribeToProjectLibrary,
 } from "@/lib/snapshot-storage";
 import { useLiveObraProgress } from "@/lib/use-live-obra-progress";
@@ -17,6 +25,39 @@ function getSelectedIdSnapshot(): string {
 
 function getServerEmptyId(): string {
   return "";
+}
+
+function getSelectedSnapshotSnapshot() {
+  return readSelectedSnapshotJson();
+}
+
+function getServerSnapshotSnapshot() {
+  return null;
+}
+
+function getProgressViewModeSnapshot(): ProgressViewMode {
+  return readProgressViewMode();
+}
+
+function getServerProgressViewMode(): ProgressViewMode {
+  return "after";
+}
+
+function baselineAverageFromJson(raw: string | null): number | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const model = buildSnapshotDashboard(JSON.parse(raw));
+    if (!model || model.totalObjectiveTasks === 0) {
+      return null;
+    }
+    return Math.round(
+      Math.max(0, Math.min(100, model.averageProgress)),
+    );
+  } catch {
+    return null;
+  }
 }
 
 export function ObraProgressChip({
@@ -30,6 +71,16 @@ export function ObraProgressChip({
     getSelectedIdSnapshot,
     getServerEmptyId,
   );
+  const snapshotJson = useSyncExternalStore(
+    subscribeToProjectLibrary,
+    getSelectedSnapshotSnapshot,
+    getServerSnapshotSnapshot,
+  );
+  const mode = useSyncExternalStore(
+    subscribeToProgressViewMode,
+    getProgressViewModeSnapshot,
+    getServerProgressViewMode,
+  );
   const progress = useLiveObraProgress(
     authenticated && selectedId ? selectedId : null,
   );
@@ -38,40 +89,45 @@ export function ObraProgressChip({
     return null;
   }
 
-  const overall = Math.round(
+  const beforePercent = baselineAverageFromJson(snapshotJson);
+  const afterPercent = Math.round(
     Math.max(0, Math.min(100, progress.overallPercent)),
   );
-  const roleLines = [
-    `${t("nav.progressRoles.jefe_obra")}: ${
-      progress.byRole.jefe_obra === null
-        ? "—"
-        : `${Math.round(progress.byRole.jefe_obra)}%`
-    }`,
-    `${t("nav.progressRoles.operario")}: ${
-      progress.byRole.operario === null
-        ? "—"
-        : `${Math.round(progress.byRole.operario)}%`
-    }`,
-    `${t("nav.progressRoles.jornalero")}: ${
-      progress.byRole.jornalero === null
-        ? "—"
-        : `${Math.round(progress.byRole.jornalero)}%`
-    }`,
-  ].join(" · ");
-
-  const label = t("nav.progressChip", { percent: overall });
-  const description = `${label}. ${roleLines}`;
+  const beforeLabel =
+    beforePercent === null
+      ? t("nav.progressBefore")
+      : t("nav.progressBeforePercent", { percent: beforePercent });
+  const afterLabel = t("nav.progressAfterPercent", { percent: afterPercent });
 
   return (
-    <Tooltip title={roleLines}>
-      <Chip
-        aria-label={description}
+    <Tooltip title={t("nav.progressToggleHint")}>
+      <ToggleButtonGroup
+        aria-label={t("nav.progressToggleHint")}
         color="primary"
-        label={label}
+        exclusive
+        onChange={(_event, next: ProgressViewMode | null) => {
+          if (next) {
+            setProgressViewMode(next);
+          }
+        }}
         size="small"
-        sx={{ fontWeight: 600 }}
-        variant="outlined"
-      />
+        value={mode}
+      >
+        <ToggleButton
+          aria-label={beforeLabel}
+          sx={{ fontWeight: 600, px: 1.25, textTransform: "none" }}
+          value="before"
+        >
+          {beforeLabel}
+        </ToggleButton>
+        <ToggleButton
+          aria-label={afterLabel}
+          sx={{ fontWeight: 600, px: 1.25, textTransform: "none" }}
+          value="after"
+        >
+          {afterLabel}
+        </ToggleButton>
+      </ToggleButtonGroup>
     </Tooltip>
   );
 }

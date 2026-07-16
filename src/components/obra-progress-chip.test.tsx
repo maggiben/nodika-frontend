@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
+import { clearProgressViewMode } from "@/lib/progress-view-mode";
 import {
   clearStoredSnapshotJson,
   upsertStoredProject,
@@ -13,6 +14,7 @@ import { ObraProgressChip } from "./obra-progress-chip";
 afterEach(() => {
   cleanup();
   clearStoredSnapshotJson();
+  clearProgressViewMode();
   window.localStorage.clear();
   vi.unstubAllGlobals();
 });
@@ -33,11 +35,13 @@ describe("ObraProgressChip", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  test("shows overall percent when progress is available", async () => {
+  test("shows before/after toggle when progress is available", async () => {
     upsertStoredProject(
       JSON.stringify({
         meta: { projectNombre: "North", projectId: "obra-1" },
-        tareas_con_objetivo: [],
+        tareas_con_objetivo: [
+          { id: "t1", label: "Steel", avance_base: 40, duracion: 5 },
+        ],
       }),
     );
 
@@ -68,8 +72,15 @@ describe("ObraProgressChip", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText(/Avance 64%/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Después 64%/i)).toBeInTheDocument();
     });
+    expect(screen.getByLabelText(/Antes 40%/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText(/Antes 40%/i));
+    expect(screen.getByLabelText(/Antes 40%/i)).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   test("hides when progress has no overall percent", async () => {

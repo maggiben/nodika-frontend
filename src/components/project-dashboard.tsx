@@ -12,7 +12,11 @@ import {
   mergeDashboardWithLiveProgress,
   type LiveDashboardModel,
 } from "@/lib/merge-dashboard-live-progress";
-import { type ObraProgressRole } from "@/lib/obra-progress";
+import {
+  readProgressViewMode,
+  subscribeToProgressViewMode,
+  type ProgressViewMode,
+} from "@/lib/progress-view-mode";
 import {
   buildSnapshotDashboard,
   type SnapshotDashboardModel,
@@ -39,6 +43,14 @@ function getSelectedIdSnapshot(): string {
 
 function getServerEmptyId(): string {
   return "";
+}
+
+function getProgressViewModeSnapshot(): ProgressViewMode {
+  return readProgressViewMode();
+}
+
+function getServerProgressViewMode(): ProgressViewMode {
+  return "after";
 }
 
 function modelFromStoredJson(
@@ -296,10 +308,7 @@ function DashboardBody({ model }: Readonly<{ model: LiveDashboardModel }>) {
           gap: 2,
           gridTemplateColumns: {
             xs: "1fr",
-            md:
-              model.roleBreakdown.length > 0
-                ? "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr)"
-                : "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr)",
+            md: "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr)",
           },
         }}
       >
@@ -317,20 +326,6 @@ function DashboardBody({ model }: Readonly<{ model: LiveDashboardModel }>) {
             />
           </Box>
         </Paper>
-
-        {model.roleBreakdown.length > 0 ? (
-          <Paper variant="outlined" sx={{ p: 2.5 }}>
-            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-              {t("dashboard.progressByRole")}
-            </Typography>
-            <CountBarChart
-              emptyLabel={t("dashboard.noRoleProgress")}
-              items={model.roleBreakdown}
-              seriesLabel={t("dashboard.rolesSeries")}
-              valueKey="percent"
-            />
-          </Paper>
-        ) : null}
 
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -410,7 +405,6 @@ function EmptyDashboard() {
 }
 
 export function ProjectDashboard() {
-  const { t } = useDictionary();
   const raw = useSyncExternalStore(
     subscribeToProjectLibrary,
     getSelectedSnapshotSnapshot,
@@ -421,6 +415,11 @@ export function ProjectDashboard() {
     getSelectedIdSnapshot,
     getServerEmptyId,
   );
+  const viewMode = useSyncExternalStore(
+    subscribeToProgressViewMode,
+    getProgressViewModeSnapshot,
+    getServerProgressViewMode,
+  );
   const baseModel = modelFromStoredJson(raw);
   const live = useLiveObraProgress(
     baseModel?.projectId ?? (selectedId || null),
@@ -430,13 +429,10 @@ export function ProjectDashboard() {
     return <EmptyDashboard />;
   }
 
-  const roleLabels: Record<ObraProgressRole, string> = {
-    jefe_obra: t("nav.progressRoles.jefe_obra"),
-    operario: t("nav.progressRoles.operario"),
-    jornalero: t("nav.progressRoles.jornalero"),
-    otro: t("nav.progressRoles.otro"),
-  };
+  const applyLive = viewMode === "after";
+  const model = applyLive
+    ? mergeDashboardWithLiveProgress(baseModel, live)
+    : mergeDashboardWithLiveProgress(baseModel, null);
 
-  const model = mergeDashboardWithLiveProgress(baseModel, live, roleLabels);
   return <DashboardBody model={model} />;
 }

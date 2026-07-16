@@ -120,22 +120,6 @@ export function hasUsableOverallProgress(
   );
 }
 
-export function roleBreakdownItems(
-  progress: ObraProgressSummary | null | undefined,
-  labels: Record<ObraProgressRole, string>,
-): { label: string; percent: number }[] {
-  if (!progress) {
-    return [];
-  }
-  return ROLE_KEYS.flatMap((role) => {
-    const percent = progress.byRole[role];
-    if (percent === null || !Number.isFinite(percent)) {
-      return [];
-    }
-    return [{ label: labels[role], percent }];
-  });
-}
-
 export async function fetchObraProgress(
   projectId: string,
 ): Promise<ObraProgressSummary | null> {

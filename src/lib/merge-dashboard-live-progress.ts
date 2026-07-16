@@ -4,14 +4,11 @@ import type {
 } from "@/lib/snapshot-dashboard";
 import {
   hasUsableOverallProgress,
-  roleBreakdownItems,
-  type ObraProgressRole,
   type ObraProgressSummary,
 } from "@/lib/obra-progress";
 
 export type LiveDashboardModel = SnapshotDashboardModel & {
   liveProgress: ObraProgressSummary | null;
-  roleBreakdown: { label: string; percent: number }[];
   usingLiveOverall: boolean;
 };
 
@@ -66,7 +63,6 @@ function recomputeCompleted(
 export function mergeDashboardWithLiveProgress(
   model: SnapshotDashboardModel,
   live: ObraProgressSummary | null,
-  roleLabels: Record<ObraProgressRole, string>,
 ): LiveDashboardModel {
   const objectiveTasks = overlayTaskAvance(model.objectiveTasks, live);
   const recomputed = recomputeCompleted(objectiveTasks);
@@ -82,7 +78,6 @@ export function mergeDashboardWithLiveProgress(
     completedCount: recomputed.completedCount,
     totalObjectiveTasks: recomputed.totalObjectiveTasks,
     liveProgress: live,
-    roleBreakdown: roleBreakdownItems(live, roleLabels),
     usingLiveOverall,
   };
 }
