@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
+import { ObraProgressChip } from "@/components/obra-progress-chip";
 import { ProjectSelector } from "@/components/project-selector";
 import { emailInitials } from "@/lib/email-initials";
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -118,8 +119,18 @@ export function AppNavbar({
             {t("nav.brand")}
           </Typography>
 
-          <Box sx={{ flexGrow: 1, display: "flex", justifyContent: "center" }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+              minWidth: 0,
+            }}
+          >
             <ProjectSelector />
+            <ObraProgressChip authenticated={authenticated} />
           </Box>
 
           {!authenticated ? (

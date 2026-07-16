@@ -30,6 +30,14 @@ import {
 } from "@/i18n/config";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import type { AccountSettings } from "@/lib/core-auth";
+import {
+  DEFAULT_PROGRESS_AI_MODELS,
+  defaultProgressAi,
+  modelsForProvider,
+  modelForProviderChange,
+  type ProgressAiProvider,
+  type ProgressAiSettings,
+} from "@/lib/progress-ai";
 
 type ThemePreference = "light" | "dark" | "system";
 
@@ -74,6 +82,14 @@ export function UserSettingsForm() {
   const [timezoneError, setTimezoneError] = useState<string | null>(null);
   const [savingTimezone, setSavingTimezone] = useState(false);
 
+  const [progressAi, setProgressAi] =
+    useState<ProgressAiSettings>(defaultProgressAi());
+  const [progressAiMessage, setProgressAiMessage] = useState<string | null>(
+    null,
+  );
+  const [progressAiError, setProgressAiError] = useState<string | null>(null);
+  const [savingProgressAi, setSavingProgressAi] = useState(false);
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -112,6 +128,7 @@ export function UserSettingsForm() {
           setTimezone(
             next.emailSchedule.timezone || "America/Argentina/Buenos_Aires",
           );
+          setProgressAi(defaultProgressAi(next.progressAi));
         }
       } catch {
         if (!cancelled) {
@@ -176,12 +193,64 @@ export function UserSettingsForm() {
         setTimezone(
           next.emailSchedule.timezone || "America/Argentina/Buenos_Aires",
         );
+        if (next.progressAi) {
+          setProgressAi(defaultProgressAi(next.progressAi));
+        }
       }
       setTimezoneMessage(t("settings.timezoneSaved"));
     } catch {
       setTimezoneError(t("settings.unreachable"));
     } finally {
       setSavingTimezone(false);
+    }
+  }
+
+  function changeProgressProvider(provider: ProgressAiProvider) {
+    setProgressAi((current) => ({
+      provider,
+      model: modelForProviderChange(provider, current.model),
+    }));
+  }
+
+  async function saveProgressAi() {
+    setProgressAiMessage(null);
+    setProgressAiError(null);
+    setSavingProgressAi(true);
+
+    try {
+      const payload: ProgressAiSettings = {
+        provider: progressAi.provider,
+        model: progressAi.model,
+      };
+      const response = await fetch("/api/settings", {
+        body: JSON.stringify({ progressAi: payload }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
+      });
+      const body: unknown = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        setProgressAiError(
+          typeof body === "object" &&
+            body !== null &&
+            "message" in body &&
+            typeof body.message === "string"
+            ? body.message
+            : t("settings.saveError"),
+        );
+        return;
+      }
+
+      if (body && typeof body === "object") {
+        const next = body as AccountSettings;
+        setSettings(next);
+        setProgressAi(defaultProgressAi(next.progressAi ?? payload));
+      }
+      setProgressAiMessage(t("settings.progressAiSaved"));
+    } catch {
+      setProgressAiError(t("settings.unreachable"));
+    } finally {
+      setSavingProgressAi(false);
     }
   }
 
@@ -353,6 +422,83 @@ export function UserSettingsForm() {
               {savingTimezone
                 ? t("settings.timezoneSaving")
                 : t("settings.timezoneSave")}
+            </Button>
+          </Stack>
+        </Paper>
+
+        <Paper sx={{ p: 3 }}>
+          <Typography component="h2" variant="h6">
+            {t("settings.progressAiTitle")}
+          </Typography>
+          <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
+            {t("settings.progressAiDescription")}
+          </Typography>
+          <Stack spacing={2} sx={{ maxWidth: 420 }}>
+            <FormControl size="small">
+              <InputLabel id="settings-progress-provider-label">
+                {t("settings.progressAiProvider")}
+              </InputLabel>
+              <Select
+                label={t("settings.progressAiProvider")}
+                labelId="settings-progress-provider-label"
+                onChange={(event) =>
+                  changeProgressProvider(
+                    event.target.value as ProgressAiProvider,
+                  )
+                }
+                value={progressAi.provider}
+              >
+                <MenuItem value="openai">
+                  {t("settings.progressAiOpenAI")}
+                </MenuItem>
+                <MenuItem value="anthropic">
+                  {t("settings.progressAiAnthropic")}
+                </MenuItem>
+              </Select>
+            </FormControl>
+            <FormControl size="small">
+              <InputLabel id="settings-progress-model-label">
+                {t("settings.progressAiModel")}
+              </InputLabel>
+              <Select
+                label={t("settings.progressAiModel")}
+                labelId="settings-progress-model-label"
+                onChange={(event) =>
+                  setProgressAi((current) => ({
+                    ...current,
+                    model: event.target.value,
+                  }))
+                }
+                value={
+                  modelsForProvider(progressAi.provider).includes(
+                    progressAi.model,
+                  )
+                    ? progressAi.model
+                    : (DEFAULT_PROGRESS_AI_MODELS[progressAi.provider] ??
+                      progressAi.model)
+                }
+              >
+                {modelsForProvider(progressAi.provider).map((model) => (
+                  <MenuItem key={model} value={model}>
+                    {model}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            {progressAiError ? (
+              <Alert severity="error">{progressAiError}</Alert>
+            ) : null}
+            {progressAiMessage ? (
+              <Alert severity="success">{progressAiMessage}</Alert>
+            ) : null}
+            <Button
+              disabled={savingProgressAi}
+              onClick={() => void saveProgressAi()}
+              variant="contained"
+            >
+              {savingProgressAi
+                ? t("settings.progressAiSaving")
+                : t("settings.progressAiSave")}
             </Button>
           </Stack>
         </Paper>

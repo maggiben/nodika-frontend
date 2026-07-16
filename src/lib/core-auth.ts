@@ -215,6 +215,10 @@ export type AccountSettings = {
   nextSendDates: string[];
   language?: string;
   activeProjectId?: string | null;
+  progressAi?: {
+    provider: "openai" | "anthropic";
+    model: string;
+  };
 };
 
 export function isAccountSettings(value: unknown): value is AccountSettings {
@@ -248,7 +252,20 @@ export function isAccountSettings(value: unknown): value is AccountSettings {
     return false;
   }
 
-  return true;
+  if (record.progressAi === undefined) {
+    return true;
+  }
+
+  if (typeof record.progressAi !== "object" || record.progressAi === null) {
+    return false;
+  }
+
+  const progressAi = record.progressAi as Record<string, unknown>;
+  return (
+    (progressAi.provider === "openai" || progressAi.provider === "anthropic") &&
+    typeof progressAi.model === "string" &&
+    progressAi.model.trim().length > 0
+  );
 }
 
 export async function parseAccountSettings(

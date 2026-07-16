@@ -21,6 +21,36 @@ describe("core-auth settings helpers", () => {
         nextSendDates: ["2026-07-16T12:00:00.000Z"],
       }),
     ).toBe(true);
+    expect(
+      isAccountSettings({
+        email: "user@example.com",
+        emailSchedule: {
+          enabled: true,
+          frequency: "weekly",
+          daysOfWeek: [1],
+          dayOfMonth: 1,
+          sendTime: "09:00",
+          timezone: "America/Argentina/Buenos_Aires",
+        },
+        nextSendDates: [],
+        progressAi: { provider: "anthropic", model: "claude-sonnet-4-5" },
+      }),
+    ).toBe(true);
+    expect(
+      isAccountSettings({
+        email: "user@example.com",
+        emailSchedule: {
+          enabled: true,
+          frequency: "weekly",
+          daysOfWeek: [1],
+          dayOfMonth: 1,
+          sendTime: "09:00",
+          timezone: "America/Argentina/Buenos_Aires",
+        },
+        nextSendDates: [],
+        progressAi: { provider: "openai", model: "" },
+      }),
+    ).toBe(false);
     expect(isAccountSettings({ email: "user@example.com" })).toBe(false);
   });
 

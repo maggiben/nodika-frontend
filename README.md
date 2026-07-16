@@ -113,6 +113,8 @@ NODIKA_CORE_URL=http://localhost:3000
 | `NODIKA_CORE_URL` | Public or loopback URL of Core. **Server-only** — do not use `NEXT_PUBLIC_NODIKA_CORE_URL`. |
 | `PORT` | Optional; `next dev` defaults to `3000`. If Core already uses 3000, run Next on another port. |
 
+Live obra progress (navbar chip + dashboard overlay) comes from Core `GET /messaging/progress` via the BFF. Configure `OPENAI_API_KEY` on **nodika-core** (not this frontend) so inbound WhatsApp replies can be parsed into structured progress.
+
 Example with Core on 3000 and frontend on 3001:
 
 ```bash
@@ -345,7 +347,7 @@ railway logs --build -n 300
 | `PORT` | No | Injected by Railway; default `3000` for `next start` / `next dev`. |
 | `NODE_ENV` | No | `production` in the Docker runner stage. |
 
-**Do not set** `NEXT_PUBLIC_NODIKA_CORE_URL`. Core must stay server-side.
+**Do not set** `NEXT_PUBLIC_NODIKA_CORE_URL` or `OPENAI_API_KEY` on the frontend. OpenAI keys belong on Core only; the BFF proxies `/api/messaging/progress` with the session cookie.
 
 ---
 

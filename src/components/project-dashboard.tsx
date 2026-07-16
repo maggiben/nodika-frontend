@@ -9,14 +9,21 @@ import { useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import {
+  mergeDashboardWithLiveProgress,
+  type LiveDashboardModel,
+} from "@/lib/merge-dashboard-live-progress";
+import { type ObraProgressRole } from "@/lib/obra-progress";
+import {
   buildSnapshotDashboard,
   type SnapshotDashboardModel,
   type SnapshotTaskView,
 } from "@/lib/snapshot-dashboard";
 import {
+  readProjectLibrary,
   readSelectedSnapshotJson,
   subscribeToProjectLibrary,
 } from "@/lib/snapshot-storage";
+import { useLiveObraProgress } from "@/lib/use-live-obra-progress";
 
 function getSelectedSnapshotSnapshot() {
   return readSelectedSnapshotJson();
@@ -24,6 +31,14 @@ function getSelectedSnapshotSnapshot() {
 
 function getServerSnapshotSnapshot() {
   return null;
+}
+
+function getSelectedIdSnapshot(): string {
+  return readProjectLibrary().selectedId ?? "";
+}
+
+function getServerEmptyId(): string {
+  return "";
 }
 
 function modelFromStoredJson(
@@ -44,12 +59,14 @@ function CountBarChart({
   items,
   emptyLabel,
   seriesLabel,
+  valueKey = "count",
 }: Readonly<{
-  items: { label: string; count: number }[];
+  items: { label: string; count?: number; percent?: number }[];
   emptyLabel: string;
   seriesLabel: string;
+  valueKey?: "count" | "percent";
 }>) {
-  if (items.every((item) => item.count === 0)) {
+  if (items.every((item) => (item[valueKey] ?? 0) === 0)) {
     return (
       <Typography variant="body2" color="text.secondary">
         {emptyLabel}
@@ -63,7 +80,7 @@ function CountBarChart({
       height={240}
       layout="horizontal"
       margin={{ left: 16, right: 16, top: 16, bottom: 16 }}
-      series={[{ dataKey: "count", label: seriesLabel }]}
+      series={[{ dataKey: valueKey, label: seriesLabel }]}
       yAxis={[
         {
           dataKey: "label",
@@ -218,7 +235,7 @@ function TaskDataGrid({
   );
 }
 
-function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
+function DashboardBody({ model }: Readonly<{ model: LiveDashboardModel }>) {
   const { t } = useDictionary();
   const average = Math.round(Math.max(0, Math.min(100, model.averageProgress)));
   const objectiveColumns = buildObjectiveColumns(t);
@@ -240,6 +257,15 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
               t("dashboard.cycleDatesMissing")}
             {model.projectId ? ` · ${model.projectId}` : ""}
           </Typography>
+          {model.usingLiveOverall ? (
+            <Typography
+              color="text.secondary"
+              variant="caption"
+              sx={{ display: "block", mt: 0.5 }}
+            >
+              {t("dashboard.liveProgressHint")}
+            </Typography>
+          ) : null}
         </Box>
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
           <Chip
@@ -270,7 +296,10 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
           gap: 2,
           gridTemplateColumns: {
             xs: "1fr",
-            md: "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr)",
+            md:
+              model.roleBreakdown.length > 0
+                ? "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1.2fr)"
+                : "minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1.2fr)",
           },
         }}
       >
@@ -288,6 +317,20 @@ function DashboardBody({ model }: Readonly<{ model: SnapshotDashboardModel }>) {
             />
           </Box>
         </Paper>
+
+        {model.roleBreakdown.length > 0 ? (
+          <Paper variant="outlined" sx={{ p: 2.5 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              {t("dashboard.progressByRole")}
+            </Typography>
+            <CountBarChart
+              emptyLabel={t("dashboard.noRoleProgress")}
+              items={model.roleBreakdown}
+              seriesLabel={t("dashboard.rolesSeries")}
+              valueKey="percent"
+            />
+          </Paper>
+        ) : null}
 
         <Paper variant="outlined" sx={{ p: 2.5 }}>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -367,16 +410,33 @@ function EmptyDashboard() {
 }
 
 export function ProjectDashboard() {
+  const { t } = useDictionary();
   const raw = useSyncExternalStore(
     subscribeToProjectLibrary,
     getSelectedSnapshotSnapshot,
     getServerSnapshotSnapshot,
   );
-  const model = modelFromStoredJson(raw);
+  const selectedId = useSyncExternalStore(
+    subscribeToProjectLibrary,
+    getSelectedIdSnapshot,
+    getServerEmptyId,
+  );
+  const baseModel = modelFromStoredJson(raw);
+  const live = useLiveObraProgress(
+    baseModel?.projectId ?? (selectedId || null),
+  );
 
-  if (!model) {
+  if (!baseModel) {
     return <EmptyDashboard />;
   }
 
+  const roleLabels: Record<ObraProgressRole, string> = {
+    jefe_obra: t("nav.progressRoles.jefe_obra"),
+    operario: t("nav.progressRoles.operario"),
+    jornalero: t("nav.progressRoles.jornalero"),
+    otro: t("nav.progressRoles.otro"),
+  };
+
+  const model = mergeDashboardWithLiveProgress(baseModel, live, roleLabels);
   return <DashboardBody model={model} />;
 }
