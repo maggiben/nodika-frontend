@@ -269,4 +269,229 @@ describe("UserSettingsForm", () => {
       await screen.findByText("Invalid email or password."),
     ).toBeInTheDocument();
   });
+
+  test("saves Progress AI Anthropic key and omits blank OpenAI key", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              openaiKeyConfigured: false,
+              anthropicKeyConfigured: false,
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "anthropic",
+              model: "claude-sonnet-4-5",
+              openaiKeyConfigured: false,
+              anthropicKeyConfigured: true,
+            },
+          }),
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestI18n>
+        <UserSettingsForm />
+      </TestI18n>,
+    );
+
+    await screen.findByRole("heading", { name: /IA para avance/i });
+    fireEvent.mouseDown(screen.getByLabelText("Proveedor"));
+    fireEvent.click(screen.getByRole("option", { name: "Anthropic" }));
+    fireEvent.change(screen.getByLabelText("Clave API de Anthropic"), {
+      target: { value: "sk-ant-test" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar IA de avance" }),
+    );
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          method: "PATCH",
+          body: JSON.stringify({
+            progressAi: {
+              provider: "anthropic",
+              model: "claude-sonnet-4-5",
+              anthropicApiKey: "sk-ant-test",
+            },
+          }),
+        }),
+      );
+    });
+  });
+
+  test("clears stored OpenAI and Anthropic keys from settings", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              openaiKeyConfigured: true,
+              anthropicKeyConfigured: true,
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              openaiKeyConfigured: false,
+              anthropicKeyConfigured: true,
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              openaiKeyConfigured: false,
+              anthropicKeyConfigured: false,
+            },
+          }),
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestI18n>
+        <UserSettingsForm />
+      </TestI18n>,
+    );
+
+    await screen.findByRole("button", { name: "Quitar clave de OpenAI" });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Quitar clave de OpenAI" }),
+    );
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          body: JSON.stringify({
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              openaiApiKey: null,
+            },
+          }),
+        }),
+      );
+    });
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: "Quitar clave de Anthropic" }),
+    );
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          body: JSON.stringify({
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o-mini",
+              anthropicApiKey: null,
+            },
+          }),
+        }),
+      );
+    });
+  });
+
+  test("saves an OpenAI key and surfaces Progress AI save errors", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o",
+              openaiKeyConfigured: false,
+              anthropicKeyConfigured: false,
+            },
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ message: "Invalid progress AI." }), {
+          status: 400,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            ...settingsPayload,
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o",
+              openaiKeyConfigured: true,
+              anthropicKeyConfigured: false,
+            },
+          }),
+        ),
+      );
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestI18n>
+        <UserSettingsForm />
+      </TestI18n>,
+    );
+
+    await screen.findByRole("heading", { name: /IA para avance/i });
+    fireEvent.change(screen.getByLabelText("Clave API de OpenAI"), {
+      target: { value: "sk-openai-test" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar IA de avance" }),
+    );
+    expect(await screen.findByText("Invalid progress AI.")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Guardar IA de avance" }),
+    );
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/settings",
+        expect.objectContaining({
+          body: JSON.stringify({
+            progressAi: {
+              provider: "openai",
+              model: "gpt-4o",
+              openaiApiKey: "sk-openai-test",
+            },
+          }),
+        }),
+      );
+    });
+  });
 });

@@ -84,11 +84,25 @@ export function UserSettingsForm() {
 
   const [progressAi, setProgressAi] =
     useState<ProgressAiSettings>(defaultProgressAi());
+  const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [anthropicApiKey, setAnthropicApiKey] = useState("");
+  const [openaiKeyConfigured, setOpenaiKeyConfigured] = useState(false);
+  const [anthropicKeyConfigured, setAnthropicKeyConfigured] = useState(false);
   const [progressAiMessage, setProgressAiMessage] = useState<string | null>(
     null,
   );
   const [progressAiError, setProgressAiError] = useState<string | null>(null);
   const [savingProgressAi, setSavingProgressAi] = useState(false);
+
+  function applyProgressAiFromSettings(next: AccountSettings) {
+    setProgressAi(defaultProgressAi(next.progressAi));
+    setOpenaiKeyConfigured(Boolean(next.progressAi?.openaiKeyConfigured));
+    setAnthropicKeyConfigured(
+      Boolean(next.progressAi?.anthropicKeyConfigured),
+    );
+    setOpenaiApiKey("");
+    setAnthropicApiKey("");
+  }
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -128,7 +142,7 @@ export function UserSettingsForm() {
           setTimezone(
             next.emailSchedule.timezone || "America/Argentina/Buenos_Aires",
           );
-          setProgressAi(defaultProgressAi(next.progressAi));
+          applyProgressAiFromSettings(next);
         }
       } catch {
         if (!cancelled) {
@@ -193,9 +207,7 @@ export function UserSettingsForm() {
         setTimezone(
           next.emailSchedule.timezone || "America/Argentina/Buenos_Aires",
         );
-        if (next.progressAi) {
-          setProgressAi(defaultProgressAi(next.progressAi));
-        }
+        applyProgressAiFromSettings(next);
       }
       setTimezoneMessage(t("settings.timezoneSaved"));
     } catch {
@@ -212,16 +224,32 @@ export function UserSettingsForm() {
     }));
   }
 
-  async function saveProgressAi() {
+  async function saveProgressAi(options?: {
+    clearOpenAi?: boolean;
+    clearAnthropic?: boolean;
+  }) {
     setProgressAiMessage(null);
     setProgressAiError(null);
     setSavingProgressAi(true);
 
+    const payload: Record<string, unknown> = {
+      provider: progressAi.provider,
+      model: progressAi.model,
+    };
+
+    if (options?.clearOpenAi) {
+      payload.openaiApiKey = null;
+    } else if (openaiApiKey.trim()) {
+      payload.openaiApiKey = openaiApiKey.trim();
+    }
+
+    if (options?.clearAnthropic) {
+      payload.anthropicApiKey = null;
+    } else if (anthropicApiKey.trim()) {
+      payload.anthropicApiKey = anthropicApiKey.trim();
+    }
+
     try {
-      const payload: ProgressAiSettings = {
-        provider: progressAi.provider,
-        model: progressAi.model,
-      };
       const response = await fetch("/api/settings", {
         body: JSON.stringify({ progressAi: payload }),
         headers: { "Content-Type": "application/json" },
@@ -244,7 +272,7 @@ export function UserSettingsForm() {
       if (body && typeof body === "object") {
         const next = body as AccountSettings;
         setSettings(next);
-        setProgressAi(defaultProgressAi(next.progressAi ?? payload));
+        applyProgressAiFromSettings(next);
       }
       setProgressAiMessage(t("settings.progressAiSaved"));
     } catch {
@@ -485,6 +513,50 @@ export function UserSettingsForm() {
                 ))}
               </Select>
             </FormControl>
+            <TextField
+              autoComplete="off"
+              helperText={
+                openaiKeyConfigured
+                  ? t("settings.progressAiKeyConfigured")
+                  : t("settings.progressAiKeyMissing")
+              }
+              label={t("settings.progressAiOpenAiKey")}
+              onChange={(event) => setOpenaiApiKey(event.target.value)}
+              type="password"
+              value={openaiApiKey}
+            />
+            {openaiKeyConfigured ? (
+              <Button
+                color="inherit"
+                disabled={savingProgressAi}
+                onClick={() => void saveProgressAi({ clearOpenAi: true })}
+                size="small"
+              >
+                {t("settings.progressAiClearOpenAi")}
+              </Button>
+            ) : null}
+            <TextField
+              autoComplete="off"
+              helperText={
+                anthropicKeyConfigured
+                  ? t("settings.progressAiKeyConfigured")
+                  : t("settings.progressAiKeyMissing")
+              }
+              label={t("settings.progressAiAnthropicKey")}
+              onChange={(event) => setAnthropicApiKey(event.target.value)}
+              type="password"
+              value={anthropicApiKey}
+            />
+            {anthropicKeyConfigured ? (
+              <Button
+                color="inherit"
+                disabled={savingProgressAi}
+                onClick={() => void saveProgressAi({ clearAnthropic: true })}
+                size="small"
+              >
+                {t("settings.progressAiClearAnthropic")}
+              </Button>
+            ) : null}
             {progressAiError ? (
               <Alert severity="error">{progressAiError}</Alert>
             ) : null}

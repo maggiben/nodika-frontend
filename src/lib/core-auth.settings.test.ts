@@ -48,6 +48,64 @@ describe("core-auth settings helpers", () => {
           timezone: "America/Argentina/Buenos_Aires",
         },
         nextSendDates: [],
+        progressAi: {
+          provider: "openai",
+          model: "gpt-4o-mini",
+          openaiKeyConfigured: true,
+          anthropicKeyConfigured: false,
+        },
+      }),
+    ).toBe(true);
+    expect(
+      isAccountSettings({
+        email: "user@example.com",
+        emailSchedule: {
+          enabled: true,
+          frequency: "weekly",
+          daysOfWeek: [1],
+          dayOfMonth: 1,
+          sendTime: "09:00",
+          timezone: "America/Argentina/Buenos_Aires",
+        },
+        nextSendDates: [],
+        progressAi: {
+          provider: "openai",
+          model: "gpt-4o-mini",
+          openaiKeyConfigured: "yes",
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isAccountSettings({
+        email: "user@example.com",
+        emailSchedule: {
+          enabled: true,
+          frequency: "weekly",
+          daysOfWeek: [1],
+          dayOfMonth: 1,
+          sendTime: "09:00",
+          timezone: "America/Argentina/Buenos_Aires",
+        },
+        nextSendDates: [],
+        progressAi: {
+          provider: "openai",
+          model: "gpt-4o-mini",
+          anthropicKeyConfigured: 1,
+        },
+      }),
+    ).toBe(false);
+    expect(
+      isAccountSettings({
+        email: "user@example.com",
+        emailSchedule: {
+          enabled: true,
+          frequency: "weekly",
+          daysOfWeek: [1],
+          dayOfMonth: 1,
+          sendTime: "09:00",
+          timezone: "America/Argentina/Buenos_Aires",
+        },
+        nextSendDates: [],
         progressAi: { provider: "openai", model: "" },
       }),
     ).toBe(false);

@@ -218,6 +218,8 @@ export type AccountSettings = {
   progressAi?: {
     provider: "openai" | "anthropic";
     model: string;
+    openaiKeyConfigured?: boolean;
+    anthropicKeyConfigured?: boolean;
   };
 };
 
@@ -261,11 +263,29 @@ export function isAccountSettings(value: unknown): value is AccountSettings {
   }
 
   const progressAi = record.progressAi as Record<string, unknown>;
-  return (
+  const baseProgressOk =
     (progressAi.provider === "openai" || progressAi.provider === "anthropic") &&
     typeof progressAi.model === "string" &&
-    progressAi.model.trim().length > 0
-  );
+    progressAi.model.trim().length > 0;
+
+  if (!baseProgressOk) {
+    return false;
+  }
+
+  if (
+    "openaiKeyConfigured" in progressAi &&
+    typeof progressAi.openaiKeyConfigured !== "boolean"
+  ) {
+    return false;
+  }
+  if (
+    "anthropicKeyConfigured" in progressAi &&
+    typeof progressAi.anthropicKeyConfigured !== "boolean"
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 export async function parseAccountSettings(
