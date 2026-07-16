@@ -309,8 +309,10 @@ describe("UserSettingsForm", () => {
     );
 
     await screen.findByRole("heading", { name: /IA para avance/i });
-    fireEvent.mouseDown(screen.getByLabelText("Proveedor"));
+    fireEvent.mouseDown(screen.getByLabelText("Proveedor activo"));
     fireEvent.click(screen.getByRole("option", { name: "Anthropic" }));
+    fireEvent.mouseDown(screen.getByLabelText("Modelo de Anthropic"));
+    fireEvent.click(screen.getByRole("option", { name: "claude-haiku-4-5" }));
     fireEvent.change(screen.getByLabelText("Clave API de Anthropic"), {
       target: { value: "sk-ant-test" },
     });
@@ -326,7 +328,7 @@ describe("UserSettingsForm", () => {
           body: JSON.stringify({
             progressAi: {
               provider: "anthropic",
-              model: "claude-sonnet-4-5",
+              model: "claude-haiku-4-5",
               anthropicApiKey: "sk-ant-test",
             },
           }),

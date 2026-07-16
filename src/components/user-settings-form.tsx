@@ -34,7 +34,6 @@ import {
   DEFAULT_PROGRESS_AI_MODELS,
   defaultProgressAi,
   modelsForProvider,
-  modelForProviderChange,
   type ProgressAiProvider,
   type ProgressAiSettings,
 } from "@/lib/progress-ai";
@@ -84,6 +83,12 @@ export function UserSettingsForm() {
 
   const [progressAi, setProgressAi] =
     useState<ProgressAiSettings>(defaultProgressAi());
+  const [openaiModel, setOpenaiModel] = useState(
+    DEFAULT_PROGRESS_AI_MODELS.openai,
+  );
+  const [anthropicModel, setAnthropicModel] = useState(
+    DEFAULT_PROGRESS_AI_MODELS.anthropic,
+  );
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [anthropicApiKey, setAnthropicApiKey] = useState("");
   const [openaiKeyConfigured, setOpenaiKeyConfigured] = useState(false);
@@ -95,7 +100,13 @@ export function UserSettingsForm() {
   const [savingProgressAi, setSavingProgressAi] = useState(false);
 
   function applyProgressAiFromSettings(next: AccountSettings) {
-    setProgressAi(defaultProgressAi(next.progressAi));
+    const normalized = defaultProgressAi(next.progressAi);
+    setProgressAi(normalized);
+    if (normalized.provider === "openai") {
+      setOpenaiModel(normalized.model);
+    } else {
+      setAnthropicModel(normalized.model);
+    }
     setOpenaiKeyConfigured(Boolean(next.progressAi?.openaiKeyConfigured));
     setAnthropicKeyConfigured(
       Boolean(next.progressAi?.anthropicKeyConfigured),
@@ -218,10 +229,13 @@ export function UserSettingsForm() {
   }
 
   function changeProgressProvider(provider: ProgressAiProvider) {
-    setProgressAi((current) => ({
+    setProgressAi({
       provider,
-      model: modelForProviderChange(provider, current.model),
-    }));
+      model:
+        provider === "openai"
+          ? openaiModel
+          : anthropicModel,
+    });
   }
 
   async function saveProgressAi(options?: {
@@ -232,9 +246,12 @@ export function UserSettingsForm() {
     setProgressAiError(null);
     setSavingProgressAi(true);
 
+    const model =
+      progressAi.provider === "openai" ? openaiModel : anthropicModel;
+
     const payload: Record<string, unknown> = {
       provider: progressAi.provider,
-      model: progressAi.model,
+      model,
     };
 
     if (options?.clearOpenAi) {
@@ -484,29 +501,31 @@ export function UserSettingsForm() {
                 </MenuItem>
               </Select>
             </FormControl>
+
+            <Typography component="h3" variant="subtitle2">
+              {t("settings.progressAiOpenAI")}
+            </Typography>
             <FormControl size="small">
-              <InputLabel id="settings-progress-model-label">
-                {t("settings.progressAiModel")}
+              <InputLabel id="settings-openai-model-label">
+                {t("settings.progressAiOpenAiModel")}
               </InputLabel>
               <Select
-                label={t("settings.progressAiModel")}
-                labelId="settings-progress-model-label"
-                onChange={(event) =>
-                  setProgressAi((current) => ({
-                    ...current,
-                    model: event.target.value,
-                  }))
-                }
+                label={t("settings.progressAiOpenAiModel")}
+                labelId="settings-openai-model-label"
+                onChange={(event) => {
+                  const model = event.target.value;
+                  setOpenaiModel(model);
+                  if (progressAi.provider === "openai") {
+                    setProgressAi({ provider: "openai", model });
+                  }
+                }}
                 value={
-                  modelsForProvider(progressAi.provider).includes(
-                    progressAi.model,
-                  )
-                    ? progressAi.model
-                    : (DEFAULT_PROGRESS_AI_MODELS[progressAi.provider] ??
-                      progressAi.model)
+                  modelsForProvider("openai").includes(openaiModel)
+                    ? openaiModel
+                    : DEFAULT_PROGRESS_AI_MODELS.openai
                 }
               >
-                {modelsForProvider(progressAi.provider).map((model) => (
+                {modelsForProvider("openai").map((model) => (
                   <MenuItem key={model} value={model}>
                     {model}
                   </MenuItem>
@@ -535,6 +554,37 @@ export function UserSettingsForm() {
                 {t("settings.progressAiClearOpenAi")}
               </Button>
             ) : null}
+
+            <Typography component="h3" variant="subtitle2" sx={{ pt: 1 }}>
+              {t("settings.progressAiAnthropic")}
+            </Typography>
+            <FormControl size="small">
+              <InputLabel id="settings-anthropic-model-label">
+                {t("settings.progressAiAnthropicModel")}
+              </InputLabel>
+              <Select
+                label={t("settings.progressAiAnthropicModel")}
+                labelId="settings-anthropic-model-label"
+                onChange={(event) => {
+                  const model = event.target.value;
+                  setAnthropicModel(model);
+                  if (progressAi.provider === "anthropic") {
+                    setProgressAi({ provider: "anthropic", model });
+                  }
+                }}
+                value={
+                  modelsForProvider("anthropic").includes(anthropicModel)
+                    ? anthropicModel
+                    : DEFAULT_PROGRESS_AI_MODELS.anthropic
+                }
+              >
+                {modelsForProvider("anthropic").map((model) => (
+                  <MenuItem key={model} value={model}>
+                    {model}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               autoComplete="off"
               helperText={
@@ -557,6 +607,7 @@ export function UserSettingsForm() {
                 {t("settings.progressAiClearAnthropic")}
               </Button>
             ) : null}
+
             {progressAiError ? (
               <Alert severity="error">{progressAiError}</Alert>
             ) : null}
