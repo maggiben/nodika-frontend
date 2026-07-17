@@ -50,7 +50,9 @@ describe("AppNavbar", () => {
   });
 
   test("shows email initials and a simplified account menu", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}"));
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response("{}")),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     render(
@@ -92,5 +94,25 @@ describe("AppNavbar", () => {
     });
     expect(push).toHaveBeenCalledWith("/es/login");
     expect(refresh).toHaveBeenCalled();
+  });
+
+  test("download patch no-ops without a selected snapshot", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({}))),
+    );
+
+    render(
+      <TestI18n>
+        <AppNavbar authenticated userEmail="maria@example.com" />
+      </TestI18n>,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Abrir menú de cuenta" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Bajar patch" }));
+
+    expect(push).not.toHaveBeenCalled();
   });
 });

@@ -176,6 +176,94 @@ describe("staff-org-chart", () => {
       status: 503,
     });
   });
+
+  test("saveOrgChartToCore handles empty id, network errors, and bare failures", async () => {
+    expect(
+      await saveOrgChartToCore({
+        contactId: "   ",
+        reports: [],
+        projectIds: [],
+      }),
+    ).toEqual({ ok: false, message: "Contact id is required." });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({}),
+      }),
+    );
+    expect(
+      await saveOrgChartToCore({
+        contactId: "lead_bare",
+        reports: [],
+        projectIds: [],
+      }),
+    ).toEqual({
+      ok: false,
+      message: "Save failed (500).",
+      status: 500,
+    });
+
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+    expect(
+      await saveOrgChartToCore({
+        contactId: "lead_net",
+        reports: [],
+        projectIds: ["proj_a"],
+        contactLabel: "Lead",
+      }),
+    ).toEqual({
+      ok: false,
+      message: "Could not reach the messaging service.",
+    });
+  });
+
+  test("saveOrgChartToCore falls back when response omits orgReports fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ _id: "lead_fb" }),
+      }),
+    );
+    const result = await saveOrgChartToCore({
+      contactId: "lead_fb",
+      reports: [{ id: "r1", name: "Ana", role: "operario" }],
+      projectIds: ["obra-1"],
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.chart.reports[0]?.name).toBe("Ana");
+      expect(result.chart.projectIds).toEqual(["obra-1"]);
+    }
+  });
+
+  test("parse helpers and edge removals", () => {
+    expect(readOrgChart("   ")).toBeNull();
+    expect(removeOrgChart("")).toBeUndefined();
+    expect(
+      reportRoleLabel(
+        { id: "r1", name: "Sam", role: "otro" },
+        { operario: "Op", jornalero: "Jo", otro: "Other" },
+      ),
+    ).toBe("Other");
+
+    vi.stubGlobal("crypto", {});
+    expect(createReportId().startsWith("report-")).toBe(true);
+    vi.unstubAllGlobals();
+
+    hydrateOrgChartsFromRoster([
+      {
+        _id: "lead_singular",
+        projectId: "solo",
+        orgReports: null,
+      },
+      { _id: "  " },
+    ]);
+    expect(readOrgChart("lead_singular")?.projectIds).toEqual(["solo"]);
+  });
 });
 
 describe("staff-org-chart-draft", () => {
@@ -206,6 +294,46 @@ describe("staff-org-chart-draft", () => {
     expect(draft).toContain("1. Ana (operario)");
     expect(draft).toContain("2. Luis (jornalero)");
     expect(draft).toContain("performance");
+  });
+
+  test("builds English drafts and titles without a lead name", () => {
+    const chart = {
+      ...emptyOrgChart("lead_1"),
+      reports: [{ id: "r1", name: "Ana", role: "operario" as const }],
+    };
+    expect(
+      buildPerformanceDraft({
+        locale: "en",
+        leadName: "",
+        chart,
+      }),
+    ).toContain("Hi there");
+    expect(
+      buildAttendanceDraft({
+        locale: "en",
+        leadName: "",
+        chart,
+      }),
+    ).toContain("Hi there");
+    expect(
+      buildAttendanceTitle({
+        locale: "en",
+        dateLabel: "Jul 15, 2026",
+      }),
+    ).toBe("Team attendance — Jul 15, 2026");
+    expect(
+      buildWorkProgressTitle({
+        locale: "en",
+        dateLabel: "Jul 15, 2026",
+      }),
+    ).toBe("Workday progress — Jul 15, 2026");
+    expect(
+      buildWorkProgressDraft({
+        locale: "en",
+        leadName: "Juan",
+        chart,
+      }),
+    ).toContain("Percent complete");
   });
 
   test("builds a Spanish attendance draft from org chart reports", () => {
@@ -268,6 +396,34 @@ describe("staff-org-chart-draft", () => {
     });
     expect(applied.usedOrgChart).toBe(true);
     expect(applied.body).toContain("Ana (operario)");
+
+    const attendance = applyCatalogMessagePreset({
+      presetId: "attendance",
+      locale: "en",
+      leadName: "Juan",
+      chart: null,
+    });
+    expect(attendance.usedOrgChart).toBe(false);
+    expect(attendance.title).toContain("Team attendance");
+    expect(attendance.body).toContain("No people on this lead’s org chart yet");
+
+    const performanceEmpty = applyCatalogMessagePreset({
+      presetId: "performance",
+      locale: "en",
+      leadName: "",
+      chart: emptyOrgChart("lead_1", "Site lead"),
+    });
+    expect(performanceEmpty.usedOrgChart).toBe(false);
+    expect(performanceEmpty.body).toContain("Hi Site lead");
+    expect(performanceEmpty.title).toContain("Team performance");
+
+    const performanceEsEmpty = applyCatalogMessagePreset({
+      presetId: "performance",
+      locale: "es",
+      leadName: "",
+      chart: null,
+    });
+    expect(performanceEsEmpty.body).toContain("organigrama");
 
     const withoutTeam = applyCatalogMessagePreset({
       presetId: "workProgress",
