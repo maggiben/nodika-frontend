@@ -105,3 +105,13 @@ The upload route SHALL obtain the Core base URL from server-only `NODIKA_CORE_UR
 - **WHEN** `NODIKA_CORE_URL` is not configured
 - **THEN** the route SHALL return a 503 response with a generic configuration error
 - **AND** the response SHALL not include a stack trace or internal configuration value
+
+### Requirement: Settings entry to snapshot upload
+
+The settings Projects section SHALL navigate users to the existing localized `/upload` route for new snapshot uploads. Upload validation, BFF forwarding, activation of `activeProjectId`, and library refresh SHALL remain as specified for `/upload`; settings MUST NOT introduce a second upload implementation.
+
+#### Scenario: Settings deep-link to upload
+
+- **WHEN** an authenticated user opens `/upload` from the settings Projects upload control
+- **THEN** the page SHALL show the existing snapshot JSON editor and upload controls
+- **AND** a successful upload SHALL activate the project and refresh the Core-backed library as on a direct visit to `/upload`

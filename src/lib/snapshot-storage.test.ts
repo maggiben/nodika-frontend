@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
   activateUploadedSnapshot,
   clearStoredSnapshotJson,
+  deleteStoredProject,
   listStoredProjects,
   readProjectLibrary,
   readSelectedSnapshotJson,
@@ -166,5 +167,205 @@ describe("snapshot-storage", () => {
     expect(() => clearStoredSnapshotJson()).not.toThrow();
     expect(listStoredProjects()).toEqual([]);
     expect(readSelectedSnapshotJson()).toBeNull();
+  });
+
+  test("deleteStoredProject removes a project and refreshes", async () => {
+    let projects = [
+      {
+        id: "src_a",
+        projectId: "proj_a",
+        name: "Alpha",
+        filename: "a.json",
+        createdAt: "2026-01-02T00:00:00.000Z",
+        content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+      },
+      {
+        id: "src_b",
+        projectId: "proj_b",
+        name: "Beta",
+        filename: "b.json",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        content: { meta: { projectId: "proj_b", projectNombre: "Beta" } },
+      },
+    ];
+    let activeProjectId = "proj_a";
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (
+          url.includes("/api/snapshots/proj_a") &&
+          init?.method === "DELETE"
+        ) {
+          projects = projects.filter(
+            (project) => project.projectId !== "proj_a",
+          );
+          return new Response(
+            JSON.stringify({ projectId: "proj_a", deletedCount: 1 }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/snapshots")) {
+          return new Response(JSON.stringify(projects), { status: 200 });
+        }
+        if (url.includes("/api/settings") && init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body)) as {
+            activeProjectId: string | null;
+          };
+          activeProjectId = body.activeProjectId ?? "";
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: body.activeProjectId,
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/settings")) {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId,
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("{}", { status: 404 });
+      }),
+    );
+
+    await refreshProjectLibrary();
+    expect(readProjectLibrary().selectedId).toBe("proj_a");
+
+    const result = await deleteStoredProject("proj_a");
+    expect(result.ok).toBe(true);
+    expect(listStoredProjects().map((project) => project.id)).toEqual([
+      "proj_b",
+    ]);
+    expect(readProjectLibrary().selectedId).toBe("proj_b");
+    expect(activeProjectId).toBe("proj_b");
+  });
+
+  test("deleteStoredProject clears activeProjectId when deleting the last project", async () => {
+    let projects = [
+      {
+        id: "src_a",
+        projectId: "proj_a",
+        name: "Alpha",
+        filename: "a.json",
+        createdAt: "2026-01-02T00:00:00.000Z",
+        content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+      },
+    ];
+    let activeProjectId: string | null = "proj_a";
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (
+          url.includes("/api/snapshots/proj_a") &&
+          init?.method === "DELETE"
+        ) {
+          projects = [];
+          return new Response(
+            JSON.stringify({ projectId: "proj_a", deletedCount: 1 }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/snapshots")) {
+          return new Response(JSON.stringify(projects), { status: 200 });
+        }
+        if (url.includes("/api/settings") && init?.method === "PATCH") {
+          const body = JSON.parse(String(init.body)) as {
+            activeProjectId: string | null;
+          };
+          activeProjectId = body.activeProjectId;
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: body.activeProjectId,
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/settings")) {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId,
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("{}", { status: 404 });
+      }),
+    );
+
+    await refreshProjectLibrary();
+    const result = await deleteStoredProject("proj_a");
+    expect(result.ok).toBe(true);
+    expect(listStoredProjects()).toEqual([]);
+    expect(readProjectLibrary().selectedId).toBeNull();
+    expect(activeProjectId).toBeNull();
+  });
+
+  test("deleteStoredProject surfaces BFF failures", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        if (
+          String(input).includes("/api/snapshots/") &&
+          init?.method === "DELETE"
+        ) {
+          return new Response(JSON.stringify({ message: "blocked" }), {
+            status: 403,
+          });
+        }
+        return new Response(JSON.stringify([]), { status: 200 });
+      }),
+    );
+
+    await expect(deleteStoredProject("proj_a")).resolves.toEqual({
+      ok: false,
+      message: "blocked",
+    });
   });
 });

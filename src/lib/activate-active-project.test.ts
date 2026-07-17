@@ -55,6 +55,18 @@ describe("activateActiveProject", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
+  test("clears activeProjectId when null", async () => {
+    const result = await activateActiveProject(null);
+    expect(result).toEqual({ ok: true });
+    expect(fetch).toHaveBeenCalledWith(
+      "/api/settings",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({ activeProjectId: null }),
+      }),
+    );
+  });
+
   test("surfaces upstream errors", async () => {
     vi.stubGlobal(
       "fetch",

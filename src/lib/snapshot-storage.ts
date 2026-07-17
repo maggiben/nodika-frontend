@@ -1,5 +1,7 @@
 /** In-memory project library loaded from Core via BFF. No localStorage. */
 
+import { activateActiveProject } from "@/lib/activate-active-project";
+
 export const PROJECT_LIBRARY_CHANGED_EVENT = "nodika:project-library-changed";
 
 /** Pre-rebrand / legacy keys — cleared once so old caches do not confuse debugging. */
@@ -271,6 +273,67 @@ export async function activateUploadedSnapshot(
   return (
     memoryLibrary.projects.find((project) => project.id === projectId) ?? null
   );
+}
+
+export type DeleteStoredProjectResult =
+  { ok: true; library: ProjectLibrary } | { ok: false; message: string };
+
+/** Delete a project in Core by projectId, refresh library, fix active selection. */
+export async function deleteStoredProject(
+  projectId: string,
+): Promise<DeleteStoredProjectResult> {
+  const trimmed = projectId.trim();
+  if (!trimmed) {
+    return { ok: false, message: "Missing project id." };
+  }
+
+  if (typeof window === "undefined") {
+    return { ok: false, message: "Delete is only available in the browser." };
+  }
+
+  try {
+    const response = await fetch(
+      `/api/snapshots/${encodeURIComponent(trimmed)}`,
+      { method: "DELETE" },
+    );
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message =
+        typeof body === "object" &&
+        body !== null &&
+        "message" in body &&
+        typeof body.message === "string"
+          ? body.message
+          : "Could not delete the project.";
+      return { ok: false, message };
+    }
+
+    const wasSelected = memoryLibrary.selectedId === trimmed;
+    const refresh = await refreshProjectLibrary();
+    if (!refresh.ok) {
+      return {
+        ok: false,
+        message: "Project deleted, but the library could not be refreshed.",
+      };
+    }
+
+    if (wasSelected) {
+      const nextId = refresh.library.projects[0]?.id ?? null;
+      const activated = await activateActiveProject(nextId);
+      if (!activated.ok) {
+        return { ok: false, message: activated.message };
+      }
+      if (nextId) {
+        selectStoredProject(nextId);
+      } else {
+        writeLibrary({ projects: [], selectedId: null });
+      }
+    }
+
+    return { ok: true, library: readProjectLibrary() };
+  } catch {
+    return { ok: false, message: "Could not reach the delete service." };
+  }
 }
 
 export function clearStoredSnapshotJson(): void {

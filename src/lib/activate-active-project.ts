@@ -1,12 +1,13 @@
 /**
  * Sync the browser-selected Nodika obra to Core account settings so
  * WhatsApp catalog / task checklist only use that project's source.
+ * Pass `null` to clear the active project.
  */
 export async function activateActiveProject(
-  projectId: string,
+  projectId: string | null,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
-  const trimmed = projectId.trim();
-  if (!trimmed) {
+  const trimmed = projectId === null ? null : projectId.trim();
+  if (trimmed !== null && !trimmed) {
     return { ok: false, message: "Missing project id." };
   }
 

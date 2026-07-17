@@ -36,6 +36,10 @@ vi.mock("@mui/material/styles", async () => {
   };
 });
 
+vi.mock("./settings-projects-panel", () => ({
+  SettingsProjectsPanel: () => null,
+}));
+
 afterEach(() => {
   cleanup();
   refresh.mockReset();

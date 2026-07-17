@@ -38,6 +38,7 @@ import {
   type ProgressAiProvider,
   type ProgressAiSettings,
 } from "@/lib/progress-ai";
+import { SettingsProjectsPanel } from "@/components/settings-projects-panel";
 
 type ThemePreference = "light" | "dark" | "system";
 
@@ -198,9 +199,7 @@ export function UserSettingsForm() {
       if (body && typeof body === "object") {
         const next = body as AccountSettings;
         setSettings(next);
-        setTimezone(
-          next.emailSchedule.timezone || DEFAULT_TIMEZONE,
-        );
+        setTimezone(next.emailSchedule.timezone || DEFAULT_TIMEZONE);
         applyProgressAiFromSettings(next);
       }
       setTimezoneMessage(t("settings.timezoneSaved"));
@@ -353,6 +352,8 @@ export function UserSettingsForm() {
             </Typography>
           ) : null}
         </Box>
+
+        <SettingsProjectsPanel />
 
         <Paper sx={{ p: 3 }}>
           <Typography component="h2" variant="h6">
