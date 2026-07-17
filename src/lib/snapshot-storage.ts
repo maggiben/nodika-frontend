@@ -26,6 +26,8 @@ export type ProjectLibraryRefresh = {
   library: ProjectLibrary;
   /** True when GET /api/snapshots returned HTTP 200. */
   ok: boolean;
+  /** True when GET /api/snapshots returned HTTP 401. */
+  unauthorized: boolean;
 };
 
 const EMPTY_LIBRARY: ProjectLibrary = {
@@ -174,7 +176,7 @@ async function fetchActiveProjectId(): Promise<string | null> {
 /** Load projects from Core BFF into memory. */
 export async function refreshProjectLibrary(): Promise<ProjectLibraryRefresh> {
   if (typeof window === "undefined") {
-    return { library: EMPTY_LIBRARY, ok: false };
+    return { library: EMPTY_LIBRARY, ok: false, unauthorized: false };
   }
 
   if (loadPromise) {
@@ -187,17 +189,21 @@ export async function refreshProjectLibrary(): Promise<ProjectLibraryRefresh> {
       const response = await fetch("/api/snapshots", { cache: "no-store" });
       if (!response.ok) {
         writeLibrary(EMPTY_LIBRARY);
-        return { library: EMPTY_LIBRARY, ok: false };
+        return {
+          library: EMPTY_LIBRARY,
+          ok: false,
+          unauthorized: response.status === 401,
+        };
       }
       const body: unknown = await response.json().catch(() => null);
       const sources = parseListedSources(body);
       const activeProjectId = await fetchActiveProjectId();
       const library = libraryFromSources(sources, activeProjectId);
       writeLibrary(library);
-      return { library, ok: true };
+      return { library, ok: true, unauthorized: false };
     } catch {
       writeLibrary(EMPTY_LIBRARY);
-      return { library: EMPTY_LIBRARY, ok: false };
+      return { library: EMPTY_LIBRARY, ok: false, unauthorized: false };
     } finally {
       loadPromise = null;
     }

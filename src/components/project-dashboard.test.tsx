@@ -65,6 +65,33 @@ afterEach(() => {
 });
 
 describe("ProjectDashboard", () => {
+  test("prompts to sign in when unauthenticated without showing a spinner", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TestI18n>
+        <ProjectDashboard authenticated={false} />
+      </TestI18n>,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Inicia sesión para ver el estado del proyecto",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Iniciar sesión" })).toHaveAttribute(
+      "href",
+      "/es/login",
+    );
+    expect(screen.getByRole("link", { name: "Registrarse" })).toHaveAttribute(
+      "href",
+      "/es/register",
+    );
+    expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test("shows loading indicator before empty state when Core has no sources", async () => {
     let resolveFetch: ((value: Response) => void) | undefined;
     const fetchPromise = new Promise<Response>((resolve) => {
@@ -78,7 +105,7 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 
@@ -98,7 +125,7 @@ describe("ProjectDashboard", () => {
     expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
   });
 
-  test("does not show empty upload message when Core request fails", async () => {
+  test("prompts to sign in when Core returns 401", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("{}", { status: 401 })),
@@ -106,16 +133,18 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 
-    expect(await screen.findByText("Cargando proyecto…")).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Inicia sesión para ver el estado del proyecto",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Estado del proyecto" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("link", { name: "Subir snapshot" }),
     ).not.toBeInTheDocument();
   });
 
@@ -127,7 +156,7 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 
@@ -172,7 +201,7 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 
@@ -200,7 +229,7 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 
@@ -220,7 +249,7 @@ describe("ProjectDashboard", () => {
 
     render(
       <TestI18n>
-        <ProjectDashboard />
+        <ProjectDashboard authenticated />
       </TestI18n>,
     );
 

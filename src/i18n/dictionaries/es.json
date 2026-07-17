@@ -76,6 +76,8 @@
   },
   "dashboard": {
     "loading": "Cargando proyecto…",
+    "signInTitle": "Inicia sesión para ver el estado del proyecto",
+    "signInDescription": "Inicia sesión o crea una cuenta para cargar tus proyectos desde Nodika.",
     "emptyTitle": "Estado del proyecto",
     "emptyDescription": "Sube un JSON de snapshot Nodika desde el menú del avatar para ver el progreso, la duración y las tablas de tareas en esta página de inicio.",
     "uploadCta": "Subir snapshot",

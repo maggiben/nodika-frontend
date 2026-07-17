@@ -76,6 +76,8 @@
   },
   "dashboard": {
     "loading": "Loading project…",
+    "signInTitle": "Sign in to view project status",
+    "signInDescription": "Log in or create an account to load your projects from Nodika.",
     "emptyTitle": "Project status",
     "emptyDescription": "Upload a Nodika snapshot JSON from the avatar menu to see progress, duration mix, and task grids on this home page.",
     "uploadCta": "Upload snapshot",

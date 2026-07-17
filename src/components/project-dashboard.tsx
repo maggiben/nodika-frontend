@@ -433,10 +433,56 @@ function LoadingDashboard() {
   );
 }
 
-export function ProjectDashboard() {
+function SignInDashboard() {
+  const { locale, t } = useDictionary();
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 3, sm: 5 },
+        textAlign: "center",
+      }}
+    >
+      <Typography variant="h5" component="h1" gutterBottom>
+        {t("dashboard.signInTitle")}
+      </Typography>
+      <Typography
+        color="text.secondary"
+        sx={{ mb: 3, maxWidth: 420, mx: "auto" }}
+      >
+        {t("dashboard.signInDescription")}
+      </Typography>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={1.5}
+        sx={{ justifyContent: "center" }}
+      >
+        <Button
+          component={Link}
+          href={`/${locale}/login`}
+          variant="contained"
+        >
+          {t("nav.signIn")}
+        </Button>
+        <Button
+          component={Link}
+          href={`/${locale}/register`}
+          variant="outlined"
+        >
+          {t("nav.register")}
+        </Button>
+      </Stack>
+    </Paper>
+  );
+}
+
+export function ProjectDashboard({
+  authenticated,
+}: Readonly<{ authenticated: boolean }>) {
   const [libraryStatus, setLibraryStatus] = useState<
-    "loading" | "ready" | "unavailable"
-  >("loading");
+    "loading" | "ready" | "unavailable" | "unauthorized"
+  >(authenticated ? "loading" : "unauthorized");
   const raw = useSyncExternalStore(
     subscribeToProjectLibrary,
     getSelectedSnapshotSnapshot,
@@ -454,14 +500,25 @@ export function ProjectDashboard() {
   );
 
   useEffect(() => {
+    if (!authenticated) {
+      return;
+    }
     void refreshProjectLibrary().then((result) => {
-      setLibraryStatus(result.ok ? "ready" : "unavailable");
+      if (result.ok) {
+        setLibraryStatus("ready");
+        return;
+      }
+      setLibraryStatus(result.unauthorized ? "unauthorized" : "unavailable");
     });
-  }, []);
+  }, [authenticated]);
   const baseModel = modelFromStoredJson(raw);
   const live = useLiveObraProgress(
     baseModel?.projectId ?? (selectedId || null),
   );
+
+  if (libraryStatus === "unauthorized") {
+    return <SignInDashboard />;
+  }
 
   if (libraryStatus === "loading") {
     return <LoadingDashboard />;
