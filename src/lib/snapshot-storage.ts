@@ -193,7 +193,8 @@ export async function refreshProjectLibrary(options?: {
 
   const generation = ++loadGeneration;
 
-  const request = (async (): Promise<ProjectLibraryRefresh> => {
+  let request!: Promise<ProjectLibraryRefresh>;
+  request = (async (): Promise<ProjectLibraryRefresh> => {
     clearLegacyLocalStorage();
     try {
       const response = await fetch("/api/snapshots", { cache: "no-store" });
