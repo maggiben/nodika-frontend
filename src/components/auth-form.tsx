@@ -9,7 +9,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -27,7 +26,6 @@ type AuthFormProps = {
 type AuthFormValues = Record<FieldName, string>;
 
 export function AuthForm({ action, fields }: AuthFormProps) {
-  const router = useRouter();
   const { locale, t } = useDictionary();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +68,7 @@ export function AuthForm({ action, fields }: AuthFormProps) {
       }
 
       if (action === "login" || action === "register") {
-        router.push(`/${locale}`);
-        router.refresh();
+        window.location.assign(`/${locale}`);
         return;
       }
 

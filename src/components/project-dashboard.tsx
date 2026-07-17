@@ -30,6 +30,7 @@ import {
   type SnapshotDashboardModel,
   type SnapshotTaskView,
 } from "@/lib/snapshot-dashboard";
+import { loginPathForLocale } from "@/lib/session-client";
 import {
   readProjectLibrary,
   readSelectedSnapshotJson,
@@ -433,49 +434,10 @@ function LoadingDashboard() {
   );
 }
 
-function SignInDashboard() {
-  const { locale, t } = useDictionary();
-
-  return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: { xs: 3, sm: 5 },
-        textAlign: "center",
-      }}
-    >
-      <Typography variant="h5" component="h1" gutterBottom>
-        {t("dashboard.signInTitle")}
-      </Typography>
-      <Typography
-        color="text.secondary"
-        sx={{ mb: 3, maxWidth: 420, mx: "auto" }}
-      >
-        {t("dashboard.signInDescription")}
-      </Typography>
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={1.5}
-        sx={{ justifyContent: "center" }}
-      >
-        <Button component={Link} href={`/${locale}/login`} variant="contained">
-          {t("nav.signIn")}
-        </Button>
-        <Button
-          component={Link}
-          href={`/${locale}/register`}
-          variant="outlined"
-        >
-          {t("nav.register")}
-        </Button>
-      </Stack>
-    </Paper>
-  );
-}
-
 export function ProjectDashboard({
   authenticated,
 }: Readonly<{ authenticated: boolean }>) {
+  const { locale } = useDictionary();
   const [libraryStatus, setLibraryStatus] = useState<
     "loading" | "ready" | "unavailable" | "unauthorized"
   >(authenticated ? "loading" : "unauthorized");
@@ -497,6 +459,7 @@ export function ProjectDashboard({
 
   useEffect(() => {
     if (!authenticated) {
+      window.location.assign(loginPathForLocale(locale));
       return;
     }
     void refreshProjectLibrary().then((result) => {
@@ -504,19 +467,20 @@ export function ProjectDashboard({
         setLibraryStatus("ready");
         return;
       }
-      setLibraryStatus(result.unauthorized ? "unauthorized" : "unavailable");
+      if (result.unauthorized) {
+        window.location.assign(loginPathForLocale(locale));
+        setLibraryStatus("unauthorized");
+        return;
+      }
+      setLibraryStatus("unavailable");
     });
-  }, [authenticated]);
+  }, [authenticated, locale]);
   const baseModel = modelFromStoredJson(raw);
   const live = useLiveObraProgress(
     baseModel?.projectId ?? (selectedId || null),
   );
 
-  if (libraryStatus === "unauthorized") {
-    return <SignInDashboard />;
-  }
-
-  if (libraryStatus === "loading") {
+  if (libraryStatus === "unauthorized" || libraryStatus === "loading") {
     return <LoadingDashboard />;
   }
 

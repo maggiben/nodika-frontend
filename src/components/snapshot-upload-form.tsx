@@ -18,6 +18,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { activateActiveProject } from "@/lib/activate-active-project";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
+import { fetchAuthed } from "@/lib/session-client";
 import { activateUploadedSnapshot } from "@/lib/snapshot-storage";
 
 type UploadFormValues = {
@@ -102,7 +103,7 @@ export function SnapshotUploadForm({
     }
 
     try {
-      const response = await fetch("/api/snapshots", {
+      const response = await fetchAuthed("/api/snapshots", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

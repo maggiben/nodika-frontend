@@ -1,3 +1,5 @@
+import { redirectToLoginIfUnauthorized } from "@/lib/session-client";
+
 export type ObraProgressRole = "jefe_obra" | "operario" | "jornalero" | "otro";
 
 export type ObraProgressReport = {
@@ -132,6 +134,9 @@ export async function fetchObraProgress(
       `/api/messaging/progress?projectId=${encodeURIComponent(trimmed)}`,
       { method: "GET" },
     );
+    if (redirectToLoginIfUnauthorized(response)) {
+      return null;
+    }
     if (!response.ok) {
       return null;
     }

@@ -65,7 +65,9 @@ afterEach(() => {
 });
 
 describe("ProjectDashboard", () => {
-  test("prompts to sign in when unauthenticated without showing a spinner", () => {
+  test("redirects to login when unauthenticated", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, pathname: "/es" });
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
@@ -75,19 +77,9 @@ describe("ProjectDashboard", () => {
       </TestI18n>,
     );
 
-    expect(
-      screen.getByRole("heading", {
-        name: "Inicia sesión para ver el estado del proyecto",
-      }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Iniciar sesión" }),
-    ).toHaveAttribute("href", "/es/login");
-    expect(screen.getByRole("link", { name: "Registrarse" })).toHaveAttribute(
-      "href",
-      "/es/register",
-    );
-    expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith("/es/login");
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -124,7 +116,9 @@ describe("ProjectDashboard", () => {
     expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
   });
 
-  test("prompts to sign in when Core returns 401", async () => {
+  test("redirects to login when Core returns 401", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, pathname: "/es" });
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response("{}", { status: 401 })),
@@ -136,14 +130,13 @@ describe("ProjectDashboard", () => {
       </TestI18n>,
     );
 
+    await waitFor(() => {
+      expect(assign).toHaveBeenCalledWith("/es/login");
+    });
     expect(
-      await screen.findByRole("heading", {
+      screen.queryByRole("heading", {
         name: "Inicia sesión para ver el estado del proyecto",
       }),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("heading", { name: "Estado del proyecto" }),
     ).not.toBeInTheDocument();
   });
 

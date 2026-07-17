@@ -55,6 +55,7 @@ import {
   statusFromPersistedLatencyMs,
   type StaffResponseStatus,
 } from "@/lib/staff-response-status";
+import { fetchAuthed } from "@/lib/session-client";
 
 const TEMPLATE_TOKENS = [
   "percent",
@@ -158,7 +159,7 @@ export function StaffMessagingForm() {
   }, [orgChartsSnapshot]);
 
   const loadRoster = useCallback(async () => {
-    const rosterResponse = await fetch("/api/messaging/roster", {
+    const rosterResponse = await fetchAuthed("/api/messaging/roster", {
       cache: "no-store",
     });
     const rosterBody: unknown = await rosterResponse.json().catch(() => null);
@@ -169,7 +170,7 @@ export function StaffMessagingForm() {
       rows = parseStaffRoster(rosterBody);
     } else {
       // Degraded mode: fall back to contacts list.
-      const contactsResponse = await fetch("/api/messaging/contacts", {
+      const contactsResponse = await fetchAuthed("/api/messaging/contacts", {
         cache: "no-store",
       });
       const contactsBody: unknown = await contactsResponse
@@ -256,7 +257,7 @@ export function StaffMessagingForm() {
         await refreshProjectLibrary();
         const [roster, templatesResponse] = await Promise.all([
           loadRoster(),
-          fetch(`/api/messaging/templates?language=${locale}`),
+          fetchAuthed(`/api/messaging/templates?language=${locale}`),
         ]);
 
         const templatesBody: unknown = await templatesResponse
@@ -332,7 +333,7 @@ export function StaffMessagingForm() {
     setError(null);
     try {
       const selectedProjectId = readProjectLibrary().selectedId?.trim();
-      const response = await fetch("/api/messaging/contacts", {
+      const response = await fetchAuthed("/api/messaging/contacts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -373,7 +374,7 @@ export function StaffMessagingForm() {
       setActionMessage(null);
       setError(null);
       try {
-        const response = await fetch(
+        const response = await fetchAuthed(
           `/api/messaging/contacts/${encodeURIComponent(row._id)}`,
           {
             method: "PATCH",
@@ -410,7 +411,7 @@ export function StaffMessagingForm() {
       setActionMessage(null);
       setError(null);
       try {
-        const response = await fetch("/api/messaging/test-send", {
+        const response = await fetchAuthed("/api/messaging/test-send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -451,7 +452,7 @@ export function StaffMessagingForm() {
     setActionMessage(null);
     setError(null);
     try {
-      const response = await fetch("/api/messaging/remind", {
+      const response = await fetchAuthed("/api/messaging/remind", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contactId: row._id }),
@@ -499,7 +500,7 @@ export function StaffMessagingForm() {
         active: true,
       };
 
-      const response = await fetch(
+      const response = await fetchAuthed(
         exists
           ? `/api/messaging/templates/${encodeURIComponent(templateKey)}`
           : "/api/messaging/templates",

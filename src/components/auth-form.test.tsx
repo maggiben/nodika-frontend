@@ -12,23 +12,20 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { TestI18n } from "@/test-utils/test-i18n";
 import { AuthForm } from "./auth-form";
 
-const push = vi.fn();
-const refresh = vi.fn();
-
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push, refresh }),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
   usePathname: () => "/en/login",
 }));
 
 afterEach(() => {
   cleanup();
-  push.mockReset();
-  refresh.mockReset();
   vi.unstubAllGlobals();
 });
 
 describe("AuthForm", () => {
   test("validates and submits login credentials to the BFF", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, pathname: "/en/login" });
     const fetchMock = vi.fn().mockResolvedValue(new Response("{}"));
     vi.stubGlobal("fetch", fetchMock);
     render(
@@ -57,7 +54,7 @@ describe("AuthForm", () => {
         }),
       );
     });
-    expect(push).toHaveBeenCalledWith("/en");
+    expect(assign).toHaveBeenCalledWith("/en");
   });
 
   test("shows safe failures from the BFF", async () => {
@@ -110,6 +107,8 @@ describe("AuthForm", () => {
   });
 
   test("shows success message for forgot-password without redirect", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { assign, pathname: "/en/forgot-password" });
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}")));
     render(
       <TestI18n locale="en">
@@ -125,6 +124,6 @@ describe("AuthForm", () => {
     expect(
       await screen.findByText(/you will receive email instructions/i),
     ).toBeInTheDocument();
-    expect(push).not.toHaveBeenCalled();
+    expect(assign).not.toHaveBeenCalled();
   });
 });

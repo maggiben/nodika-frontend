@@ -1,6 +1,7 @@
 /** In-memory project library loaded from Core via BFF. No localStorage. */
 
 import { activateActiveProject } from "@/lib/activate-active-project";
+import { redirectToLoginIfUnauthorized } from "@/lib/session-client";
 
 export const PROJECT_LIBRARY_CHANGED_EVENT = "nodika:project-library-changed";
 
@@ -165,6 +166,9 @@ function libraryFromSources(
 async function fetchActiveProjectId(): Promise<string | null> {
   try {
     const response = await fetch("/api/settings", { cache: "no-store" });
+    if (redirectToLoginIfUnauthorized(response)) {
+      return null;
+    }
     if (!response.ok) {
       return null;
     }
@@ -193,24 +197,30 @@ export async function refreshProjectLibrary(options?: {
 
   const generation = ++loadGeneration;
 
-  let request!: Promise<ProjectLibraryRefresh>;
-  request = (async (): Promise<ProjectLibraryRefresh> => {
+  const request: Promise<ProjectLibraryRefresh> = (async (): Promise<ProjectLibraryRefresh> => {
     clearLegacyLocalStorage();
     try {
       const response = await fetch("/api/snapshots", { cache: "no-store" });
+      if (redirectToLoginIfUnauthorized(response)) {
+        return {
+          library: EMPTY_LIBRARY,
+          ok: false,
+          unauthorized: true,
+        };
+      }
       if (!response.ok) {
         if (generation !== loadGeneration) {
           return {
             library: memoryLibrary,
             ok: false,
-            unauthorized: response.status === 401,
+            unauthorized: false,
           };
         }
         writeLibrary(EMPTY_LIBRARY);
         return {
           library: EMPTY_LIBRARY,
           ok: false,
-          unauthorized: response.status === 401,
+          unauthorized: false,
         };
       }
       const body: unknown = await response.json().catch(() => null);
@@ -320,6 +330,9 @@ export async function deleteStoredProject(
       `/api/snapshots/${encodeURIComponent(trimmed)}`,
       { method: "DELETE" },
     );
+    if (redirectToLoginIfUnauthorized(response)) {
+      return { ok: false, message: "Your session is no longer valid." };
+    }
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const message =

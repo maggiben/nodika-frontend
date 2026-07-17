@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { computeNextSendDates } from "@/lib/compute-next-send-dates";
 import type { AccountSettings, EmailSchedule } from "@/lib/core-auth";
+import { fetchAuthed } from "@/lib/session-client";
 import { DEFAULT_TIMEZONE } from "@/lib/timezone-options";
 import type { Locale } from "@/i18n/config";
 
@@ -61,7 +62,7 @@ export function EmailFollowUpSchedulePanel() {
       setLoading(true);
       setLoadError(null);
       try {
-        const response = await fetch("/api/settings", { cache: "no-store" });
+        const response = await fetchAuthed("/api/settings", { cache: "no-store" });
         const body: unknown = await response.json().catch(() => null);
         if (!response.ok) {
           if (!cancelled) {
@@ -110,7 +111,7 @@ export function EmailFollowUpSchedulePanel() {
     setSaveMessage(null);
     setSaveError(null);
     try {
-      const response = await fetch("/api/settings", {
+      const response = await fetchAuthed("/api/settings", {
         body: JSON.stringify(schedule),
         headers: { "Content-Type": "application/json" },
         method: "PATCH",

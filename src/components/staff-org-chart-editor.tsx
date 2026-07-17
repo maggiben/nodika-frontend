@@ -40,6 +40,7 @@ import {
   type StoredProject,
 } from "@/lib/snapshot-storage";
 import { parseStaffRoster } from "@/lib/staff-roster";
+import { fetchAuthed } from "@/lib/session-client";
 
 type LeadInfo = {
   id: string;
@@ -135,7 +136,7 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
       setLeadError(null);
       try {
         const [rosterResponse, libraryRefresh] = await Promise.all([
-          fetch("/api/messaging/roster", { cache: "no-store" }),
+          fetchAuthed("/api/messaging/roster", { cache: "no-store" }),
           refreshProjectLibrary(),
         ]);
         if (!cancelled) {
@@ -146,7 +147,7 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
         let rows = rosterResponse.ok ? parseStaffRoster(body) : [];
 
         if (!rosterResponse.ok) {
-          const contactsResponse = await fetch("/api/messaging/contacts", {
+          const contactsResponse = await fetchAuthed("/api/messaging/contacts", {
             cache: "no-store",
           });
           const contactsBody: unknown = await contactsResponse
@@ -310,7 +311,7 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
     setSendError(null);
     setCopyMessage(null);
     try {
-      const response = await fetch("/api/messaging/test-send", {
+      const response = await fetchAuthed("/api/messaging/test-send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

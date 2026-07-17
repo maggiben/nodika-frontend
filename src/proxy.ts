@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { defaultLocale, isLocale, LOCALE_COOKIE, locales } from "@/i18n/config";
 import { CORE_ACCESS_COOKIE } from "@/lib/core-auth";
-
-const PUBLIC_AUTH_SEGMENTS = new Set([
-  "login",
-  "register",
-  "forgot-password",
-  "reset-password",
-  "verify-email",
-]);
+import { isPublicAuthPath } from "@/lib/session-client";
 
 function preferredLocale(request: NextRequest) {
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
@@ -17,21 +10,6 @@ function preferredLocale(request: NextRequest) {
     return cookieLocale;
   }
   return defaultLocale;
-}
-
-export function isPublicAuthPath(pathname: string): boolean {
-  for (const locale of locales) {
-    const prefix = `/${locale}`;
-    if (pathname === prefix || pathname === `${prefix}/`) {
-      return false;
-    }
-    if (!pathname.startsWith(`${prefix}/`)) {
-      continue;
-    }
-    const firstSegment = pathname.slice(prefix.length + 1).split("/")[0] ?? "";
-    return PUBLIC_AUTH_SEGMENTS.has(firstSegment);
-  }
-  return false;
 }
 
 function localeFromPathname(pathname: string): string | null {
@@ -42,6 +20,8 @@ function localeFromPathname(pathname: string): string | null {
   }
   return null;
 }
+
+export { isPublicAuthPath };
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

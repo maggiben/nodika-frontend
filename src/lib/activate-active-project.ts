@@ -1,3 +1,5 @@
+import { redirectToLoginIfUnauthorized } from "@/lib/session-client";
+
 /**
  * Sync the browser-selected Nodika obra to Core account settings so
  * WhatsApp catalog / task checklist only use that project's source.
@@ -17,6 +19,9 @@ export async function activateActiveProject(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ activeProjectId: trimmed }),
     });
+    if (redirectToLoginIfUnauthorized(response)) {
+      return { ok: false, message: "Your session is no longer valid." };
+    }
     const body: unknown = await response.json().catch(() => null);
     if (!response.ok) {
       const message =

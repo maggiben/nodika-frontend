@@ -1,5 +1,7 @@
 /** In-memory org charts loaded from Core via BFF. No localStorage as source of truth. */
 
+import { fetchAuthed } from "@/lib/session-client";
+
 export const STAFF_ORG_CHART_CHANGED_EVENT = "nodika:staff-org-chart-changed";
 const LEGACY_ORG_CHART_STORAGE_KEY = "nodika.staffOrgCharts.v1";
 
@@ -239,7 +241,7 @@ export async function saveOrgChartToCore(
   const projectIds = parseProjectIds(input.projectIds);
 
   try {
-    const response = await fetch(
+    const response = await fetchAuthed(
       `/api/messaging/contacts/${encodeURIComponent(contactId)}`,
       {
         method: "PATCH",

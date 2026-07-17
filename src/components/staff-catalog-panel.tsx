@@ -39,6 +39,7 @@ import {
   statusFromPersistedLatencyMs,
   type StaffResponseStatus,
 } from "@/lib/staff-response-status";
+import { fetchAuthed } from "@/lib/session-client";
 import { truncateForPreview } from "@/lib/text-preview";
 
 const STATUS_COLOR: Record<string, string> = {
@@ -137,7 +138,7 @@ export function StaffCatalogPanel({
   }, []);
 
   const loadCatalog = useCallback(async () => {
-    const response = await fetch("/api/messaging/catalog", {
+    const response = await fetchAuthed("/api/messaging/catalog", {
       cache: "no-store",
     });
     const payload: unknown = await response.json().catch(() => null);
@@ -226,7 +227,7 @@ export function StaffCatalogPanel({
     setError(null);
     setMessage(null);
     try {
-      const response = await fetch("/api/messaging/catalog", {
+      const response = await fetchAuthed("/api/messaging/catalog", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -269,7 +270,7 @@ export function StaffCatalogPanel({
       setError(null);
       setMessage(null);
       try {
-        const response = await fetch(
+        const response = await fetchAuthed(
           `/api/messaging/catalog/${encodeURIComponent(row._id)}/assign`,
           {
             method: "POST",
@@ -306,7 +307,7 @@ export function StaffCatalogPanel({
       setError(null);
       setMessage(null);
       try {
-        const response = await fetch(
+        const response = await fetchAuthed(
           `/api/messaging/catalog/${encodeURIComponent(row._id)}/send`,
           {
             method: "POST",
@@ -345,7 +346,7 @@ export function StaffCatalogPanel({
       setError(null);
       setMessage(null);
       try {
-        const response = await fetch(
+        const response = await fetchAuthed(
           `/api/messaging/catalog/${encodeURIComponent(row._id)}`,
           { method: "DELETE" },
         );
@@ -408,7 +409,7 @@ export function StaffCatalogPanel({
       setError(null);
       setMessage(null);
       try {
-        const response = await fetch("/api/messaging/catalog/reorder", {
+        const response = await fetchAuthed("/api/messaging/catalog/reorder", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ contactId, orderedIds: nextIds }),

@@ -30,6 +30,7 @@ import {
 } from "@/i18n/config";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import type { AccountSettings } from "@/lib/core-auth";
+import { fetchAuthed } from "@/lib/session-client";
 import { DEFAULT_TIMEZONE, TIMEZONE_OPTIONS } from "@/lib/timezone-options";
 import {
   DEFAULT_PROGRESS_AI_MODELS,
@@ -114,7 +115,7 @@ export function UserSettingsForm() {
       setLoadError(null);
 
       try {
-        const response = await fetch("/api/settings");
+        const response = await fetchAuthed("/api/settings");
         const body: unknown = await response.json().catch(() => null);
 
         if (!response.ok) {
@@ -177,7 +178,7 @@ export function UserSettingsForm() {
     setSavingTimezone(true);
 
     try {
-      const response = await fetch("/api/settings", {
+      const response = await fetchAuthed("/api/settings", {
         body: JSON.stringify({ timezone }),
         headers: { "Content-Type": "application/json" },
         method: "PATCH",
@@ -246,7 +247,7 @@ export function UserSettingsForm() {
     }
 
     try {
-      const response = await fetch("/api/settings", {
+      const response = await fetchAuthed("/api/settings", {
         body: JSON.stringify({ progressAi: payload }),
         headers: { "Content-Type": "application/json" },
         method: "PATCH",
@@ -290,7 +291,7 @@ export function UserSettingsForm() {
     setChangingPassword(true);
 
     try {
-      const response = await fetch("/api/settings/change-password", {
+      const response = await fetchAuthed("/api/settings/change-password", {
         body: JSON.stringify({ currentPassword, newPassword }),
         headers: { "Content-Type": "application/json" },
         method: "POST",

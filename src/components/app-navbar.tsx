@@ -14,7 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 
 import { ObraProgressChip } from "@/components/obra-progress-chip";
@@ -22,6 +22,7 @@ import { ProjectSelector } from "@/components/project-selector";
 import { emailInitials } from "@/lib/email-initials";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { fetchObraProgress } from "@/lib/obra-progress";
+import { fetchAuthed, isHomePath } from "@/lib/session-client";
 import {
   buildProgressPatchJson,
   downloadJsonFile,
@@ -41,12 +42,14 @@ export function AppNavbar({
   userEmail?: string | null;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { locale, t } = useDictionary();
   const menuId = useId();
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [fetchedEmail, setFetchedEmail] = useState<string | null>(null);
   const menuOpen = Boolean(anchorEl);
+  const showProjectChrome = isHomePath(pathname, locale);
   const homeHref = `/${locale}`;
   const loginHref = `/${locale}/login`;
   const registerHref = `/${locale}/register`;
@@ -65,7 +68,7 @@ export function AppNavbar({
 
     async function loadEmail() {
       try {
-        const response = await fetch("/api/settings");
+        const response = await fetchAuthed("/api/settings");
         if (!response.ok) {
           return;
         }
@@ -163,8 +166,12 @@ export function AppNavbar({
               minWidth: 0,
             }}
           >
-            <ProjectSelector />
-            <ObraProgressChip authenticated={authenticated} />
+            {showProjectChrome ? (
+              <>
+                <ProjectSelector />
+                <ObraProgressChip authenticated={authenticated} />
+              </>
+            ) : null}
           </Box>
 
           {!authenticated ? (
