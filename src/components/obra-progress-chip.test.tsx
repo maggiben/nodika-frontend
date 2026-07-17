@@ -76,7 +76,19 @@ describe("ObraProgressChip", () => {
       projectId: "obra-1",
       overallPercent: 64,
       byRole: {},
-      reports: [],
+      reports: [
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: "t1",
+          percent: 64,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:00:00.000Z",
+          messageId: "m1",
+        },
+      ],
       updatedAt: "2026-07-15T12:00:00.000Z",
     });
     const { container } = render(
@@ -89,18 +101,41 @@ describe("ObraProgressChip", () => {
     });
   });
 
-  test("shows before/after toggle when progress is available", async () => {
+  test("shows before/after from task-grid merge, not catalog-only overall", async () => {
     stubLibraryAndProgress({
       projectId: "obra-1",
-      overallPercent: 64,
+      overallPercent: 100,
       byRole: {
-        jefe_obra: 70,
-        operario: 50,
+        jefe_obra: 100,
+        operario: null,
         jornalero: null,
         otro: null,
       },
-      reports: [],
-      updatedAt: "2026-07-15T12:00:00.000Z",
+      reports: [
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: null,
+          percent: 100,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:00:00.000Z",
+          messageId: "m-catalog",
+        },
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: "t1",
+          percent: 64,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:01:00.000Z",
+          messageId: "m-task",
+        },
+      ],
+      updatedAt: "2026-07-15T12:01:00.000Z",
     });
 
     render(
@@ -119,6 +154,38 @@ describe("ObraProgressChip", () => {
       "aria-pressed",
       "true",
     );
+  });
+
+  test("hides when only catalog replies exist (no task overlays)", async () => {
+    stubLibraryAndProgress({
+      projectId: "obra-1",
+      overallPercent: 100,
+      byRole: {},
+      reports: [
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: null,
+          percent: 100,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:00:00.000Z",
+          messageId: "m-catalog",
+        },
+      ],
+      updatedAt: "2026-07-15T12:00:00.000Z",
+    });
+
+    const { container } = render(
+      <TestI18n>
+        <ObraProgressChip authenticated />
+      </TestI18n>,
+    );
+
+    await waitFor(() => {
+      expect(container).toBeEmptyDOMElement();
+    });
   });
 
   test("hides when progress has no overall percent", async () => {

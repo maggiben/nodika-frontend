@@ -4,7 +4,7 @@ import { ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 import { useEffect, useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
-import { hasUsableOverallProgress } from "@/lib/obra-progress";
+import { mergeDashboardWithLiveProgress } from "@/lib/merge-dashboard-live-progress";
 import {
   readProgressViewMode,
   setProgressViewMode,
@@ -44,21 +44,6 @@ function getServerProgressViewMode(): ProgressViewMode {
   return "after";
 }
 
-function baselineAverageFromJson(raw: string | null): number | null {
-  if (!raw) {
-    return null;
-  }
-  try {
-    const model = buildSnapshotDashboard(JSON.parse(raw));
-    if (!model || model.totalObjectiveTasks === 0) {
-      return null;
-    }
-    return Math.round(Math.max(0, Math.min(100, model.averageProgress)));
-  } catch {
-    return null;
-  }
-}
-
 export function ObraProgressChip({
   authenticated,
 }: {
@@ -88,14 +73,33 @@ export function ObraProgressChip({
     void refreshProjectLibrary();
   }, []);
 
-  if (!hasUsableOverallProgress(progress)) {
+  let beforePercent: number | null = null;
+  let afterPercent: number | null = null;
+  let hasLiveTaskOverlay = false;
+  if (snapshotJson) {
+    try {
+      const base = buildSnapshotDashboard(JSON.parse(snapshotJson));
+      if (base && base.totalObjectiveTasks > 0) {
+        beforePercent = Math.round(
+          Math.max(0, Math.min(100, base.averageProgress)),
+        );
+        const merged = mergeDashboardWithLiveProgress(base, progress);
+        hasLiveTaskOverlay = merged.usingLiveOverall;
+        afterPercent = Math.round(
+          Math.max(0, Math.min(100, merged.averageProgress)),
+        );
+      }
+    } catch {
+      // ignore invalid snapshot JSON
+    }
+  }
+
+  // Same rule as the dashboard gauge: only show when WhatsApp task overlays
+  // actually change objective-task %. Catalog-only 100% must not appear here.
+  if (!hasLiveTaskOverlay || afterPercent === null) {
     return null;
   }
 
-  const beforePercent = baselineAverageFromJson(snapshotJson);
-  const afterPercent = Math.round(
-    Math.max(0, Math.min(100, progress.overallPercent)),
-  );
   const beforeLabel =
     beforePercent === null
       ? t("nav.progressBefore")

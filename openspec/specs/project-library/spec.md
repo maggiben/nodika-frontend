@@ -45,8 +45,9 @@ The application SHALL allow removing a project from the Core-backed library by `
 - **WHEN** an authenticated client deletes a `projectId` via the BFF
 - **AND** Core accepts the deletion
 - **AND** that `projectId` previously had WhatsApp send history, task-checklist threads, or live obra progress
+- **THEN** Core SHALL delete StaffMessage history for that obra (by `projectId`, linked `sourceId`, and sole-project contacts)
 - **THEN** subsequent progress reads for that `projectId` SHALL show no prior advance
-- **AND** the dashboard overall progress (progreso general) SHALL match the objective-task grid (not a separate catalog-only WhatsApp aggregate)
+- **AND** the dashboard overall progress and navbar after-% SHALL match the objective-task grid (not a separate catalog-only WhatsApp aggregate)
 - **AND** re-uploading a snapshot with the same `projectId` SHALL NOT restore the previous send or obra progress
 
 #### Scenario: Deleted active project
