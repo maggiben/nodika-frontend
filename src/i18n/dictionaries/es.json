@@ -25,6 +25,14 @@
     "settings": "Configuración",
     "staff": "Equipo"
   },
+  "breadcrumb": {
+    "ariaLabel": "Ruta de navegación",
+    "home": "Inicio",
+    "upload": "Subir snapshot",
+    "settings": "Configuración",
+    "staff": "Equipo",
+    "org": "Organigrama"
+  },
   "auth": {
     "email": "Correo electrónico",
     "password": "Contraseña",
@@ -200,7 +208,6 @@
       "title": "Organigrama",
       "description": "Anotá quién tiene a cargo este jefe de obra para luego preguntar por la performance de cada uno.",
       "loading": "Cargando organigrama…",
-      "backToRoster": "Volver al equipo",
       "leadTitle": "Jefe de obra",
       "leadName": "Responsable: {name}",
       "leadPhone": "WhatsApp: {phone}",

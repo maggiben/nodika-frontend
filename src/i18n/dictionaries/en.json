@@ -25,6 +25,14 @@
     "settings": "Settings",
     "staff": "Staff"
   },
+  "breadcrumb": {
+    "ariaLabel": "Breadcrumb",
+    "home": "Home",
+    "upload": "Upload snapshot",
+    "settings": "Settings",
+    "staff": "Staff",
+    "org": "Org chart"
+  },
   "auth": {
     "email": "Email address",
     "password": "Password",
@@ -200,7 +208,6 @@
       "title": "Org chart",
       "description": "List the people under this site lead so you can ask about each person’s performance.",
       "loading": "Loading org chart…",
-      "backToRoster": "Back to team",
       "leadTitle": "Site lead",
       "leadName": "Lead: {name}",
       "leadPhone": "WhatsApp: {phone}",

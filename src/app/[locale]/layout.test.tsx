@@ -30,6 +30,10 @@ vi.mock("@/components/app-navbar", () => ({
   ),
 }));
 
+vi.mock("@/components/app-breadcrumbs", () => ({
+  AppBreadcrumbs: () => <div>App breadcrumbs</div>,
+}));
+
 vi.mock("@/components/html-lang", () => ({
   HtmlLang: () => null,
 }));
@@ -52,6 +56,7 @@ describe("LocaleLayout", () => {
 
     expect(screen.getByText("Localized content")).toBeInTheDocument();
     expect(screen.getByText("App navbar signed-out")).toBeInTheDocument();
+    expect(screen.getByText("App breadcrumbs")).toBeInTheDocument();
   });
 
   test("rejects unsupported locales", async () => {

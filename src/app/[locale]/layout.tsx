@@ -3,6 +3,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { AppBreadcrumbs } from "@/components/app-breadcrumbs";
 import { AppNavbar } from "@/components/app-navbar";
 import { AppTheme } from "@/components/app-theme";
 import { isLocale, locales, type Locale } from "@/i18n/config";
@@ -64,6 +65,7 @@ export default async function LocaleLayout({
         <DictionaryProvider dictionary={dictionary} locale={locale}>
           <HtmlLang locale={locale} />
           <AppNavbar authenticated={authenticated} userEmail={userEmail} />
+          <AppBreadcrumbs />
           {children}
         </DictionaryProvider>
       </AppTheme>

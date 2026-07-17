@@ -16,7 +16,6 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -352,14 +351,6 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
     <Container maxWidth="md" sx={{ py: { xs: 4, sm: 6 } }}>
       <Stack spacing={3}>
         <Box>
-          <Button
-            component={Link}
-            href={`/${locale}/staff`}
-            size="small"
-            sx={{ mb: 1 }}
-          >
-            {t("staff.org.backToRoster")}
-          </Button>
           <Typography component="h1" variant="h4">
             {t("staff.org.title")}
           </Typography>
