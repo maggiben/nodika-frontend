@@ -1,10 +1,4 @@
-# Home Page
-
-## Purpose
-
-Define the current behavior of the public landing route at `/`.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Public home route
 
@@ -28,23 +22,3 @@ The application SHALL render the project-status landing dashboard at `/` only fo
 - **THEN** the page SHALL render the project-status dashboard
 - **AND** the page SHALL not embed a Core bearer token in the server-rendered response
 - **AND** the page SHALL not host the snapshot upload editor
-
-### Requirement: Responsive starter content
-
-The home page SHALL render the project-status dashboard with Material UI components, remain responsive, and remain usable in light and dark color schemes.
-
-#### Scenario: Viewing the page at a narrow width
-
-- **WHEN** a user views `/` on a narrow viewport
-- **THEN** the Material UI dashboard content SHALL fit the viewport without horizontal scrolling
-- **AND** labels and task progress SHALL remain readable
-
-### Requirement: External navigation safety
-
-The home page SHALL protect external links that open in a new browsing context.
-
-#### Scenario: Opening a starter resource
-
-- **WHEN** a user activates an external home-page link
-- **THEN** it SHALL open in a new tab
-- **AND** the link SHALL include `rel="noopener noreferrer"`

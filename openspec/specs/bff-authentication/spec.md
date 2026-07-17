@@ -40,7 +40,7 @@ The frontend SHALL retain the Core access and refresh tokens only in root-path `
 
 ### Requirement: Account management user flows
 
-The application SHALL provide accessible Material UI and React Hook Form pages for register, login, email verification, forgotten-password submission, and password reset. It SHALL provide a logout affordance for authenticated users. Account forms SHALL submit only to same-origin BFF routes and SHALL never collect or display Core tokens.
+The application SHALL provide accessible Material UI and React Hook Form pages for register, login, email verification, forgotten-password submission, and password reset. It SHALL provide a logout affordance for authenticated users. Account forms SHALL submit only to same-origin BFF routes and SHALL never collect or display Core tokens. After logout, the client SHALL navigate to the localized login page.
 
 #### Scenario: Password reset flow
 
@@ -53,3 +53,4 @@ The application SHALL provide accessible Material UI and React Hook Form pages f
 - **WHEN** an authenticated user invokes logout
 - **THEN** the client SHALL call the BFF logout route
 - **AND** the browser session cookies SHALL be cleared
+- **AND** the client SHALL navigate to the localized login page

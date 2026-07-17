@@ -97,6 +97,7 @@ export function AppNavbar({
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
+      router.push(loginHref);
       router.refresh();
       setIsLoggingOut(false);
     }

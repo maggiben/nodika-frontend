@@ -8,7 +8,7 @@ TBD - created by archiving change upload-nodika-snapshot. Update Purpose after a
 
 ### Requirement: Snapshot upload route
 
-The application SHALL provide snapshot upload at `/upload` using the existing syntax validation and authenticated BFF upload flow.
+The application SHALL provide snapshot upload at `/upload` using the existing syntax validation and authenticated BFF upload flow. Unauthenticated requests to `/upload` SHALL redirect to the localized login page.
 
 #### Scenario: Opening the upload route while signed in
 
@@ -19,7 +19,8 @@ The application SHALL provide snapshot upload at `/upload` using the existing sy
 #### Scenario: Opening the upload route while signed out
 
 - **WHEN** an unauthenticated user opens `/upload`
-- **THEN** the page SHALL require sign-in before enabling upload
+- **THEN** the application SHALL redirect to the localized login page
+- **AND** SHALL not render the snapshot upload editor
 
 ### Requirement: Upload activates project from Core
 

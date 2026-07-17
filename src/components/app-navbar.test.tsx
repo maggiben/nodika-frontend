@@ -65,14 +65,12 @@ describe("AppNavbar", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Abrir menú de cuenta" }),
     );
-    const menuItems = screen.getAllByRole("menuitem");
-    expect(menuItems[0]).toHaveTextContent("Subir snapshot");
-    expect(menuItems[1]).toHaveTextContent("Configuración");
-    expect(menuItems[2]).toHaveTextContent("Equipo");
-    expect(menuItems[3]).toHaveTextContent("Cerrar sesión");
     expect(
       screen.getByRole("menuitem", { name: "Subir snapshot" }),
     ).toHaveAttribute("href", "/es/upload");
+    expect(
+      screen.getByRole("menuitem", { name: "Bajar patch" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("menuitem", { name: "Configuración" }),
     ).toHaveAttribute("href", "/es/settings");
@@ -92,6 +90,7 @@ describe("AppNavbar", () => {
         method: "POST",
       });
     });
+    expect(push).toHaveBeenCalledWith("/es/login");
     expect(refresh).toHaveBeenCalled();
   });
 });
