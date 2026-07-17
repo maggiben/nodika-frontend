@@ -21,6 +21,17 @@ import { ObraProgressChip } from "@/components/obra-progress-chip";
 import { ProjectSelector } from "@/components/project-selector";
 import { emailInitials } from "@/lib/email-initials";
 import { useDictionary } from "@/i18n/dictionary-provider";
+import { fetchObraProgress } from "@/lib/obra-progress";
+import {
+  buildProgressPatchJson,
+  downloadJsonFile,
+  progressPatchFilename,
+} from "@/lib/progress-patch";
+import {
+  listStoredProjects,
+  readProjectLibrary,
+  readSelectedSnapshotJson,
+} from "@/lib/snapshot-storage";
 
 export function AppNavbar({
   authenticated,
@@ -89,6 +100,30 @@ export function AppNavbar({
       router.refresh();
       setIsLoggingOut(false);
     }
+  }
+
+  async function downloadProgressPatch() {
+    setAnchorEl(null);
+    const snapshotJson = readSelectedSnapshotJson();
+    if (!snapshotJson) {
+      return;
+    }
+    const library = readProjectLibrary();
+    const selected =
+      listStoredProjects().find(
+        (project) => project.id === library.selectedId,
+      ) ?? null;
+    const live = selected
+      ? await fetchObraProgress(selected.id)
+      : null;
+    const patched = buildProgressPatchJson(snapshotJson, live);
+    if (!patched) {
+      return;
+    }
+    downloadJsonFile(
+      progressPatchFilename(selected?.name ?? "project"),
+      patched,
+    );
   }
 
   return (
@@ -174,6 +209,9 @@ export function AppNavbar({
                   onClick={() => setAnchorEl(null)}
                 >
                   <ListItemText primary={t("nav.uploadSnapshot")} />
+                </MenuItem>
+                <MenuItem onClick={() => void downloadProgressPatch()}>
+                  <ListItemText primary={t("nav.downloadPatch")} />
                 </MenuItem>
                 <MenuItem
                   component={Link}
