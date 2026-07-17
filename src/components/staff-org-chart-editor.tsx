@@ -72,6 +72,9 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [sendMessage, setSendMessage] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [draft, setDraft] = useState<string | null>(null);
 
   const roleLabels = useMemo(
@@ -265,6 +268,8 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
 
   function generateDraft() {
     setCopyMessage(null);
+    setSendMessage(null);
+    setSendError(null);
     if (chartHasNoReports(chart)) {
       setDraft(null);
       setCopyMessage(t("staff.org.draftEmpty"));
@@ -285,8 +290,53 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
     try {
       await navigator.clipboard.writeText(draft);
       setCopyMessage(t("staff.org.copied"));
+      setSendError(null);
     } catch {
       setCopyMessage(t("staff.org.copyError"));
+    }
+  }
+
+  async function sendDraft() {
+    const text = draft?.trim() ?? "";
+    if (!text) {
+      return;
+    }
+    if (!lead?.phone) {
+      setSendMessage(null);
+      setSendError(t("staff.org.sendMissingPhone"));
+      return;
+    }
+    setSending(true);
+    setSendMessage(null);
+    setSendError(null);
+    setCopyMessage(null);
+    try {
+      const response = await fetch("/api/messaging/test-send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: lead.phone,
+          text,
+          language: locale,
+        }),
+      });
+      const body: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        setSendError(
+          typeof body === "object" &&
+            body !== null &&
+            "message" in body &&
+            typeof body.message === "string"
+            ? body.message
+            : t("staff.org.sendError"),
+        );
+        return;
+      }
+      setSendMessage(t("staff.org.draftSent"));
+    } catch {
+      setSendError(t("staff.unreachable"));
+    } finally {
+      setSending(false);
     }
   }
 
@@ -518,13 +568,22 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
               <Button onClick={generateDraft} variant="contained">
                 {t("staff.org.generateDraft")}
               </Button>
-              <Button disabled={!draft} onClick={() => void copyDraft()}>
+              <Button
+                disabled={!draft?.trim()}
+                onClick={() => void copyDraft()}
+              >
                 {t("staff.org.copyDraft")}
               </Button>
+              <Button
+                disabled={!draft?.trim() || !lead.phone || sending}
+                onClick={() => void sendDraft()}
+                variant="outlined"
+              >
+                {sending
+                  ? t("staff.org.sendingDraft")
+                  : t("staff.org.sendDraft")}
+              </Button>
             </Stack>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              {t("staff.org.sendUnavailable")}
-            </Alert>
             {copyMessage ? (
               <Alert
                 severity={
@@ -538,12 +597,26 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
                 {copyMessage}
               </Alert>
             ) : null}
+            {sendMessage ? (
+              <Alert severity="success" sx={{ mt: 2 }}>
+                {sendMessage}
+              </Alert>
+            ) : null}
+            {sendError ? (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {sendError}
+              </Alert>
+            ) : null}
             {draft ? (
               <TextField
                 fullWidth
                 multiline
                 minRows={8}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={(event) => {
+                  setDraft(event.target.value);
+                  setSendMessage(null);
+                  setSendError(null);
+                }}
                 sx={{ mt: 2 }}
                 value={draft}
               />

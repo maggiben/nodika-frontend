@@ -283,12 +283,128 @@ describe("StaffOrgChartEditor", () => {
     });
   });
 
-  test("generates and copies a performance draft", async () => {
+  test("generates, edits, and sends a performance draft", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },
     });
 
+    mockFetch({
+      "/api/messaging/roster": () =>
+        new Response(
+          JSON.stringify(
+            rosterResponse({
+              orgReports: [{ id: "r1", name: "Ana", role: "operario" }],
+            }),
+          ),
+          { status: 200 },
+        ),
+      "POST /api/messaging/test-send": () =>
+        new Response(
+          JSON.stringify({
+            ok: true,
+            phone: "54911112222",
+            templateKey: null,
+            renderedText: "ok",
+          }),
+          { status: 200 },
+        ),
+    });
+
+    render(
+      <TestI18n>
+        <StaffOrgChartEditor contactId="lead_1" />
+      </TestI18n>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Personas a cargo: 1/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Generar mensaje" }));
+    const draftField = await screen.findByDisplayValue(/Hola Juan/);
+    fireEvent.change(draftField, {
+      target: { value: "Hola Juan,\n\nMensaje editado." },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Copiar" }));
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith("Hola Juan,\n\nMensaje editado.");
+      expect(screen.getByText("Mensaje copiado.")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    await waitFor(() => {
+      expect(screen.getByText("Mensaje enviado por WhatsApp.")).toBeInTheDocument();
+    });
+
+    const fetchMock = vi.mocked(fetch);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/messaging/test-send",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          phone: "54911112222",
+          text: "Hola Juan,\n\nMensaje editado.",
+          language: "es",
+        }),
+      }),
+    );
+  });
+
+  test("shows empty-draft guidance when there are no reports", async () => {
+    mockFetch({
+      "/api/messaging/roster": () =>
+        new Response(JSON.stringify(rosterResponse()), { status: 200 }),
+    });
+
+    render(
+      <TestI18n>
+        <StaffOrgChartEditor contactId="lead_1" />
+      </TestI18n>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Juan/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Generar mensaje" }));
+    expect(
+      await screen.findByText(/Agregá al menos una persona/i),
+    ).toBeInTheDocument();
+  });
+
+  test("disables send when the lead has no phone", async () => {
+    mockFetch({
+      "/api/messaging/roster": () =>
+        new Response(
+          JSON.stringify(
+            rosterResponse({
+              phone: "",
+              orgReports: [{ id: "r1", name: "Ana", role: "operario" }],
+            }),
+          ),
+          { status: 200 },
+        ),
+    });
+
+    render(
+      <TestI18n>
+        <StaffOrgChartEditor contactId="lead_1" />
+      </TestI18n>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/Personas a cargo: 1/)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Generar mensaje" }));
+    await screen.findByDisplayValue(/Hola Juan/);
+    expect(
+      screen.getByRole("button", { name: "Enviar mensaje" }),
+    ).toBeDisabled();
+  });
+
+  test("disables copy and send when draft text is only whitespace", async () => {
     mockFetch({
       "/api/messaging/roster": () =>
         new Response(
@@ -312,34 +428,12 @@ describe("StaffOrgChartEditor", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Generar mensaje" }));
-    expect(await screen.findByDisplayValue(/Hola Juan/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Copiar" }));
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalled();
-      expect(screen.getByText("Mensaje copiado.")).toBeInTheDocument();
-    });
-  });
-
-  test("shows empty-draft guidance when there are no reports", async () => {
-    mockFetch({
-      "/api/messaging/roster": () =>
-        new Response(JSON.stringify(rosterResponse()), { status: 200 }),
-    });
-
-    render(
-      <TestI18n>
-        <StaffOrgChartEditor contactId="lead_1" />
-      </TestI18n>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText(/Juan/)).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByRole("button", { name: "Generar mensaje" }));
+    const draftField = await screen.findByDisplayValue(/Hola Juan/);
+    fireEvent.change(draftField, { target: { value: "   \n  " } });
+    expect(screen.getByRole("button", { name: "Copiar" })).toBeDisabled();
     expect(
-      await screen.findByText(/Agregá al menos una persona/i),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Enviar mensaje" }),
+    ).toBeDisabled();
   });
 
   test("shows missing lead when contact is absent", async () => {
