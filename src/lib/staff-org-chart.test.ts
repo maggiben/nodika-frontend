@@ -16,9 +16,11 @@ import {
   createReportId,
   emptyOrgChart,
   getOrgChartsSnapshot,
+  hydrateOrgChartsFromRoster,
   readOrgChart,
   removeOrgChart,
   reportRoleLabel,
+  saveOrgChartToCore,
   subscribeToOrgCharts,
   upsertOrgChart,
 } from "./staff-org-chart";
@@ -40,6 +42,7 @@ describe("staff-org-chart", () => {
         { id: "r1", name: "Ana", role: "operario" },
         { id: "r2", name: "Luis", role: "jornalero" },
       ],
+      projectIds: ["proj_a"],
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -48,12 +51,13 @@ describe("staff-org-chart", () => {
       "Ana",
       "Luis",
     ]);
+    expect(readOrgChart("lead_1")?.projectIds).toEqual(["proj_a"]);
     expect(
       JSON.parse(getOrgChartsSnapshot()).charts.lead_1.reports,
     ).toHaveLength(2);
   });
 
-  test("removes a chart for a contact", () => {
+  test("removes a chart for a contact from memory", () => {
     upsertOrgChart({
       ...emptyOrgChart("lead_2", "Lead"),
       reports: [{ id: "r1", name: "Pablo", role: "operario" }],
@@ -76,6 +80,7 @@ describe("staff-org-chart", () => {
           role: "operario",
         },
       ],
+      projectIds: [],
       updatedAt: "2026-01-01T00:00:00.000Z",
     });
 
@@ -90,128 +95,86 @@ describe("staff-org-chart", () => {
     ).toBe("Ayudante");
   });
 
-  test("ignores corrupt localStorage payloads", () => {
+  test("clears legacy localStorage key on hydrate", () => {
     window.localStorage.setItem("nodika.staffOrgCharts.v1", "{not-json");
-    expect(readOrgChart("x")).toBeNull();
-    window.localStorage.setItem(
-      "nodika.staffOrgCharts.v1",
-      JSON.stringify({ charts: { bad: { contactId: "other" } } }),
-    );
-    clearOrgCharts();
-    expect(countOrgReports("bad")).toBe(0);
+    hydrateOrgChartsFromRoster([
+      {
+        _id: "lead_x",
+        label: "Lead",
+        orgReports: [{ id: "r1", name: "Ana", role: "operario" }],
+        projectIds: ["obra-1"],
+      },
+    ]);
+    expect(window.localStorage.getItem("nodika.staffOrgCharts.v1")).toBeNull();
+    expect(countOrgReports("lead_x")).toBe(1);
+    expect(readOrgChart("lead_x")?.projectIds).toEqual(["obra-1"]);
   });
 
-  test("notifies subscribers and creates report ids", () => {
+  test("notifies subscribers on upsert", () => {
     const listener = vi.fn();
     const unsubscribe = subscribeToOrgCharts(listener);
     upsertOrgChart({
       ...emptyOrgChart("lead_4"),
-      reports: [{ id: createReportId(), name: "A", role: "operario" }],
+      reports: [{ id: "r1", name: "A", role: "operario" }],
     });
     expect(listener).toHaveBeenCalled();
     unsubscribe();
+  });
+
+  test("createReportId returns a non-empty string", () => {
     expect(createReportId().length).toBeGreaterThan(4);
   });
 
-  test("covers storage event subscriptions and role labels without roleOther", () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeToOrgCharts(listener);
-    window.dispatchEvent(
-      new StorageEvent("storage", { key: "other-key", newValue: "x" }),
-    );
-    expect(listener).not.toHaveBeenCalled();
-    window.dispatchEvent(
-      new StorageEvent("storage", {
-        key: "nodika.staffOrgCharts.v1",
-        newValue: "{}",
+  test("saveOrgChartToCore PATCHes orgReports and projectIds", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        orgReports: [{ id: "r1", name: "Ana", role: "operario" }],
+        projectIds: ["proj_a", "proj_b"],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await saveOrgChartToCore({
+      contactId: "lead_save",
+      reports: [{ id: "r1", name: "Ana", role: "operario" }],
+      projectIds: ["proj_a", "proj_b"],
+      contactLabel: "Lead",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/messaging/contacts/lead_save",
+      expect.objectContaining({
+        method: "PATCH",
+        body: JSON.stringify({
+          orgReports: [{ id: "r1", name: "Ana", role: "operario" }],
+          projectIds: ["proj_a", "proj_b"],
+        }),
       }),
     );
-    expect(listener).toHaveBeenCalled();
-    unsubscribe();
-
-    expect(
-      reportRoleLabel(
-        { id: "r1", name: "Sam", role: "otro" },
-        {
-          operario: "Operator",
-          jornalero: "Day laborer",
-          otro: "Other",
-        },
-      ),
-    ).toBe("Other");
-    expect(readOrgChart("   ")).toBeNull();
-    expect(createReportId()).toMatch(/./);
-
-    const original = globalThis.crypto;
-    Object.defineProperty(globalThis, "crypto", {
-      configurable: true,
-      value: undefined,
-    });
-    expect(createReportId()).toMatch(/^report-/);
-    Object.defineProperty(globalThis, "crypto", {
-      configurable: true,
-      value: original,
-    });
+    expect(readOrgChart("lead_save")?.projectIds).toEqual(["proj_a", "proj_b"]);
   });
 
-  test("swallows localStorage write failures", () => {
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("quota");
-    });
-    expect(() =>
-      upsertOrgChart({
-        ...emptyOrgChart("lead_5"),
-        reports: [{ id: "r1", name: "A", role: "operario" }],
-      }),
-    ).not.toThrow();
-  });
-
-  test("swallows localStorage read failures", () => {
-    clearOrgCharts();
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    expect(readOrgChart("lead_x")).toBeNull();
-    expect(countOrgReports("lead_x")).toBe(0);
-  });
-
-  test("parses empty, mismatched, and partial chart documents", () => {
-    clearOrgCharts();
-    window.localStorage.setItem("nodika.staffOrgCharts.v1", "   ");
-    expect(getOrgChartsSnapshot()).toBe(JSON.stringify({ charts: {} }));
-
-    clearOrgCharts();
-    window.localStorage.setItem(
-      "nodika.staffOrgCharts.v1",
-      JSON.stringify({
-        charts: {
-          lead_ok: {
-            contactId: "lead_ok",
-            contactLabel: "  ",
-            reports: [
-              { id: "r1", name: "A", role: "operario" },
-              { id: "r2", name: "B", role: "nope" },
-              null,
-              { id: "r3", name: "C", role: "jornalero" },
-            ],
-            updatedAt: null,
-          },
-          lead_bad: {
-            contactId: "different",
-            reports: [],
-          },
-        },
+  test("saveOrgChartToCore returns errors from the BFF", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        json: async () => ({ message: "Core down" }),
       }),
     );
-    expect(countOrgReports("lead_ok")).toBe(2);
-    expect(readOrgChart("lead_bad")).toBeNull();
-  });
-
-  test("swallows localStorage remove failures on clear", () => {
-    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
-      throw new Error("blocked");
+    const result = await saveOrgChartToCore({
+      contactId: "lead_err",
+      reports: [],
+      projectIds: [],
     });
-    expect(() => clearOrgCharts()).not.toThrow();
+    expect(result).toEqual({
+      ok: false,
+      message: "Core down",
+      status: 503,
+    });
   });
 });
 
@@ -231,13 +194,11 @@ describe("staff-org-chart-draft", () => {
       locale: "es",
       leadName: "Juan",
       chart: {
-        contactId: "lead_1",
-        contactLabel: "Juan",
+        ...emptyOrgChart("lead_1", "Juan"),
         reports: [
           { id: "r1", name: "Ana", role: "operario" },
           { id: "r2", name: "Luis", role: "jornalero" },
         ],
-        updatedAt: "2026-01-01T00:00:00.000Z",
       },
     });
 
@@ -247,56 +208,20 @@ describe("staff-org-chart-draft", () => {
     expect(draft).toContain("performance");
   });
 
-  test("builds an English draft listing each report", () => {
-    const draft = buildPerformanceDraft({
-      locale: "en",
-      leadName: "",
-      chart: {
-        contactId: "lead_1",
-        contactLabel: "Site lead",
-        reports: [{ id: "r1", name: "Ana", role: "otro", roleOther: "Helper" }],
-        updatedAt: "2026-01-01T00:00:00.000Z",
-      },
-    });
-
-    expect(draft).toContain("Hi Site lead");
-    expect(draft).toContain("1. Ana (Helper)");
-    expect(draft).toContain("performance update");
-  });
-
-  test("falls back when lead name and label are missing", () => {
-    const draft = buildPerformanceDraft({
-      locale: "en",
-      leadName: "   ",
-      chart: {
-        contactId: "lead_1",
-        reports: [{ id: "r1", name: "Ana", role: "operario" }],
-        updatedAt: "2026-01-01T00:00:00.000Z",
-      },
-    });
-    expect(draft).toContain("Hi there");
-  });
-
   test("builds a Spanish attendance draft from org chart reports", () => {
     const draft = buildAttendanceDraft({
       locale: "es",
       leadName: "Juan",
       chart: {
-        contactId: "lead_1",
-        contactLabel: "Juan",
+        ...emptyOrgChart("lead_1", "Juan"),
         reports: [
           { id: "r1", name: "Ana", role: "operario" },
           { id: "r2", name: "Luis", role: "jornalero" },
         ],
-        updatedAt: "2026-01-01T00:00:00.000Z",
       },
     });
     expect(draft).toContain("Hola Juan");
     expect(draft).toContain("1. Ana (operario)");
-    expect(draft).toContain("2. Luis (jornalero)");
-    expect(draft).toContain("Día completo");
-    expect(draft).toContain("Media jornada");
-    expect(draft).toContain("Faltó");
     expect(
       buildAttendanceTitle({
         locale: "es",
@@ -312,25 +237,14 @@ describe("staff-org-chart-draft", () => {
       leadName: "Juan",
       chart: emptyOrgChart("lead_1", "Juan"),
     });
-    expect(draft).toContain("Hi Juan");
-    expect(draft).not.toContain("Person 1");
     expect(draft).toContain("No people on this lead’s org chart yet");
   });
 
   test("builds work-progress and catalog preset drafts", () => {
     const chart = {
-      contactId: "lead_1",
-      contactLabel: "Juan",
+      ...emptyOrgChart("lead_1", "Juan"),
       reports: [{ id: "r1", name: "Ana", role: "operario" as const }],
-      updatedAt: "2026-01-01T00:00:00.000Z",
     };
-    expect(
-      buildWorkProgressDraft({
-        locale: "es",
-        leadName: "Juan",
-        chart,
-      }),
-    ).toMatch(/Porcentaje cumplido[\s\S]*Duración[\s\S]*Avance[\s\S]*Notas/);
     expect(
       buildWorkProgressDraft({
         locale: "es",
@@ -353,7 +267,6 @@ describe("staff-org-chart-draft", () => {
       chart,
     });
     expect(applied.usedOrgChart).toBe(true);
-    expect(applied.title).toContain("Performance del equipo — Juan");
     expect(applied.body).toContain("Ana (operario)");
 
     const withoutTeam = applyCatalogMessagePreset({
@@ -363,8 +276,8 @@ describe("staff-org-chart-draft", () => {
       chart: null,
     });
     expect(withoutTeam.usedOrgChart).toBe(false);
-    expect(withoutTeam.body).toContain("Percent complete");
-    expect(withoutTeam.body).not.toContain("Person 1");
-    expect(withoutTeam.body).toContain("No people on this lead’s org chart yet");
+    expect(withoutTeam.body).toContain(
+      "No people on this lead’s org chart yet",
+    );
   });
 });

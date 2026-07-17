@@ -35,10 +35,13 @@ import { useDictionary } from "@/i18n/dictionary-provider";
 import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
-import { readProjectLibrary, refreshProjectLibrary } from "@/lib/snapshot-storage";
+import {
+  readProjectLibrary,
+  refreshProjectLibrary,
+} from "@/lib/snapshot-storage";
 import {
   getOrgChartsSnapshot,
-  removeOrgChart,
+  hydrateOrgChartsFromRoster,
   subscribeToOrgCharts,
 } from "@/lib/staff-org-chart";
 import {
@@ -160,69 +163,87 @@ export function StaffMessagingForm() {
     });
     const rosterBody: unknown = await rosterResponse.json().catch(() => null);
 
+    let rows: StaffRosterRow[] = [];
+
     if (rosterResponse.ok) {
-      return parseStaffRoster(rosterBody);
+      rows = parseStaffRoster(rosterBody);
+    } else {
+      // Degraded mode: fall back to contacts list.
+      const contactsResponse = await fetch("/api/messaging/contacts", {
+        cache: "no-store",
+      });
+      const contactsBody: unknown = await contactsResponse
+        .json()
+        .catch(() => null);
+      if (!contactsResponse.ok) {
+        const message =
+          (typeof rosterBody === "object" &&
+            rosterBody !== null &&
+            "message" in rosterBody &&
+            typeof rosterBody.message === "string" &&
+            rosterBody.message) ||
+          (typeof contactsBody === "object" &&
+            contactsBody !== null &&
+            "message" in contactsBody &&
+            typeof contactsBody.message === "string" &&
+            contactsBody.message) ||
+          t("staff.loadError");
+        throw new Error(message);
+      }
+
+      if (Array.isArray(contactsBody)) {
+        rows = contactsBody
+          .filter(
+            (
+              item,
+            ): item is {
+              _id: string;
+              phone: string;
+              label?: string;
+              active?: boolean;
+              tags?: string[];
+              orgReports?: unknown;
+              projectIds?: unknown;
+              projectId?: unknown;
+            } =>
+              typeof item === "object" &&
+              item !== null &&
+              typeof (item as { _id?: unknown })._id === "string" &&
+              typeof (item as { phone?: unknown }).phone === "string",
+          )
+          .filter(
+            (item) =>
+              item.active !== false && (item.tags?.includes("staff") ?? true),
+          )
+          .map((item) => ({
+            _id: item._id,
+            phone: item.phone,
+            label: item.label,
+            active: item.active !== false,
+            tags: item.tags ?? ["staff"],
+            projectIds: Array.isArray(item.projectIds)
+              ? item.projectIds.filter(
+                  (id): id is string => typeof id === "string",
+                )
+              : typeof item.projectId === "string"
+                ? [item.projectId]
+                : [],
+            projectId:
+              typeof item.projectId === "string" ? item.projectId : null,
+            orgReports: Array.isArray(item.orgReports)
+              ? (item.orgReports as StaffRosterRow["orgReports"])
+              : [],
+            lastSentAt: null,
+            lastReceivedAt: null,
+            lastTemplateKey: null,
+            messageTypes: [],
+            hasOutbound: false,
+          }));
+      }
     }
 
-    // Degraded mode: fall back to contacts list.
-    const contactsResponse = await fetch("/api/messaging/contacts", {
-      cache: "no-store",
-    });
-    const contactsBody: unknown = await contactsResponse
-      .json()
-      .catch(() => null);
-    if (!contactsResponse.ok) {
-      const message =
-        (typeof rosterBody === "object" &&
-          rosterBody !== null &&
-          "message" in rosterBody &&
-          typeof rosterBody.message === "string" &&
-          rosterBody.message) ||
-        (typeof contactsBody === "object" &&
-          contactsBody !== null &&
-          "message" in contactsBody &&
-          typeof contactsBody.message === "string" &&
-          contactsBody.message) ||
-        t("staff.loadError");
-      throw new Error(message);
-    }
-
-    if (!Array.isArray(contactsBody)) {
-      return [];
-    }
-
-    return contactsBody
-      .filter(
-        (
-          item,
-        ): item is {
-          _id: string;
-          phone: string;
-          label?: string;
-          active?: boolean;
-          tags?: string[];
-        } =>
-          typeof item === "object" &&
-          item !== null &&
-          typeof (item as { _id?: unknown })._id === "string" &&
-          typeof (item as { phone?: unknown }).phone === "string",
-      )
-      .filter(
-        (item) =>
-          item.active !== false && (item.tags?.includes("staff") ?? true),
-      )
-      .map((item) => ({
-        _id: item._id,
-        phone: item.phone,
-        label: item.label,
-        active: item.active !== false,
-        tags: item.tags ?? ["staff"],
-        lastSentAt: null,
-        lastReceivedAt: null,
-        lastTemplateKey: null,
-        messageTypes: [],
-        hasOutbound: false,
-      }));
+    hydrateOrgChartsFromRoster(rows);
+    return rows;
   }, [t]);
 
   useEffect(() => {
@@ -373,7 +394,6 @@ export function StaffMessagingForm() {
           return;
         }
         setActionMessage(t("staff.removed"));
-        removeOrgChart(row._id);
         setRows(await loadRoster());
       } catch {
         setError(t("staff.unreachable"));

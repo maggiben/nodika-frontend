@@ -1,5 +1,7 @@
-const ORG_CHART_STORAGE_KEY = "nodika.staffOrgCharts.v1";
+/** In-memory org charts loaded from Core via BFF. No localStorage as source of truth. */
+
 export const STAFF_ORG_CHART_CHANGED_EVENT = "nodika:staff-org-chart-changed";
+const LEGACY_ORG_CHART_STORAGE_KEY = "nodika.staffOrgCharts.v1";
 
 export type StaffReportRole = "operario" | "jornalero" | "otro";
 
@@ -15,6 +17,7 @@ export type StaffOrgChart = {
   contactId: string;
   contactLabel?: string;
   reports: StaffOrgReport[];
+  projectIds: string[];
   updatedAt: string;
 };
 
@@ -24,7 +27,7 @@ export type StaffOrgChartStore = {
 
 const EMPTY_STORE: StaffOrgChartStore = { charts: {} };
 
-let memoryStore: StaffOrgChartStore | null = null;
+let memoryStore: StaffOrgChartStore = EMPTY_STORE;
 
 const REPORT_ROLES: StaffReportRole[] = ["operario", "jornalero", "otro"];
 
@@ -51,11 +54,23 @@ function notifyStoreChanged() {
   window.dispatchEvent(new Event(STAFF_ORG_CHART_CHANGED_EVENT));
 }
 
-function invalidateMemoryStore() {
-  memoryStore = null;
+function writeStore(store: StaffOrgChartStore): void {
+  memoryStore = store;
+  notifyStoreChanged();
 }
 
-function parseReport(value: unknown): StaffOrgReport | null {
+function clearLegacyLocalStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(LEGACY_ORG_CHART_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function parseOrgReport(value: unknown): StaffOrgReport | null {
   if (!isRecord(value)) {
     return null;
   }
@@ -76,79 +91,70 @@ function parseReport(value: unknown): StaffOrgReport | null {
   };
 }
 
-function parseChart(value: unknown): StaffOrgChart | null {
-  if (!isRecord(value)) {
-    return null;
+export function parseOrgReports(value: unknown): StaffOrgReport[] {
+  if (!Array.isArray(value)) {
+    return [];
   }
-  const contactId = asString(value.contactId);
-  if (!contactId || !Array.isArray(value.reports)) {
-    return null;
-  }
-  const reports = value.reports
-    .map(parseReport)
+  return value
+    .map(parseOrgReport)
     .filter((report): report is StaffOrgReport => report !== null);
-  const contactLabel = asString(value.contactLabel) ?? undefined;
-  const updatedAt = asString(value.updatedAt) ?? new Date().toISOString();
+}
+
+export function parseProjectIds(value: unknown, fallback?: unknown): string[] {
+  if (Array.isArray(value)) {
+    return [
+      ...new Set(
+        value
+          .map((id) => asString(id))
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+  }
+  const singular = asString(fallback);
+  return singular ? [singular] : [];
+}
+
+export function chartFromRosterRow(row: {
+  _id: string;
+  label?: string;
+  orgReports?: unknown;
+  projectIds?: unknown;
+  projectId?: unknown;
+}): StaffOrgChart {
   return {
-    contactId,
-    ...(contactLabel ? { contactLabel } : {}),
-    reports,
-    updatedAt,
+    contactId: row._id,
+    ...(asString(row.label) ? { contactLabel: asString(row.label)! } : {}),
+    reports: parseOrgReports(row.orgReports),
+    projectIds: parseProjectIds(row.projectIds, row.projectId),
+    updatedAt: new Date().toISOString(),
   };
 }
 
-function parseStore(raw: string | null): StaffOrgChartStore {
-  if (!raw || raw.trim().length === 0) {
-    return EMPTY_STORE;
-  }
-  try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || !isRecord(parsed.charts)) {
-      return EMPTY_STORE;
+/** Replace the in-memory store from roster (or contact) rows. */
+export function hydrateOrgChartsFromRoster(
+  rows: Array<{
+    _id: string;
+    label?: string;
+    orgReports?: unknown;
+    projectIds?: unknown;
+    projectId?: unknown;
+  }>,
+): StaffOrgChartStore {
+  clearLegacyLocalStorage();
+  const charts: Record<string, StaffOrgChart> = {};
+  for (const row of rows) {
+    if (!asString(row._id)) {
+      continue;
     }
-    const charts: Record<string, StaffOrgChart> = {};
-    for (const [key, value] of Object.entries(parsed.charts)) {
-      const chart = parseChart(value);
-      if (chart && chart.contactId === key) {
-        charts[key] = chart;
-      }
-    }
-    return { charts };
-  } catch {
-    return EMPTY_STORE;
+    charts[row._id] = chartFromRosterRow(row);
   }
-}
-
-function writeStore(store: StaffOrgChartStore): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  memoryStore = store;
-  try {
-    window.localStorage.setItem(ORG_CHART_STORAGE_KEY, JSON.stringify(store));
-    notifyStoreChanged();
-  } catch {
-    // Ignore quota / privacy-mode failures.
-  }
+  const store = { charts };
+  writeStore(store);
+  return store;
 }
 
 export function readOrgChartStore(): StaffOrgChartStore {
-  if (typeof window === "undefined") {
-    return EMPTY_STORE;
-  }
-  if (memoryStore !== null) {
-    return memoryStore;
-  }
-  try {
-    const store = parseStore(
-      window.localStorage.getItem(ORG_CHART_STORAGE_KEY),
-    );
-    memoryStore = store;
-    return store;
-  } catch {
-    memoryStore = EMPTY_STORE;
-    return EMPTY_STORE;
-  }
+  return memoryStore;
 }
 
 /** Stable snapshot for `useSyncExternalStore` consumers. */
@@ -171,6 +177,7 @@ export function countOrgReports(contactId: string): number {
 export function emptyOrgChart(
   contactId: string,
   contactLabel?: string,
+  projectIds: string[] = [],
 ): StaffOrgChart {
   return {
     contactId: contactId.trim(),
@@ -178,10 +185,12 @@ export function emptyOrgChart(
       ? { contactLabel: asString(contactLabel)! }
       : {}),
     reports: [],
+    projectIds: [...projectIds],
     updatedAt: new Date().toISOString(),
   };
 }
 
+/** Updates the in-memory chart only (tests / optimistic UI). */
 export function upsertOrgChart(chart: StaffOrgChart): StaffOrgChart {
   const contactId = chart.contactId.trim();
   const next: StaffOrgChart = {
@@ -190,23 +199,92 @@ export function upsertOrgChart(chart: StaffOrgChart): StaffOrgChart {
       ? { contactLabel: asString(chart.contactLabel)! }
       : {}),
     reports: chart.reports
-      .map((report) => parseReport(report))
+      .map((report) => parseOrgReport(report))
       .filter((report): report is StaffOrgReport => report !== null),
+    projectIds: parseProjectIds(chart.projectIds),
     updatedAt: new Date().toISOString(),
   };
-  const store = readOrgChartStore();
   writeStore({
     charts: {
-      ...store.charts,
+      ...readOrgChartStore().charts,
       [contactId]: next,
     },
   });
   return next;
 }
 
+export type SaveOrgChartInput = {
+  contactId: string;
+  reports: StaffOrgReport[];
+  projectIds: string[];
+  contactLabel?: string;
+};
+
+export type SaveOrgChartResult =
+  | { ok: true; chart: StaffOrgChart }
+  | { ok: false; message: string; status?: number };
+
+/** Persist org reports + project membership to Core through the BFF. */
+export async function saveOrgChartToCore(
+  input: SaveOrgChartInput,
+): Promise<SaveOrgChartResult> {
+  const contactId = input.contactId.trim();
+  if (!contactId) {
+    return { ok: false, message: "Contact id is required." };
+  }
+
+  const reports = input.reports
+    .map((report) => parseOrgReport(report))
+    .filter((report): report is StaffOrgReport => report !== null);
+  const projectIds = parseProjectIds(input.projectIds);
+
+  try {
+    const response = await fetch(
+      `/api/messaging/contacts/${encodeURIComponent(contactId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgReports: reports,
+          projectIds,
+        }),
+      },
+    );
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message =
+        isRecord(body) && typeof body.message === "string"
+          ? body.message
+          : `Save failed (${response.status}).`;
+      return { ok: false, message, status: response.status };
+    }
+
+    const chart: StaffOrgChart = {
+      contactId,
+      ...(asString(input.contactLabel)
+        ? { contactLabel: asString(input.contactLabel)! }
+        : {}),
+      reports:
+        isRecord(body) && "orgReports" in body
+          ? parseOrgReports(body.orgReports)
+          : reports,
+      projectIds:
+        isRecord(body) && ("projectIds" in body || "projectId" in body)
+          ? parseProjectIds(body.projectIds, body.projectId)
+          : projectIds,
+      updatedAt: new Date().toISOString(),
+    };
+    upsertOrgChart(chart);
+    return { ok: true, chart };
+  } catch {
+    return { ok: false, message: "Could not reach the messaging service." };
+  }
+}
+
+/** Drops a chart from memory (contact deletion is owned by Core). */
 export function removeOrgChart(contactId: string): void {
   const id = contactId.trim();
-  if (!id || typeof window === "undefined") {
+  if (!id) {
     return;
   }
   const store = readOrgChartStore();
@@ -240,33 +318,16 @@ export function subscribeToOrgCharts(onStoreChange: () => void): () => void {
     return () => undefined;
   }
 
-  const onCrossTabStorage = (event: StorageEvent) => {
-    if (event.key !== null && event.key !== ORG_CHART_STORAGE_KEY) {
-      return;
-    }
-    invalidateMemoryStore();
-    onStoreChange();
-  };
   const onSameTabChange = () => onStoreChange();
-
-  window.addEventListener("storage", onCrossTabStorage);
   window.addEventListener(STAFF_ORG_CHART_CHANGED_EVENT, onSameTabChange);
   return () => {
-    window.removeEventListener("storage", onCrossTabStorage);
     window.removeEventListener(STAFF_ORG_CHART_CHANGED_EVENT, onSameTabChange);
   };
 }
 
-/** Clears browser + in-memory store (tests / remove-all). */
+/** Clears in-memory store and legacy localStorage key (tests). */
 export function clearOrgCharts(): void {
-  memoryStore = null;
-  if (typeof window === "undefined") {
-    return;
-  }
-  try {
-    window.localStorage.removeItem(ORG_CHART_STORAGE_KEY);
-    notifyStoreChanged();
-  } catch {
-    // Ignore storage failures.
-  }
+  memoryStore = EMPTY_STORE;
+  clearLegacyLocalStorage();
+  notifyStoreChanged();
 }

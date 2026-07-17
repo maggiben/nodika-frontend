@@ -6,6 +6,12 @@ export type StaffRosterRow = {
   tags: string[];
   projectId?: string | null;
   projectIds?: string[];
+  orgReports?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    roleOther?: string;
+  }>;
   lastSentAt: string | null;
   lastReceivedAt: string | null;
   lastTemplateKey: string | null;
@@ -55,10 +61,26 @@ export function parseStaffRoster(payload: unknown): StaffRosterRow[] {
     projectId:
       typeof row.projectId === "string"
         ? row.projectId
-        : Array.isArray(row.projectIds) &&
-            typeof row.projectIds[0] === "string"
+        : Array.isArray(row.projectIds) && typeof row.projectIds[0] === "string"
           ? row.projectIds[0]
           : null,
+    orgReports: Array.isArray(row.orgReports)
+      ? row.orgReports.filter(
+          (
+            item,
+          ): item is {
+            id: string;
+            name: string;
+            role: string;
+            roleOther?: string;
+          } =>
+            typeof item === "object" &&
+            item !== null &&
+            typeof (item as { id?: unknown }).id === "string" &&
+            typeof (item as { name?: unknown }).name === "string" &&
+            typeof (item as { role?: unknown }).role === "string",
+        )
+      : [],
     lastSentAt: typeof row.lastSentAt === "string" ? row.lastSentAt : null,
     lastReceivedAt:
       typeof row.lastReceivedAt === "string" ? row.lastReceivedAt : null,

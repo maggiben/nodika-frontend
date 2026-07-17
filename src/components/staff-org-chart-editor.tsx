@@ -2,8 +2,10 @@
 
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
+  Checkbox,
   Container,
   FormControl,
   InputLabel,
@@ -25,13 +27,19 @@ import {
 import {
   createReportId,
   emptyOrgChart,
+  hydrateOrgChartsFromRoster,
   readOrgChart,
   reportRoleLabel,
+  saveOrgChartToCore,
   type StaffOrgChart,
   type StaffOrgReport,
   type StaffReportRole,
-  upsertOrgChart,
 } from "@/lib/staff-org-chart";
+import {
+  listStoredProjects,
+  refreshProjectLibrary,
+  type StoredProject,
+} from "@/lib/snapshot-storage";
 import { parseStaffRoster } from "@/lib/staff-roster";
 
 type LeadInfo = {
@@ -51,14 +59,18 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
   const [lead, setLead] = useState<LeadInfo | null>(null);
   const [leadError, setLeadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [chart, setChart] = useState<StaffOrgChart>(() =>
     emptyOrgChart(contactId),
   );
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
+  const [projects, setProjects] = useState<StoredProject[]>([]);
   const [draftName, setDraftName] = useState("");
   const [draftRole, setDraftRole] = useState<StaffReportRole>("operario");
   const [draftRoleOther, setDraftRoleOther] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<string | null>(null);
 
@@ -72,18 +84,45 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
     [t],
   );
 
+  const projectOptions = useMemo(() => {
+    const byId = new Map(projects.map((project) => [project.id, project]));
+    for (const id of selectedProjectIds) {
+      if (!byId.has(id)) {
+        byId.set(id, {
+          id,
+          name: id,
+          json: "{}",
+          updatedAt: new Date(0).toISOString(),
+        });
+      }
+    }
+    return [...byId.values()];
+  }, [projects, selectedProjectIds]);
+
   const persist = useCallback(
-    (next: StaffOrgChart) => {
-      const saved = upsertOrgChart({
-        ...next,
+    async (nextReports: StaffOrgReport[], nextProjectIds: string[]) => {
+      setSaving(true);
+      setSavedMessage(null);
+      setSaveError(null);
+      const result = await saveOrgChartToCore({
+        contactId,
+        reports: nextReports,
+        projectIds: nextProjectIds,
         contactLabel: lead?.label,
       });
-      setChart(saved);
+      setSaving(false);
+      if (!result.ok) {
+        setSaveError(result.message || t("staff.org.saveError"));
+        return false;
+      }
+      setChart(result.chart);
+      setSelectedProjectIds(result.chart.projectIds);
       setSavedMessage(t("staff.org.saved"));
       setDraft(null);
       setCopyMessage(null);
+      return true;
     },
-    [lead?.label, t],
+    [contactId, lead?.label, t],
   );
 
   useEffect(() => {
@@ -93,13 +132,18 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
       setLoading(true);
       setLeadError(null);
       try {
-        const response = await fetch("/api/messaging/roster", {
-          cache: "no-store",
-        });
-        const body: unknown = await response.json().catch(() => null);
-        let rows = response.ok ? parseStaffRoster(body) : [];
+        const [rosterResponse, libraryRefresh] = await Promise.all([
+          fetch("/api/messaging/roster", { cache: "no-store" }),
+          refreshProjectLibrary(),
+        ]);
+        if (!cancelled) {
+          setProjects(libraryRefresh.library.projects);
+        }
 
-        if (!response.ok) {
+        const body: unknown = await rosterResponse.json().catch(() => null);
+        let rows = rosterResponse.ok ? parseStaffRoster(body) : [];
+
+        if (!rosterResponse.ok) {
           const contactsResponse = await fetch("/api/messaging/contacts", {
             cache: "no-store",
           });
@@ -124,6 +168,8 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
           return;
         }
 
+        hydrateOrgChartsFromRoster(rows);
+
         const match = rows.find((row) => row._id === contactId);
         if (!match) {
           setLead(null);
@@ -139,11 +185,14 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
         };
         setLead(info);
         const existing = readOrgChart(contactId);
-        setChart(
-          existing
-            ? { ...existing, contactLabel: info.label }
-            : emptyOrgChart(contactId, info.label),
-        );
+        const nextChart = existing
+          ? { ...existing, contactLabel: info.label }
+          : emptyOrgChart(contactId, info.label, match.projectIds ?? []);
+        setChart(nextChart);
+        setSelectedProjectIds(nextChart.projectIds);
+        if (libraryRefresh.ok) {
+          setProjects(listStoredProjects());
+        }
       } catch {
         if (!cancelled) {
           setLeadError(t("staff.unreachable"));
@@ -174,9 +223,10 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
     setDraftRole(report.role);
     setDraftRoleOther(report.roleOther ?? "");
     setSavedMessage(null);
+    setSaveError(null);
   }
 
-  function saveReport() {
+  async function saveReport() {
     const name = draftName.trim();
     if (!name) {
       return;
@@ -190,23 +240,27 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
       ...(roleOther ? { roleOther } : {}),
     };
     const without = chart.reports.filter((item) => item.id !== report.id);
-    persist({
-      ...chart,
-      reports: editingId
-        ? chart.reports.map((item) => (item.id === report.id ? report : item))
-        : [...without, report],
-    });
-    resetDraftForm();
-  }
-
-  function removeReport(reportId: string) {
-    persist({
-      ...chart,
-      reports: chart.reports.filter((item) => item.id !== reportId),
-    });
-    if (editingId === reportId) {
+    const nextReports = editingId
+      ? chart.reports.map((item) => (item.id === report.id ? report : item))
+      : [...without, report];
+    const ok = await persist(nextReports, selectedProjectIds);
+    if (ok) {
       resetDraftForm();
     }
+  }
+
+  async function removeReport(reportId: string) {
+    const ok = await persist(
+      chart.reports.filter((item) => item.id !== reportId),
+      selectedProjectIds,
+    );
+    if (ok && editingId === reportId) {
+      resetDraftForm();
+    }
+  }
+
+  async function saveProjects() {
+    await persist(chart.reports, selectedProjectIds);
   }
 
   function generateDraft() {
@@ -265,6 +319,7 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
         </Box>
 
         {leadError ? <Alert severity="error">{leadError}</Alert> : null}
+        {saveError ? <Alert severity="error">{saveError}</Alert> : null}
         {savedMessage ? <Alert severity="success">{savedMessage}</Alert> : null}
 
         {lead ? (
@@ -283,9 +338,59 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
             <Typography sx={{ mt: 1 }}>
               {t("staff.org.teamCount", { count: chart.reports.length })}
             </Typography>
-            <Alert severity="info" sx={{ mt: 2 }}>
-              {t("staff.org.localNotice")}
-            </Alert>
+          </Paper>
+        ) : null}
+
+        {lead ? (
+          <Paper sx={{ p: 3 }}>
+            <Typography component="h2" variant="h6">
+              {t("staff.org.projectsTitle")}
+            </Typography>
+            <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
+              {t("staff.org.projectsDescription")}
+            </Typography>
+            <Autocomplete
+              disableCloseOnSelect
+              getOptionLabel={(option) =>
+                option.name === option.id
+                  ? option.id
+                  : `${option.name} (${option.id})`
+              }
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              multiple
+              onChange={(_event, value) => {
+                setSelectedProjectIds(value.map((project) => project.id));
+                setSavedMessage(null);
+                setSaveError(null);
+              }}
+              options={projectOptions}
+              renderOption={(props, option, { selected }) => (
+                <li {...props} key={option.id}>
+                  <Checkbox checked={selected} sx={{ mr: 1 }} />
+                  {option.name === option.id
+                    ? option.id
+                    : `${option.name} (${option.id})`}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label={t("staff.org.projectsLabel")}
+                  placeholder={t("staff.org.projectsPlaceholder")}
+                />
+              )}
+              value={projectOptions.filter((project) =>
+                selectedProjectIds.includes(project.id),
+              )}
+            />
+            <Button
+              disabled={saving}
+              onClick={() => void saveProjects()}
+              sx={{ mt: 2 }}
+              variant="outlined"
+            >
+              {t("staff.org.saveProjects")}
+            </Button>
           </Paper>
         ) : null}
 
@@ -334,8 +439,8 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
               ) : null}
               <Stack direction="row" spacing={1}>
                 <Button
-                  disabled={!draftName.trim()}
-                  onClick={saveReport}
+                  disabled={!draftName.trim() || saving}
+                  onClick={() => void saveReport()}
                   variant="contained"
                 >
                   {editingId
@@ -387,7 +492,8 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
                       </Button>
                       <Button
                         color="warning"
-                        onClick={() => removeReport(report.id)}
+                        disabled={saving}
+                        onClick={() => void removeReport(report.id)}
                         size="small"
                       >
                         {t("staff.org.removeReport")}
