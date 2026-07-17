@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { NextRequest } from "next/server";
-import { POST } from "./route";
+import { GET, POST } from "./route";
 
 const validSnapshot = {
   schema_version: "nodika-snapshot-v1",
@@ -42,6 +42,17 @@ function createRequest(
   });
 }
 
+function createGetRequest(
+  cookies = "nodika_access_token=token; nodika_refresh_token=refresh",
+) {
+  return new NextRequest("http://localhost:3000/api/snapshots", {
+    method: "GET",
+    headers: {
+      Cookie: cookies,
+    },
+  });
+}
+
 function createRawRequest(
   body: string,
   cookies = "nodika_access_token=token; nodika_refresh_token=refresh",
@@ -59,6 +70,37 @@ function createRawRequest(
 afterEach(() => {
   delete process.env.NODIKA_CORE_URL;
   vi.unstubAllGlobals();
+});
+
+describe("GET /api/snapshots", () => {
+  test("lists sources from Core", async () => {
+    process.env.NODIKA_CORE_URL = "http://core.example";
+    const listed = [
+      {
+        id: "source_1",
+        projectId: "proj_1",
+        name: "Obra",
+        filename: "nodika-snapshot.json",
+        createdAt: "2026-07-15T00:50:36.611Z",
+        content: validSnapshot,
+      },
+    ];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(listed), { status: 200 })),
+    );
+
+    const response = await GET(createGetRequest());
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual(listed);
+  });
+
+  test("requires authentication", async () => {
+    process.env.NODIKA_CORE_URL = "http://core.example";
+    const response = await GET(createGetRequest(""));
+    expect(response.status).toBe(401);
+  });
 });
 
 describe("POST /api/snapshots", () => {
@@ -129,6 +171,7 @@ describe("POST /api/snapshots", () => {
             createdAt: "2026-07-15T00:50:36.611Z",
             filename: "nodika-snapshot.json",
             id: "source_1",
+            projectId: "proj_1",
           }),
           { status: 201 },
         ),
@@ -142,6 +185,7 @@ describe("POST /api/snapshots", () => {
       createdAt: "2026-07-15T00:50:36.611Z",
       filename: "nodika-snapshot.json",
       id: "source_1",
+      projectId: "proj_1",
     });
   });
 
@@ -180,6 +224,7 @@ describe("POST /api/snapshots", () => {
             createdAt: "2026-07-15T00:50:36.611Z",
             filename: "nodika-snapshot.json",
             id: "source_1",
+            projectId: "proj_1",
           }),
         ),
       );

@@ -35,7 +35,7 @@ import { useDictionary } from "@/i18n/dictionary-provider";
 import { EmailFollowUpSchedulePanel } from "@/components/email-follow-up-schedule-panel";
 import { StaffCatalogPanel } from "@/components/staff-catalog-panel";
 import { useVisibleInterval } from "@/hooks/use-visible-interval";
-import { readProjectLibrary } from "@/lib/snapshot-storage";
+import { readProjectLibrary, refreshProjectLibrary } from "@/lib/snapshot-storage";
 import {
   getOrgChartsSnapshot,
   removeOrgChart,
@@ -232,6 +232,7 @@ export function StaffMessagingForm() {
       setLoading(true);
       setError(null);
       try {
+        await refreshProjectLibrary();
         const [roster, templatesResponse] = await Promise.all([
           loadRoster(),
           fetch(`/api/messaging/templates?language=${locale}`),

@@ -1,10 +1,4 @@
-# Project Library
-
-## Purpose
-
-Load uploaded Nodika snapshot projects from Core and track which project the dashboard should visualize via account `activeProjectId`.
-
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Core-backed project library
 

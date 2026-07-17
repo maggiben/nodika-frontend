@@ -18,7 +18,7 @@ import { Controller, useForm } from "react-hook-form";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { activateActiveProject } from "@/lib/activate-active-project";
 import { parseNodikaSnapshot } from "@/lib/nodika-snapshot";
-import { upsertStoredProject } from "@/lib/snapshot-storage";
+import { activateUploadedSnapshot } from "@/lib/snapshot-storage";
 
 type UploadFormValues = {
   snapshot: string;
@@ -28,6 +28,7 @@ type UploadResult = {
   id: string;
   filename: string;
   createdAt: string;
+  projectId?: string | null;
 };
 
 function isUploadResult(value: unknown): value is UploadResult {
@@ -128,8 +129,13 @@ export function SnapshotUploadForm({
         return;
       }
 
-      const stored = upsertStoredProject(values.snapshot);
-      await activateActiveProject(stored.id);
+      const stored = await activateUploadedSnapshot(
+        values.snapshot,
+        body.projectId,
+      );
+      if (stored) {
+        await activateActiveProject(stored.id);
+      }
       setResult(body);
       router.push(`/${locale}`);
     } catch {

@@ -1,41 +1,90 @@
 // @vitest-environment jsdom
 
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+
 import {
+  activateUploadedSnapshot,
   clearStoredSnapshotJson,
   listStoredProjects,
   readProjectLibrary,
   readSelectedSnapshotJson,
-  readStoredSnapshotJson,
+  refreshProjectLibrary,
   selectStoredProject,
-  storeSnapshotJson,
-  upsertStoredProject,
 } from "./snapshot-storage";
+
+function snapshot(projectId: string, name: string) {
+  return JSON.stringify({
+    meta: { projectId, projectNombre: name },
+  });
+}
+
+beforeEach(() => {
+  clearStoredSnapshotJson();
+  window.localStorage.clear();
+  vi.unstubAllGlobals();
+});
 
 afterEach(() => {
   clearStoredSnapshotJson();
-  window.localStorage.clear();
-  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("snapshot-storage", () => {
-  test("upserts multiple projects and reads the selected snapshot", () => {
-    expect(readSelectedSnapshotJson()).toBeNull();
+  test("loads projects from Core BFF and honors activeProjectId", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/api/snapshots")) {
+          return new Response(
+            JSON.stringify([
+              {
+                id: "src_a",
+                projectId: "proj_a",
+                name: "Alpha",
+                filename: "a.json",
+                createdAt: "2026-01-02T00:00:00.000Z",
+                content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+              },
+              {
+                id: "src_b",
+                projectId: "proj_b",
+                name: "Beta",
+                filename: "b.json",
+                createdAt: "2026-01-01T00:00:00.000Z",
+                content: { meta: { projectId: "proj_b", projectNombre: "Beta" } },
+              },
+            ]),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/settings")) {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: "proj_b",
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("{}", { status: 404 });
+      }),
+    );
 
-    upsertStoredProject(
-      JSON.stringify({
-        meta: { projectId: "proj_a", projectNombre: "Alpha" },
-      }),
-    );
-    upsertStoredProject(
-      JSON.stringify({
-        meta: { projectId: "proj_b", projectNombre: "Beta" },
-      }),
-    );
+    await refreshProjectLibrary();
 
     expect(listStoredProjects().map((project) => project.name)).toEqual([
-      "Beta",
       "Alpha",
+      "Beta",
     ]);
     expect(readProjectLibrary().selectedId).toBe("proj_b");
     expect(readSelectedSnapshotJson()).toContain("Beta");
@@ -44,60 +93,72 @@ describe("snapshot-storage", () => {
     expect(readSelectedSnapshotJson()).toContain("Alpha");
   });
 
-  test("migrates a legacy single snapshot into the library", () => {
-    window.localStorage.setItem(
-      "nodika.lastSnapshotJson",
-      JSON.stringify({
-        meta: { projectId: "legacy_1", projectNombre: "Legacy" },
+  test("activateUploadedSnapshot selects project and refreshes from Core", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo) => {
+        const url = String(input);
+        if (url.includes("/api/snapshots")) {
+          return new Response(
+            JSON.stringify([
+              {
+                id: "src_new",
+                projectId: "proj_new",
+                name: "Nuevo",
+                filename: "n.json",
+                createdAt: "2026-03-01T00:00:00.000Z",
+                content: {
+                  meta: { projectId: "proj_new", projectNombre: "Nuevo" },
+                },
+              },
+            ]),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/settings")) {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: "proj_new",
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        return new Response("{}", { status: 404 });
       }),
     );
 
-    expect(readSelectedSnapshotJson()).toContain("Legacy");
-    expect(listStoredProjects()).toHaveLength(1);
+    const stored = await activateUploadedSnapshot(snapshot("proj_new", "Nuevo"));
+    expect(stored?.id).toBe("proj_new");
+    expect(readSelectedSnapshotJson()).toContain("Nuevo");
+  });
+
+  test("clears legacy localStorage keys on refresh", async () => {
+    window.localStorage.setItem("nodika.projectLibrary.v1", '{"projects":[]}');
+    window.localStorage.setItem("nodika.lastSnapshotJson", "{}");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
+    );
+
+    await refreshProjectLibrary();
+
+    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).toBeNull();
     expect(window.localStorage.getItem("nodika.lastSnapshotJson")).toBeNull();
-    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).not.toBeNull();
   });
 
-  test("migrates previous-brand library keys into the new store", () => {
-    window.localStorage.setItem(
-      "nordika.projectLibrary.v1",
-      JSON.stringify({
-        projects: [
-          {
-            id: "old_1",
-            name: "Old brand",
-            json: '{"meta":{"projectNombre":"Old brand"}}',
-            updatedAt: "2026-01-01T00:00:00.000Z",
-          },
-        ],
-        selectedId: "old_1",
-      }),
-    );
-
-    expect(readSelectedSnapshotJson()).toContain("Old brand");
-    expect(window.localStorage.getItem("nordika.projectLibrary.v1")).toBeNull();
-    expect(window.localStorage.getItem("nodika.projectLibrary.v1")).not.toBeNull();
-  });
-
-  test("keeps deprecated helpers working", () => {
-    storeSnapshotJson('{"meta":{"projectNombre":"Compat"}}');
-    expect(readStoredSnapshotJson()).toContain("Compat");
-  });
-
-  test("ignores localStorage failures", () => {
-    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
-    expect(readStoredSnapshotJson()).toBeNull();
-
-    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
-      throw new Error("quota");
-    });
-    expect(() => storeSnapshotJson("{}")).not.toThrow();
-
-    vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
-      throw new Error("blocked");
-    });
+  test("clearStoredSnapshotJson empties memory", () => {
     expect(() => clearStoredSnapshotJson()).not.toThrow();
+    expect(listStoredProjects()).toEqual([]);
+    expect(readSelectedSnapshotJson()).toBeNull();
   });
 });

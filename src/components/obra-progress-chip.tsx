@@ -1,7 +1,7 @@
 "use client";
 
 import { ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { hasUsableOverallProgress } from "@/lib/obra-progress";
@@ -15,6 +15,7 @@ import { buildSnapshotDashboard } from "@/lib/snapshot-dashboard";
 import {
   readProjectLibrary,
   readSelectedSnapshotJson,
+  refreshProjectLibrary,
   subscribeToProjectLibrary,
 } from "@/lib/snapshot-storage";
 import { useLiveObraProgress } from "@/lib/use-live-obra-progress";
@@ -84,6 +85,10 @@ export function ObraProgressChip({
   const progress = useLiveObraProgress(
     authenticated && selectedId ? selectedId : null,
   );
+
+  useEffect(() => {
+    void refreshProjectLibrary();
+  }, []);
 
   if (!hasUsableOverallProgress(progress)) {
     return null;

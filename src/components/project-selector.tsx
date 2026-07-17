@@ -7,12 +7,13 @@ import {
   Select,
   type SelectChangeEvent,
 } from "@mui/material";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { activateActiveProject } from "@/lib/activate-active-project";
 import {
   listStoredProjects,
   readProjectLibrary,
+  refreshProjectLibrary,
   selectStoredProject,
   subscribeToProjectLibrary,
   type StoredProject,
@@ -47,6 +48,10 @@ export function ProjectSelector() {
     getSelectedIdSnapshot,
     getServerEmptyId,
   );
+
+  useEffect(() => {
+    void refreshProjectLibrary();
+  }, []);
 
   if (projects.length === 0) {
     return null;

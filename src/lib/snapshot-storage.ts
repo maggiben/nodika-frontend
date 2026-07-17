@@ -1,9 +1,14 @@
-/** Pre-rebrand keys; migrated once into LIBRARY_STORAGE_KEY. */
-const PREVIOUS_BRAND_LIBRARY_KEY = "nordika.projectLibrary.v1";
-const PREVIOUS_BRAND_SNAPSHOT_KEY = "nordika.lastSnapshotJson";
-const LEGACY_STORAGE_KEY = "nodika.lastSnapshotJson";
-const LIBRARY_STORAGE_KEY = "nodika.projectLibrary.v1";
+/** In-memory project library loaded from Core via BFF. No localStorage. */
+
 export const PROJECT_LIBRARY_CHANGED_EVENT = "nodika:project-library-changed";
+
+/** Pre-rebrand / legacy keys — cleared once so old caches do not confuse debugging. */
+const LEGACY_STORAGE_KEYS = [
+  "nodika.projectLibrary.v1",
+  "nodika.lastSnapshotJson",
+  "nordika.projectLibrary.v1",
+  "nordika.lastSnapshotJson",
+] as const;
 
 export type StoredProject = {
   id: string;
@@ -22,28 +27,42 @@ const EMPTY_LIBRARY: ProjectLibrary = {
   selectedId: null,
 };
 
-let memoryLibrary: ProjectLibrary | null = null;
+let memoryLibrary: ProjectLibrary = EMPTY_LIBRARY;
+let loadPromise: Promise<ProjectLibrary> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function notifyLibraryChanged() {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.dispatchEvent(new Event(PROJECT_LIBRARY_CHANGED_EVENT));
-}
-
-function invalidateMemoryLibrary() {
-  memoryLibrary = null;
 }
 
 function asString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
     : null;
+}
+
+function notifyLibraryChanged() {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.dispatchEvent(new Event(PROJECT_LIBRARY_CHANGED_EVENT));
+}
+
+function writeLibrary(library: ProjectLibrary): void {
+  memoryLibrary = library;
+  notifyLibraryChanged();
+}
+
+function clearLegacyLocalStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    for (const key of LEGACY_STORAGE_KEYS) {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // Ignore storage failures.
+  }
 }
 
 export function projectIdentityFromSnapshotJson(json: string): {
@@ -72,135 +91,117 @@ export function projectIdentityFromSnapshotJson(json: string): {
   }
 }
 
-function parseLibrary(raw: string | null): ProjectLibrary | null {
-  if (!raw || raw.trim().length === 0) {
-    return null;
-  }
+type ListedSource = {
+  id: string;
+  projectId: string;
+  name: string;
+  filename: string;
+  createdAt: string;
+  content: unknown;
+};
 
+function parseListedSources(body: unknown): ListedSource[] {
+  if (!Array.isArray(body)) {
+    return [];
+  }
+  const sources: ListedSource[] = [];
+  for (const entry of body) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+    const id = asString(entry.id);
+    const projectId = asString(entry.projectId);
+    const name = asString(entry.name);
+    const filename = asString(entry.filename);
+    const createdAt = asString(entry.createdAt);
+    if (!id || !projectId || !name || !filename || !createdAt) {
+      continue;
+    }
+    if (!("content" in entry)) {
+      continue;
+    }
+    sources.push({
+      id,
+      projectId,
+      name,
+      filename,
+      createdAt,
+      content: entry.content,
+    });
+  }
+  return sources;
+}
+
+function libraryFromSources(
+  sources: ListedSource[],
+  activeProjectId: string | null,
+): ProjectLibrary {
+  const projects: StoredProject[] = sources.map((source) => ({
+    id: source.projectId,
+    name: source.name,
+    json: JSON.stringify(source.content),
+    updatedAt: source.createdAt,
+  }));
+  const selectedId =
+    activeProjectId && projects.some((project) => project.id === activeProjectId)
+      ? activeProjectId
+      : (projects[0]?.id ?? null);
+  return { projects, selectedId };
+}
+
+async function fetchActiveProjectId(): Promise<string | null> {
   try {
-    const parsed: unknown = JSON.parse(raw);
-    if (!isRecord(parsed) || !Array.isArray(parsed.projects)) {
+    const response = await fetch("/api/settings", { cache: "no-store" });
+    if (!response.ok) {
       return null;
     }
-
-    const projects: StoredProject[] = [];
-    for (const entry of parsed.projects) {
-      if (!isRecord(entry)) {
-        continue;
-      }
-      const id = asString(entry.id);
-      const name = asString(entry.name);
-      const json = asString(entry.json);
-      const updatedAt = asString(entry.updatedAt);
-      if (!id || !name || !json || !updatedAt) {
-        continue;
-      }
-      projects.push({ id, name, json, updatedAt });
+    const body: unknown = await response.json().catch(() => null);
+    if (!isRecord(body)) {
+      return null;
     }
-
-    const selectedId = asString(parsed.selectedId);
-    return {
-      projects,
-      selectedId:
-        selectedId && projects.some((project) => project.id === selectedId)
-          ? selectedId
-          : (projects[0]?.id ?? null),
-    };
+    return asString(body.activeProjectId);
   } catch {
     return null;
   }
 }
 
-function writeLibrary(library: ProjectLibrary): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  memoryLibrary = library;
-
-  try {
-    window.localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(library));
-    notifyLibraryChanged();
-  } catch {
-    // Ignore quota / privacy-mode failures.
-  }
-}
-
-function migrateSingleSnapshot(raw: string | null): ProjectLibrary {
-  if (!raw || raw.trim().length === 0) {
-    return EMPTY_LIBRARY;
-  }
-
-  const identity = projectIdentityFromSnapshotJson(raw);
-  const library: ProjectLibrary = {
-    projects: [
-      {
-        id: identity.id,
-        name: identity.name,
-        json: raw,
-        updatedAt: new Date().toISOString(),
-      },
-    ],
-    selectedId: identity.id,
-  };
-  writeLibrary(library);
-  return library;
-}
-
-function migrateLegacySnapshot(): ProjectLibrary {
+/** Load projects from Core BFF into memory. */
+export async function refreshProjectLibrary(): Promise<ProjectLibrary> {
   if (typeof window === "undefined") {
     return EMPTY_LIBRARY;
   }
 
-  try {
-    const previousLibrary = parseLibrary(
-      window.localStorage.getItem(PREVIOUS_BRAND_LIBRARY_KEY),
-    );
-    if (previousLibrary && previousLibrary.projects.length > 0) {
-      writeLibrary(previousLibrary);
-      window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
-      window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-      window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-      return previousLibrary;
+  if (loadPromise) {
+    return loadPromise;
+  }
+
+  loadPromise = (async () => {
+    clearLegacyLocalStorage();
+    try {
+      const response = await fetch("/api/snapshots", { cache: "no-store" });
+      if (!response.ok) {
+        writeLibrary(EMPTY_LIBRARY);
+        return EMPTY_LIBRARY;
+      }
+      const body: unknown = await response.json().catch(() => null);
+      const sources = parseListedSources(body);
+      const activeProjectId = await fetchActiveProjectId();
+      const library = libraryFromSources(sources, activeProjectId);
+      writeLibrary(library);
+      return library;
+    } catch {
+      writeLibrary(EMPTY_LIBRARY);
+      return EMPTY_LIBRARY;
+    } finally {
+      loadPromise = null;
     }
+  })();
 
-    const legacy =
-      window.localStorage.getItem(LEGACY_STORAGE_KEY) ??
-      window.localStorage.getItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-    const migrated = migrateSingleSnapshot(legacy);
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
-    return migrated;
-  } catch {
-    return EMPTY_LIBRARY;
-  }
+  return loadPromise;
 }
 
 export function readProjectLibrary(): ProjectLibrary {
-  if (typeof window === "undefined") {
-    return EMPTY_LIBRARY;
-  }
-
-  if (memoryLibrary !== null) {
-    return memoryLibrary;
-  }
-
-  try {
-    const existing = parseLibrary(
-      window.localStorage.getItem(LIBRARY_STORAGE_KEY),
-    );
-    if (existing && existing.projects.length > 0) {
-      memoryLibrary = existing;
-      return existing;
-    }
-    const migrated = migrateLegacySnapshot();
-    memoryLibrary = migrated;
-    return migrated;
-  } catch {
-    memoryLibrary = EMPTY_LIBRARY;
-    return EMPTY_LIBRARY;
-  }
+  return memoryLibrary;
 }
 
 export function listStoredProjects(): StoredProject[] {
@@ -212,29 +213,10 @@ export function readSelectedSnapshotJson(): string | null {
   if (!library.selectedId) {
     return null;
   }
-
   return (
     library.projects.find((project) => project.id === library.selectedId)
       ?.json ?? null
   );
-}
-
-export function upsertStoredProject(json: string): StoredProject {
-  const identity = projectIdentityFromSnapshotJson(json);
-  const library = readProjectLibrary();
-  const entry: StoredProject = {
-    id: identity.id,
-    name: identity.name,
-    json,
-    updatedAt: new Date().toISOString(),
-  };
-  const without = library.projects.filter((project) => project.id !== entry.id);
-  const next: ProjectLibrary = {
-    projects: [entry, ...without],
-    selectedId: entry.id,
-  };
-  writeLibrary(next);
-  return entry;
 }
 
 export function selectStoredProject(projectId: string): void {
@@ -242,39 +224,46 @@ export function selectStoredProject(projectId: string): void {
   if (!library.projects.some((project) => project.id === projectId)) {
     return;
   }
-
   writeLibrary({
     ...library,
     selectedId: projectId,
   });
 }
 
-/** @deprecated Prefer upsertStoredProject for multi-project library. */
-export function storeSnapshotJson(json: string): void {
-  upsertStoredProject(json);
-}
-
-/** @deprecated Prefer readSelectedSnapshotJson. */
-export function readStoredSnapshotJson(): string | null {
-  return readSelectedSnapshotJson();
+/** After upload: set selection from snapshot identity, then refresh from Core. */
+export async function activateUploadedSnapshot(
+  snapshotJson: string,
+  projectIdFromUpload?: string | null,
+): Promise<StoredProject | null> {
+  const identity = projectIdentityFromSnapshotJson(snapshotJson);
+  const projectId = projectIdFromUpload?.trim() || identity.id;
+  selectStoredProject(projectId);
+  // Optimistically keep selection even before refresh finds it.
+  if (!memoryLibrary.projects.some((project) => project.id === projectId)) {
+    writeLibrary({
+      projects: [
+        {
+          id: projectId,
+          name: identity.name,
+          json: snapshotJson,
+          updatedAt: new Date().toISOString(),
+        },
+        ...memoryLibrary.projects,
+      ],
+      selectedId: projectId,
+    });
+  }
+  await refreshProjectLibrary();
+  selectStoredProject(projectId);
+  return (
+    memoryLibrary.projects.find((project) => project.id === projectId) ?? null
+  );
 }
 
 export function clearStoredSnapshotJson(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  memoryLibrary = null;
-
-  try {
-    window.localStorage.removeItem(LIBRARY_STORAGE_KEY);
-    window.localStorage.removeItem(LEGACY_STORAGE_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_LIBRARY_KEY);
-    window.localStorage.removeItem(PREVIOUS_BRAND_SNAPSHOT_KEY);
-    notifyLibraryChanged();
-  } catch {
-    // Ignore storage failures.
-  }
+  memoryLibrary = EMPTY_LIBRARY;
+  clearLegacyLocalStorage();
+  notifyLibraryChanged();
 }
 
 export function subscribeToProjectLibrary(
@@ -284,16 +273,9 @@ export function subscribeToProjectLibrary(
     return () => undefined;
   }
 
-  const onCrossTabStorage = () => {
-    invalidateMemoryLibrary();
-    onStoreChange();
-  };
   const onSameTabChange = () => onStoreChange();
-
-  window.addEventListener("storage", onCrossTabStorage);
   window.addEventListener(PROJECT_LIBRARY_CHANGED_EVENT, onSameTabChange);
   return () => {
-    window.removeEventListener("storage", onCrossTabStorage);
     window.removeEventListener(PROJECT_LIBRARY_CHANGED_EVENT, onSameTabChange);
   };
 }

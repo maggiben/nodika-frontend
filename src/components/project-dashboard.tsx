@@ -5,7 +5,7 @@ import { BarChart } from "@mui/x-charts/BarChart";
 import { Gauge } from "@mui/x-charts/Gauge";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import {
@@ -25,6 +25,7 @@ import {
 import {
   readProjectLibrary,
   readSelectedSnapshotJson,
+  refreshProjectLibrary,
   subscribeToProjectLibrary,
 } from "@/lib/snapshot-storage";
 import { useLiveObraProgress } from "@/lib/use-live-obra-progress";
@@ -420,6 +421,10 @@ export function ProjectDashboard() {
     getProgressViewModeSnapshot,
     getServerProgressViewMode,
   );
+
+  useEffect(() => {
+    void refreshProjectLibrary();
+  }, []);
   const baseModel = modelFromStoredJson(raw);
   const live = useLiveObraProgress(
     baseModel?.projectId ?? (selectedId || null),

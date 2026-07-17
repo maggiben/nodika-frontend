@@ -1,22 +1,76 @@
 // @vitest-environment jsdom
 
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
-import {
-  clearStoredSnapshotJson,
-  upsertStoredProject,
-} from "@/lib/snapshot-storage";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { clearStoredSnapshotJson } from "@/lib/snapshot-storage";
 import { TestI18n } from "@/test-utils/test-i18n";
 import { ProjectDashboard } from "./project-dashboard";
+
+function stubSources(content: unknown, projectId = "proj_north") {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo) => {
+      const url = String(input);
+      if (url.includes("/api/snapshots")) {
+        return new Response(
+          JSON.stringify([
+            {
+              id: "src_1",
+              projectId,
+              name:
+                typeof content === "object" &&
+                content !== null &&
+                "meta" in content &&
+                typeof (content as { meta?: { projectNombre?: string } }).meta
+                  ?.projectNombre === "string"
+                  ? (content as { meta: { projectNombre: string } }).meta
+                      .projectNombre
+                  : projectId,
+              filename: "a.json",
+              createdAt: "2026-07-15T00:00:00.000Z",
+              content,
+            },
+          ]),
+          { status: 200 },
+        );
+      }
+      if (url.includes("/api/settings")) {
+        return new Response(
+          JSON.stringify({
+            email: "a@b.co",
+            activeProjectId: projectId,
+            emailSchedule: {
+              enabled: false,
+              frequency: "weekly",
+              daysOfWeek: [1],
+              dayOfMonth: 1,
+              sendTime: "09:00",
+              timezone: "UTC",
+            },
+            nextSendDates: [],
+          }),
+          { status: 200 },
+        );
+      }
+      return new Response("{}", { status: 404 });
+    }),
+  );
+}
 
 afterEach(() => {
   cleanup();
   clearStoredSnapshotJson();
   window.localStorage.clear();
+  vi.unstubAllGlobals();
 });
 
 describe("ProjectDashboard", () => {
   test("shows empty state when no snapshot is stored", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
+    );
+
     render(
       <TestI18n>
         <ProjectDashboard />
@@ -31,38 +85,36 @@ describe("ProjectDashboard", () => {
     ).toHaveAttribute("href", "/es/upload");
   });
 
-  test("renders charts and grid from stored snapshot JSON", async () => {
-    upsertStoredProject(
-      JSON.stringify({
-        meta: {
-          projectNombre: "North Quay",
-          projectId: "proj_north",
-          ciclo_inicio: "2026-07-01",
-          ciclo_fin: "2026-07-21",
+  test("renders charts and grid from Core snapshot JSON", async () => {
+    stubSources({
+      meta: {
+        projectNombre: "North Quay",
+        projectId: "proj_north",
+        ciclo_inicio: "2026-07-01",
+        ciclo_fin: "2026-07-21",
+      },
+      tareas_con_objetivo: [
+        {
+          id: "t1",
+          label: "Steel frame",
+          duracion: 10,
+          avance_base: 40,
+          sector: "Deck",
+          ini: "2026-07-01",
+          fin: "2026-07-11",
         },
-        tareas_con_objetivo: [
-          {
-            id: "t1",
-            label: "Steel frame",
-            duracion: 10,
-            avance_base: 40,
-            sector: "Deck",
-            ini: "2026-07-01",
-            fin: "2026-07-11",
-          },
-        ],
-        tareas_contexto: [
-          {
-            id: "c1",
-            label: "Survey",
-            sector: "Deck",
-            duracion: 1,
-            ini: "2026-06-01",
-            fin: "2026-06-02",
-          },
-        ],
-      }),
-    );
+      ],
+      tareas_contexto: [
+        {
+          id: "c1",
+          label: "Survey",
+          sector: "Deck",
+          duracion: 1,
+          ini: "2026-06-01",
+          fin: "2026-06-02",
+        },
+      ],
+    });
 
     render(
       <TestI18n>
@@ -86,20 +138,10 @@ describe("ProjectDashboard", () => {
     expect(screen.getAllByLabelText(/search/i).length).toBeGreaterThan(0);
   });
 
-  test("falls back to empty state when stored JSON is invalid", async () => {
-    window.localStorage.setItem(
-      "nodika.projectLibrary.v1",
-      JSON.stringify({
-        selectedId: "bad",
-        projects: [
-          {
-            id: "bad",
-            name: "Broken",
-            json: "{not-json",
-            updatedAt: "2026-07-15T00:00:00.000Z",
-          },
-        ],
-      }),
+  test("falls back to empty state when Core returns no sources", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify([]), { status: 200 })),
     );
 
     render(
@@ -114,11 +156,12 @@ describe("ProjectDashboard", () => {
   });
 
   test("shows empty charts and task table for a sparse snapshot", async () => {
-    upsertStoredProject(
-      JSON.stringify({
+    stubSources(
+      {
         meta: { projectNombre: "Sparse", projectId: "proj_sparse" },
         tareas_con_objetivo: [],
-      }),
+      },
+      "proj_sparse",
     );
 
     render(
