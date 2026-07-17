@@ -58,3 +58,9 @@ The application SHALL use `/` as a project-status landing page that visualizes t
 
 - **WHEN** the user changes the active project in the navbar selector
 - **THEN** the dashboard SHALL update to that project's visualization without requiring another upload
+
+#### Scenario: Overall progress matches objective tasks
+
+- **WHEN** the dashboard shows objective tasks and overall progress
+- **THEN** the overall progress gauge SHALL equal the average of those objective-task progress values (after any live task overlays)
+- **AND** SHALL NOT use a separate WhatsApp catalog aggregate that ignores task ids

@@ -2,10 +2,7 @@ import type {
   SnapshotDashboardModel,
   SnapshotTaskView,
 } from "@/lib/snapshot-dashboard";
-import {
-  hasUsableOverallProgress,
-  type ObraProgressSummary,
-} from "@/lib/obra-progress";
+import type { ObraProgressSummary } from "@/lib/obra-progress";
 
 export type LiveDashboardModel = SnapshotDashboardModel & {
   liveProgress: ObraProgressSummary | null;
@@ -15,9 +12,9 @@ export type LiveDashboardModel = SnapshotDashboardModel & {
 function overlayTaskAvance(
   tasks: SnapshotTaskView[],
   live: ObraProgressSummary | null,
-): SnapshotTaskView[] {
+): { tasks: SnapshotTaskView[]; overlaidCount: number } {
   if (!live || live.reports.length === 0) {
-    return tasks;
+    return { tasks, overlaidCount: 0 };
   }
   const byTaskId = new Map<string, number>();
   for (const report of live.reports) {
@@ -29,15 +26,18 @@ function overlayTaskAvance(
     }
   }
   if (byTaskId.size === 0) {
-    return tasks;
+    return { tasks, overlaidCount: 0 };
   }
-  return tasks.map((task) => {
+  let overlaidCount = 0;
+  const next = tasks.map((task) => {
     const livePercent = byTaskId.get(task.id);
     if (livePercent === undefined) {
       return task;
     }
+    overlaidCount += 1;
     return { ...task, avance: livePercent };
   });
+  return { tasks: next, overlaidCount };
 }
 
 function recomputeCompleted(
@@ -60,29 +60,31 @@ function recomputeCompleted(
   };
 }
 
+/**
+ * Merge live WhatsApp progress into the dashboard model.
+ *
+ * Overall progress (Progreso general) MUST come from the same objective-task
+ * avances shown in the grid. Using `live.overallPercent` was wrong: that value
+ * averages catalog/obra replies without `taskId`, so the gauge could show 100%
+ * while every task row still showed 0%.
+ */
 export function mergeDashboardWithLiveProgress(
   model: SnapshotDashboardModel,
   live: ObraProgressSummary | null,
 ): LiveDashboardModel {
-  const objectiveTasks = overlayTaskAvance(model.objectiveTasks, live);
+  const { tasks: objectiveTasks, overlaidCount } = overlayTaskAvance(
+    model.objectiveTasks,
+    live,
+  );
   const recomputed = recomputeCompleted(objectiveTasks);
-  const usingLiveOverall = hasUsableOverallProgress(live);
-  // When live progress was fetched but is empty (e.g. after project delete
-  // cleared WhatsApp threads), overall must not fall back to snapshot
-  // avance_base — that looked like progress survived the delete.
-  const averageProgress = usingLiveOverall
-    ? live.overallPercent
-    : live !== null
-      ? 0
-      : recomputed.averageProgress;
 
   return {
     ...model,
     objectiveTasks,
-    averageProgress,
+    averageProgress: recomputed.averageProgress,
     completedCount: recomputed.completedCount,
     totalObjectiveTasks: recomputed.totalObjectiveTasks,
     liveProgress: live,
-    usingLiveOverall,
+    usingLiveOverall: overlaidCount > 0,
   };
 }

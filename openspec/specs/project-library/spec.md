@@ -46,7 +46,7 @@ The application SHALL allow removing a project from the Core-backed library by `
 - **AND** Core accepts the deletion
 - **AND** that `projectId` previously had WhatsApp send history, task-checklist threads, or live obra progress
 - **THEN** subsequent progress reads for that `projectId` SHALL show no prior advance
-- **AND** the dashboard overall progress (progreso general) in live/after view SHALL NOT keep the previous live percentage
+- **AND** the dashboard overall progress (progreso general) SHALL match the objective-task grid (not a separate catalog-only WhatsApp aggregate)
 - **AND** re-uploading a snapshot with the same `projectId` SHALL NOT restore the previous send or obra progress
 
 #### Scenario: Deleted active project

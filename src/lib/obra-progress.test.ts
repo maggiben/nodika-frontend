@@ -62,23 +62,79 @@ describe("mergeDashboardWithLiveProgress", () => {
     expect(merged.objectiveTasks[0]?.avance).toBe(20);
   });
 
-  test("uses 0 overall when live progress was fetched but is empty", () => {
+  test("ignores catalog-only live overall when no taskIds match the grid", () => {
     expect(snapshot).not.toBeNull();
     const merged = mergeDashboardWithLiveProgress(snapshot!, {
       projectId: "obra-1",
-      overallPercent: null,
+      overallPercent: 100,
       byRole: {
-        jefe_obra: null,
+        jefe_obra: 100,
         operario: null,
         jornalero: null,
         otro: null,
       },
-      reports: [],
-      updatedAt: null,
+      reports: [
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: null,
+          percent: 100,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:00:00.000Z",
+          messageId: "m-catalog",
+        },
+      ],
+      updatedAt: "2026-07-15T12:00:00.000Z",
     });
     expect(merged.usingLiveOverall).toBe(false);
-    expect(merged.averageProgress).toBe(0);
+    expect(merged.averageProgress).toBe(30);
     expect(merged.objectiveTasks[0]?.avance).toBe(20);
+    expect(merged.objectiveTasks[1]?.avance).toBe(40);
+  });
+
+  test("overall matches overlaid task average, not live.overallPercent", () => {
+    expect(snapshot).not.toBeNull();
+    const merged = mergeDashboardWithLiveProgress(snapshot!, {
+      projectId: "obra-1",
+      overallPercent: 100,
+      byRole: {
+        jefe_obra: 100,
+        operario: null,
+        jornalero: null,
+        otro: null,
+      },
+      reports: [
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: null,
+          percent: 100,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:00:00.000Z",
+          messageId: "m-catalog",
+        },
+        {
+          contactId: "c1",
+          role: "jefe_obra",
+          taskId: "t1",
+          percent: 0,
+          duration: null,
+          avance: null,
+          notes: null,
+          repliedAt: "2026-07-15T12:01:00.000Z",
+          messageId: "m-task",
+        },
+      ],
+      updatedAt: "2026-07-15T12:01:00.000Z",
+    });
+    expect(merged.usingLiveOverall).toBe(true);
+    expect(merged.objectiveTasks[0]?.avance).toBe(0);
+    expect(merged.objectiveTasks[1]?.avance).toBe(40);
+    expect(merged.averageProgress).toBe(20);
   });
 
   test("overlays task percents and live overall", () => {
@@ -109,7 +165,7 @@ describe("mergeDashboardWithLiveProgress", () => {
     });
 
     expect(merged.usingLiveOverall).toBe(true);
-    expect(merged.averageProgress).toBe(77);
+    expect(merged.averageProgress).toBe(65);
     expect(merged.objectiveTasks[0]?.avance).toBe(90);
     expect(merged.objectiveTasks[1]?.avance).toBe(40);
   });
