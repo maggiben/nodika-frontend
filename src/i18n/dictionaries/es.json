@@ -75,6 +75,7 @@
     "submitting": "Subiendo…"
   },
   "dashboard": {
+    "loading": "Cargando proyecto…",
     "emptyTitle": "Estado del proyecto",
     "emptyDescription": "Sube un JSON de snapshot Nodika desde el menú del avatar para ver el progreso, la duración y las tablas de tareas en esta página de inicio.",
     "uploadCta": "Subir snapshot",

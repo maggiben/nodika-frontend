@@ -1,11 +1,19 @@
 "use client";
 
-import { Box, Button, Chip, Paper, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Paper,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { Gauge } from "@mui/x-charts/Gauge";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import Link from "next/link";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
 import {
@@ -405,7 +413,28 @@ function EmptyDashboard() {
   );
 }
 
+function LoadingDashboard() {
+  const { t } = useDictionary();
+
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: { xs: 3, sm: 5 },
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+      }}
+    >
+      <CircularProgress aria-label={t("dashboard.loading")} />
+      <Typography color="text.secondary">{t("dashboard.loading")}</Typography>
+    </Paper>
+  );
+}
+
 export function ProjectDashboard() {
+  const [libraryReady, setLibraryReady] = useState(false);
   const raw = useSyncExternalStore(
     subscribeToProjectLibrary,
     getSelectedSnapshotSnapshot,
@@ -423,12 +452,18 @@ export function ProjectDashboard() {
   );
 
   useEffect(() => {
-    void refreshProjectLibrary();
+    void refreshProjectLibrary().finally(() => {
+      setLibraryReady(true);
+    });
   }, []);
   const baseModel = modelFromStoredJson(raw);
   const live = useLiveObraProgress(
     baseModel?.projectId ?? (selectedId || null),
   );
+
+  if (!libraryReady) {
+    return <LoadingDashboard />;
+  }
 
   if (!baseModel) {
     return <EmptyDashboard />;

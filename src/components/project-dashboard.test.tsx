@@ -65,6 +65,39 @@ afterEach(() => {
 });
 
 describe("ProjectDashboard", () => {
+  test("shows loading indicator before empty state when Core has no sources", async () => {
+    let resolveFetch: ((value: Response) => void) | undefined;
+    const fetchPromise = new Promise<Response>((resolve) => {
+      resolveFetch = resolve;
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => fetchPromise),
+    );
+
+    render(
+      <TestI18n>
+        <ProjectDashboard />
+      </TestI18n>,
+    );
+
+    expect(screen.getByText("Cargando proyecto…")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Estado del proyecto" }),
+    ).not.toBeInTheDocument();
+
+    resolveFetch?.(new Response(JSON.stringify([]), { status: 200 }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Estado del proyecto" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Subir snapshot" }),
+    ).toHaveAttribute("href", "/es/upload");
+    expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
+  });
+
   test("shows empty state when no snapshot is stored", async () => {
     vi.stubGlobal(
       "fetch",

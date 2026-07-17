@@ -75,6 +75,7 @@
     "submitting": "Uploading…"
   },
   "dashboard": {
+    "loading": "Loading project…",
     "emptyTitle": "Project status",
     "emptyDescription": "Upload a Nodika snapshot JSON from the avatar menu to see progress, duration mix, and task grids on this home page.",
     "uploadCta": "Upload snapshot",
