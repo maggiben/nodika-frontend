@@ -368,4 +368,125 @@ describe("snapshot-storage", () => {
       message: "blocked",
     });
   });
+
+  test("after successful delete, progress for that projectId is empty (Core cascade)", async () => {
+    let projects = [
+      {
+        id: "src_a",
+        projectId: "proj_a",
+        name: "Alpha",
+        filename: "a.json",
+        createdAt: "2026-01-02T00:00:00.000Z",
+        content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+      },
+    ];
+    let progressByProject: Record<
+      string,
+      {
+        projectId: string;
+        overallPercent: number | null;
+        reports: unknown[];
+      }
+    > = {
+      proj_a: {
+        projectId: "proj_a",
+        overallPercent: 42,
+        reports: [{ messageId: "m1", percent: 42 }],
+      },
+    };
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/api/snapshots/proj_a") && init?.method === "DELETE") {
+          projects = [];
+          // Mirrors Core cascade: messaging progress wiped with the source.
+          delete progressByProject.proj_a;
+          return new Response(
+            JSON.stringify({ projectId: "proj_a", deletedCount: 1 }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/snapshots")) {
+          return new Response(JSON.stringify(projects), { status: 200 });
+        }
+        if (url.includes("/api/settings") && init?.method === "PATCH") {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: null,
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/settings")) {
+          return new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              activeProjectId: "proj_a",
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              nextSendDates: [],
+            }),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/api/messaging/progress")) {
+          const projectId = new URL(url, "http://localhost").searchParams.get(
+            "projectId",
+          );
+          const summary = projectId ? progressByProject[projectId] : undefined;
+          return new Response(
+            JSON.stringify(
+              summary ?? {
+                projectId: projectId ?? "",
+                overallPercent: null,
+                byRole: {
+                  jefe_obra: null,
+                  operario: null,
+                  jornalero: null,
+                  otro: null,
+                },
+                reports: [],
+                updatedAt: null,
+              },
+            ),
+            { status: 200 },
+          );
+        }
+        return new Response("{}", { status: 404 });
+      }),
+    );
+
+    await refreshProjectLibrary();
+    const before = await fetch("/api/messaging/progress?projectId=proj_a");
+    await expect(before.json()).resolves.toMatchObject({
+      overallPercent: 42,
+    });
+
+    const result = await deleteStoredProject("proj_a");
+    expect(result.ok).toBe(true);
+
+    const after = await fetch("/api/messaging/progress?projectId=proj_a");
+    await expect(after.json()).resolves.toMatchObject({
+      overallPercent: null,
+      reports: [],
+    });
+  });
 });

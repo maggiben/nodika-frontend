@@ -312,7 +312,11 @@ export async function activateUploadedSnapshot(
 export type DeleteStoredProjectResult =
   { ok: true; library: ProjectLibrary } | { ok: false; message: string };
 
-/** Delete a project in Core by projectId, refresh library, fix active selection. */
+/**
+ * Delete a project in Core by projectId, refresh library, fix active selection.
+ * Progress reset (WhatsApp send history, checklist threads, live obra %) is
+ * performed by Core inside the same DELETE /sources/:projectId cascade.
+ */
 export async function deleteStoredProject(
   projectId: string,
 ): Promise<DeleteStoredProjectResult> {
