@@ -7,6 +7,7 @@ export type StaffCatalogRow = {
   assignedPhone: string | null;
   sortOrder: number;
   active: boolean;
+  tags: string[];
   lastSentAt: string | null;
   repliedAt: string | null;
   responseLatencyMs: number | null;
@@ -52,6 +53,12 @@ export function parseStaffCatalog(payload: unknown): StaffCatalogRow[] {
           ? item.sortOrder
           : 0,
       active: item.active !== false,
+      tags: Array.isArray(item.tags)
+        ? item.tags.filter(
+            (tag): tag is string =>
+              typeof tag === "string" && tag.trim().length > 0,
+          )
+        : [],
       lastSentAt: typeof item.lastSentAt === "string" ? item.lastSentAt : null,
       repliedAt: typeof item.repliedAt === "string" ? item.repliedAt : null,
       responseLatencyMs:

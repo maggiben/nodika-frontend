@@ -435,5 +435,18 @@ describe("staff-org-chart-draft", () => {
     expect(withoutTeam.body).toContain(
       "No people on this lead’s org chart yet",
     );
+    expect(withoutTeam.tags).toEqual([]);
+
+    const adelanto = applyCatalogMessagePreset({
+      presetId: "adelanto",
+      locale: "es",
+      leadName: "Benjamin",
+      chart: null,
+    });
+    expect(adelanto.title).toContain("Adelanto");
+    expect(adelanto.body).toContain("alguna otra tarea");
+    expect(adelanto.body).toContain("Cuánto se adelantó");
+    expect(adelanto.tags).toEqual(["adelanto"]);
+    expect(adelanto.usedOrgChart).toBe(false);
   });
 });

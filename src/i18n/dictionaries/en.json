@@ -294,6 +294,8 @@
     },
     "catalogTitle": "Team messages",
     "catalogDescription": "Messages by site lead, 4 per row. Reorder with ⋮⋮; numbers restart per lead. Only one WhatsApp at a time: the next is sent after they reply.",
+    "catalogAdelantoHelp": "Snapshot tasks are asked on WhatsApp only when today falls between their start and end dates. The Ahead-of-schedule message is sent at the end of the cycle to record early work.",
+    "catalogAdelantoApplied": "Ahead-of-schedule template ready. Save and assign it to the lead: Core sends it last, not mid-catalog.",
     "catalogMessageTitle": "Message title",
     "catalogMessageBody": "Full message text",
     "catalogSave": "Add message",
@@ -323,7 +325,8 @@
     "catalogPresets": {
       "attendance": "Team attendance",
       "performance": "Workday performance",
-      "workProgress": "Progress (%, duration, notes)"
+      "workProgress": "Progress (%, duration, notes)",
+      "adelanto": "Ahead-of-schedule work"
     },
     "catalogAssignPlaceholder": "Assign to…",
     "catalogAssignLater": "Assign later",

@@ -101,6 +101,7 @@ export function StaffCatalogPanel({
   const [body, setBody] = useState("");
   const [assignContactId, setAssignContactId] = useState("");
   const [presetId, setPresetId] = useState<"" | CatalogMessagePresetId>("");
+  const [draftTags, setDraftTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [dragCatalogId, setDragCatalogId] = useState<string | null>(null);
@@ -208,11 +209,14 @@ export function StaffCatalogPanel({
     });
     setTitle(applied.title);
     setBody(applied.body);
+    setDraftTags(applied.tags);
     setPresetId(nextPreset);
     setMessage(
-      applied.usedOrgChart
-        ? t("staff.catalogPresetApplied")
-        : t("staff.catalogPresetPlaceholder"),
+      nextPreset === "adelanto"
+        ? t("staff.catalogAdelantoApplied")
+        : applied.usedOrgChart
+          ? t("staff.catalogPresetApplied")
+          : t("staff.catalogPresetPlaceholder"),
     );
     setError(null);
   }
@@ -230,6 +234,7 @@ export function StaffCatalogPanel({
           body,
           assignedContactId: assignContactId || undefined,
           active: true,
+          ...(draftTags.length > 0 ? { tags: draftTags } : {}),
         }),
       });
       const payload: unknown = await response.json().catch(() => null);
@@ -248,6 +253,7 @@ export function StaffCatalogPanel({
       setBody("");
       setAssignContactId("");
       setPresetId("");
+      setDraftTags([]);
       setMessage(t("staff.catalogSaved"));
       setRows(await loadCatalog());
     } catch {
@@ -451,6 +457,13 @@ export function StaffCatalogPanel({
       >
         {t("staff.catalogDescription")}
       </Typography>
+      <Typography
+        color="text.secondary"
+        sx={{ mb: 1.5 }}
+        variant="body2"
+      >
+        {t("staff.catalogAdelantoHelp")}
+      </Typography>
 
       {error ? (
         <Alert severity="error" sx={{ mb: 1.5 }}>
@@ -505,6 +518,7 @@ export function StaffCatalogPanel({
                     applyPreset(value as CatalogMessagePresetId);
                   } else {
                     setPresetId("");
+                    setDraftTags([]);
                     setTitle("");
                     setBody("");
                     setMessage(null);

@@ -26,6 +26,7 @@ describe("StaffCatalogPanel message presets", () => {
     upsertOrgChart({
       contactId: "lead_1",
       contactLabel: "Juan",
+      projectIds: [],
       reports: [
         { id: "r1", name: "Ana", role: "operario" },
         { id: "r2", name: "Luis", role: "jornalero" },

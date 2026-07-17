@@ -294,6 +294,8 @@
     },
     "catalogTitle": "Mensajes del equipo",
     "catalogDescription": "Mensajes por capataz, 4 por fila. Reordená con ⋮⋮; el número reinicia por jefe. Solo se manda uno a la vez: el siguiente llega cuando responden el actual.",
+    "catalogAdelantoHelp": "Las tareas del snapshot solo se preguntan por WhatsApp si hoy cae entre su inicio y fin. El mensaje de Adelanto se manda al final del ciclo para registrar trabajos hechos antes de tiempo.",
+    "catalogAdelantoApplied": "Plantilla de adelanto lista. Guardala y asignala al jefe: Core la envía al final, no en medio del catálogo.",
     "catalogMessageTitle": "Título del mensaje",
     "catalogMessageBody": "Texto completo del mensaje",
     "catalogSave": "Agregar mensaje",
@@ -323,7 +325,8 @@
     "catalogPresets": {
       "attendance": "Asistencia del equipo",
       "performance": "Performance de la jornada",
-      "workProgress": "Avance (%, duración, notas)"
+      "workProgress": "Avance (%, duración, notas)",
+      "adelanto": "Adelanto de obra"
     },
     "catalogAssignPlaceholder": "Asignar a…",
     "catalogAssignLater": "Asignar después",

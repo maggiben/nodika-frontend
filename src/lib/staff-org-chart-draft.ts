@@ -305,21 +305,64 @@ function buildPerformanceDraftOrPlaceholder(input: {
   ].join("\n");
 }
 
+export const ADELANTO_CATALOG_TAG = "adelanto";
+
 export const CATALOG_MESSAGE_PRESET_IDS = [
   "attendance",
   "performance",
   "workProgress",
+  "adelanto",
 ] as const;
 
 export type CatalogMessagePresetId =
   (typeof CATALOG_MESSAGE_PRESET_IDS)[number];
+
+export function buildAdelantoTitle(input: {
+  locale: Locale;
+  leadName?: string;
+}): string {
+  const lead = input.leadName?.trim();
+  if (input.locale === "en") {
+    return lead
+      ? `Ahead-of-schedule work — ${lead}`
+      : "Ahead-of-schedule work";
+  }
+  return lead ? `Adelanto de obra — ${lead}` : "Adelanto de obra";
+}
+
+export function buildAdelantoDraft(input: {
+  locale: Locale;
+  leadName: string;
+}): string {
+  const lead = input.leadName.trim();
+  if (input.locale === "en") {
+    return [
+      `Hi ${lead || "there"},`,
+      "",
+      "Besides the tasks planned for this period, were you working on any other task ahead of schedule?",
+      "Which one?",
+      "How much did you advance, or how much work was done?",
+      "",
+      "Please reply with the task name and approximate % or amount of work. Thanks.",
+    ].join("\n");
+  }
+  return [
+    `Hola ${lead || ""},`.trimEnd(),
+    "",
+    "Además de las tareas de este período, ¿estuvieron trabajando en alguna otra tarea de forma adelantada?",
+    "¿Cuál?",
+    "¿Cuánto se adelantó o cuánto se trabajó?",
+    "",
+    "Respondé con el nombre de la tarea y el % o avance aproximado. Gracias.",
+  ].join("\n");
+}
 
 export function applyCatalogMessagePreset(input: {
   presetId: CatalogMessagePresetId;
   locale: Locale;
   leadName: string;
   chart: StaffOrgChart | null;
-}): { title: string; body: string; usedOrgChart: boolean } {
+}): { title: string; body: string; usedOrgChart: boolean; tags: string[] } {
   const usedOrgChart = Boolean(input.chart && !chartHasNoReports(input.chart));
 
   switch (input.presetId) {
@@ -335,6 +378,7 @@ export function applyCatalogMessagePreset(input: {
           chart: input.chart,
         }),
         usedOrgChart,
+        tags: [],
       };
     case "performance":
       return {
@@ -348,6 +392,7 @@ export function applyCatalogMessagePreset(input: {
           chart: input.chart,
         }),
         usedOrgChart,
+        tags: [],
       };
     case "workProgress":
       return {
@@ -361,6 +406,20 @@ export function applyCatalogMessagePreset(input: {
           chart: input.chart,
         }),
         usedOrgChart,
+        tags: [],
+      };
+    case "adelanto":
+      return {
+        title: buildAdelantoTitle({
+          locale: input.locale,
+          leadName: input.leadName,
+        }),
+        body: buildAdelantoDraft({
+          locale: input.locale,
+          leadName: input.leadName,
+        }),
+        usedOrgChart: false,
+        tags: [ADELANTO_CATALOG_TAG],
       };
   }
 }

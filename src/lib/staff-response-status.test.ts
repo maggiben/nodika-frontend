@@ -139,6 +139,7 @@ describe("parseStaffCatalog", () => {
         repliedAt: "2026-07-02T00:00:00.000Z",
         responseLatencyMs: 86400000,
         responseStatus: "green",
+        tags: ["adelanto"],
       },
       {
         _id: "c2",
@@ -158,6 +159,7 @@ describe("parseStaffCatalog", () => {
     ]);
     expect(rows).toHaveLength(2);
     expect(rows[0]?.body).toBe(full);
+    expect(rows[0]?.tags).toEqual(["adelanto"]);
     expect(rows[0]?.responseLatencyMs).toBe(86400000);
     expect(rows[1]?.assignedContactId).toBeNull();
     expect(rows[1]?.responseStatus).toBe("neutral");
