@@ -62,6 +62,25 @@ describe("mergeDashboardWithLiveProgress", () => {
     expect(merged.objectiveTasks[0]?.avance).toBe(20);
   });
 
+  test("uses 0 overall when live progress was fetched but is empty", () => {
+    expect(snapshot).not.toBeNull();
+    const merged = mergeDashboardWithLiveProgress(snapshot!, {
+      projectId: "obra-1",
+      overallPercent: null,
+      byRole: {
+        jefe_obra: null,
+        operario: null,
+        jornalero: null,
+        otro: null,
+      },
+      reports: [],
+      updatedAt: null,
+    });
+    expect(merged.usingLiveOverall).toBe(false);
+    expect(merged.averageProgress).toBe(0);
+    expect(merged.objectiveTasks[0]?.avance).toBe(20);
+  });
+
   test("overlays task percents and live overall", () => {
     expect(snapshot).not.toBeNull();
     const merged = mergeDashboardWithLiveProgress(snapshot!, {

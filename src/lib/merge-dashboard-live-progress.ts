@@ -67,9 +67,14 @@ export function mergeDashboardWithLiveProgress(
   const objectiveTasks = overlayTaskAvance(model.objectiveTasks, live);
   const recomputed = recomputeCompleted(objectiveTasks);
   const usingLiveOverall = hasUsableOverallProgress(live);
+  // When live progress was fetched but is empty (e.g. after project delete
+  // cleared WhatsApp threads), overall must not fall back to snapshot
+  // avance_base — that looked like progress survived the delete.
   const averageProgress = usingLiveOverall
     ? live.overallPercent
-    : recomputed.averageProgress;
+    : live !== null
+      ? 0
+      : recomputed.averageProgress;
 
   return {
     ...model,
