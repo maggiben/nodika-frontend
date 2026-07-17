@@ -24,6 +24,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import { computeNextSendDates } from "@/lib/compute-next-send-dates";
 import type { AccountSettings, EmailSchedule } from "@/lib/core-auth";
+import { DEFAULT_TIMEZONE } from "@/lib/timezone-options";
 import type { Locale } from "@/i18n/config";
 
 const weekdayKeys = [
@@ -267,7 +268,7 @@ export function EmailFollowUpSchedulePanel() {
                     {formatPreviewDate(
                       date,
                       locale,
-                      schedule.timezone || "America/Argentina/Buenos_Aires",
+                      schedule.timezone || DEFAULT_TIMEZONE,
                     )}
                   </Typography>
                 ))}

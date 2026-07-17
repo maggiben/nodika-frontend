@@ -1,4 +1,5 @@
 import type { EmailSchedule } from "@/lib/core-auth";
+import { DEFAULT_TIMEZONE } from "@/lib/timezone-options";
 
 type ZonedDateParts = {
   year: number;
@@ -113,7 +114,7 @@ export function computeNextSendDates(
     return [];
   }
 
-  const timeZone = schedule.timezone || "America/Argentina/Buenos_Aires";
+  const timeZone = schedule.timezone || DEFAULT_TIMEZONE;
   const nowParts = readZonedParts(from, timeZone);
   const weekStart = startOfWeekMonday(nowParts);
   const weekEnd = addCalendarDays(
