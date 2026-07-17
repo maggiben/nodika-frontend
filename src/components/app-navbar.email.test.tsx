@@ -23,20 +23,22 @@ describe("AppNavbar email resolution", () => {
   test("loads initials from settings when email prop is missing", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            email: "ben.maggi@example.com",
-            emailSchedule: {
-              enabled: false,
-              frequency: "weekly",
-              daysOfWeek: [1],
-              dayOfMonth: 1,
-              sendTime: "09:00",
-              timezone: "America/Argentina/Buenos_Aires",
-            },
-            nextSendDates: [],
-          }),
+      vi.fn().mockImplementation(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              email: "ben.maggi@example.com",
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "America/Argentina/Buenos_Aires",
+              },
+              nextSendDates: [],
+            }),
+          ),
         ),
       ),
     );

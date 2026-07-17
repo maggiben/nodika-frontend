@@ -199,7 +199,7 @@ export function UserSettingsForm() {
         const next = body as AccountSettings;
         setSettings(next);
         setTimezone(
-          next.emailSchedule.timezone || "America/Argentina/Buenos_Aires",
+          next.emailSchedule.timezone || DEFAULT_TIMEZONE,
         );
         applyProgressAiFromSettings(next);
       }
@@ -276,44 +276,6 @@ export function UserSettingsForm() {
       setProgressAiError(t("settings.unreachable"));
     } finally {
       setSavingProgressAi(false);
-    }
-  }
-
-  async function submitTimezoneChange() {
-    setTimezoneMessage(null);
-    setTimezoneError(null);
-    setSavingTimezone(true);
-
-    try {
-      const response = await fetch("/api/settings", {
-        body: JSON.stringify({ timezone }),
-        headers: { "Content-Type": "application/json" },
-        method: "PATCH",
-      });
-      const body: unknown = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        setTimezoneError(
-          typeof body === "object" &&
-            body !== null &&
-            "message" in body &&
-            typeof body.message === "string"
-            ? body.message
-            : t("settings.saveError"),
-        );
-        return;
-      }
-
-      if (body && typeof body === "object") {
-        const next = body as AccountSettings;
-        setSettings(next);
-        setTimezone(next.emailSchedule.timezone || DEFAULT_TIMEZONE);
-      }
-      setTimezoneMessage(t("settings.timezoneSaved"));
-    } catch {
-      setTimezoneError(t("settings.unreachable"));
-    } finally {
-      setSavingTimezone(false);
     }
   }
 
@@ -640,49 +602,6 @@ export function UserSettingsForm() {
               {savingProgressAi
                 ? t("settings.progressAiSaving")
                 : t("settings.progressAiSave")}
-            </Button>
-          </Stack>
-        </Paper>
-
-        <Paper sx={{ p: 3 }}>
-          <Typography component="h2" variant="h6">
-            {t("settings.timezoneTitle")}
-          </Typography>
-          <Typography color="text.secondary" sx={{ mb: 2, mt: 0.5 }}>
-            {t("settings.timezoneDescription")}
-          </Typography>
-          <Stack spacing={2} sx={{ maxWidth: 420 }}>
-            <FormControl size="small">
-              <InputLabel id="settings-timezone-label">
-                {t("settings.timezone")}
-              </InputLabel>
-              <Select
-                label={t("settings.timezone")}
-                labelId="settings-timezone-label"
-                onChange={(event) => setTimezone(event.target.value)}
-                value={timezone}
-              >
-                {TIMEZONE_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            {timezoneError ? (
-              <Alert severity="error">{timezoneError}</Alert>
-            ) : null}
-            {timezoneMessage ? (
-              <Alert severity="success">{timezoneMessage}</Alert>
-            ) : null}
-            <Button
-              disabled={savingTimezone}
-              onClick={() => void submitTimezoneChange()}
-              variant="contained"
-            >
-              {savingTimezone
-                ? t("settings.timezoneSaving")
-                : t("settings.timezoneSave")}
             </Button>
           </Stack>
         </Paper>
