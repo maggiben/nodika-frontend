@@ -98,6 +98,27 @@ describe("ProjectDashboard", () => {
     expect(screen.queryByText("Cargando proyecto…")).not.toBeInTheDocument();
   });
 
+  test("does not show empty upload message when Core request fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("{}", { status: 401 })),
+    );
+
+    render(
+      <TestI18n>
+        <ProjectDashboard />
+      </TestI18n>,
+    );
+
+    expect(await screen.findByText("Cargando proyecto…")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Estado del proyecto" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Subir snapshot" }),
+    ).not.toBeInTheDocument();
+  });
+
   test("shows empty state when no snapshot is stored", async () => {
     vi.stubGlobal(
       "fetch",

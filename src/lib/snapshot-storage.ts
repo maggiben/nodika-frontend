@@ -22,13 +22,19 @@ export type ProjectLibrary = {
   selectedId: string | null;
 };
 
+export type ProjectLibraryRefresh = {
+  library: ProjectLibrary;
+  /** True when GET /api/snapshots returned HTTP 200. */
+  ok: boolean;
+};
+
 const EMPTY_LIBRARY: ProjectLibrary = {
   projects: [],
   selectedId: null,
 };
 
 let memoryLibrary: ProjectLibrary = EMPTY_LIBRARY;
-let loadPromise: Promise<ProjectLibrary> | null = null;
+let loadPromise: Promise<ProjectLibraryRefresh> | null = null;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -166,9 +172,9 @@ async function fetchActiveProjectId(): Promise<string | null> {
 }
 
 /** Load projects from Core BFF into memory. */
-export async function refreshProjectLibrary(): Promise<ProjectLibrary> {
+export async function refreshProjectLibrary(): Promise<ProjectLibraryRefresh> {
   if (typeof window === "undefined") {
-    return EMPTY_LIBRARY;
+    return { library: EMPTY_LIBRARY, ok: false };
   }
 
   if (loadPromise) {
@@ -181,17 +187,17 @@ export async function refreshProjectLibrary(): Promise<ProjectLibrary> {
       const response = await fetch("/api/snapshots", { cache: "no-store" });
       if (!response.ok) {
         writeLibrary(EMPTY_LIBRARY);
-        return EMPTY_LIBRARY;
+        return { library: EMPTY_LIBRARY, ok: false };
       }
       const body: unknown = await response.json().catch(() => null);
       const sources = parseListedSources(body);
       const activeProjectId = await fetchActiveProjectId();
       const library = libraryFromSources(sources, activeProjectId);
       writeLibrary(library);
-      return library;
+      return { library, ok: true };
     } catch {
       writeLibrary(EMPTY_LIBRARY);
-      return EMPTY_LIBRARY;
+      return { library: EMPTY_LIBRARY, ok: false };
     } finally {
       loadPromise = null;
     }

@@ -434,7 +434,9 @@ function LoadingDashboard() {
 }
 
 export function ProjectDashboard() {
-  const [libraryReady, setLibraryReady] = useState(false);
+  const [libraryStatus, setLibraryStatus] = useState<
+    "loading" | "ready" | "unavailable"
+  >("loading");
   const raw = useSyncExternalStore(
     subscribeToProjectLibrary,
     getSelectedSnapshotSnapshot,
@@ -452,8 +454,8 @@ export function ProjectDashboard() {
   );
 
   useEffect(() => {
-    void refreshProjectLibrary().finally(() => {
-      setLibraryReady(true);
+    void refreshProjectLibrary().then((result) => {
+      setLibraryStatus(result.ok ? "ready" : "unavailable");
     });
   }, []);
   const baseModel = modelFromStoredJson(raw);
@@ -461,18 +463,22 @@ export function ProjectDashboard() {
     baseModel?.projectId ?? (selectedId || null),
   );
 
-  if (!libraryReady) {
+  if (libraryStatus === "loading") {
     return <LoadingDashboard />;
   }
 
-  if (!baseModel) {
+  if (baseModel) {
+    const applyLive = viewMode === "after";
+    const model = applyLive
+      ? mergeDashboardWithLiveProgress(baseModel, live)
+      : mergeDashboardWithLiveProgress(baseModel, null);
+
+    return <DashboardBody model={model} />;
+  }
+
+  if (libraryStatus === "ready") {
     return <EmptyDashboard />;
   }
 
-  const applyLive = viewMode === "after";
-  const model = applyLive
-    ? mergeDashboardWithLiveProgress(baseModel, live)
-    : mergeDashboardWithLiveProgress(baseModel, null);
-
-  return <DashboardBody model={model} />;
+  return <LoadingDashboard />;
 }

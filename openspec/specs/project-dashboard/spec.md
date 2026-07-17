@@ -6,7 +6,7 @@ Visualize Nodika snapshot JSON on the landing page using progress labels, charts
 ## Requirements
 ### Requirement: Project status landing dashboard
 
-The application SHALL use `/` as a project-status landing page that visualizes the selected project's snapshot JSON from Core (via the authenticated BFF) with progress labels, MUI X Charts visualizations, and MUI X Community Data Grid task tables. Objective and context task Data Grids SHALL support client-side column sorting and filtering. While the initial project library is loading from Core, the page SHALL show a loading indicator and SHALL NOT show the empty upload state. The empty upload state SHALL appear only after that load completes with no selectable snapshot.
+The application SHALL use `/` as a project-status landing page that visualizes the selected project's snapshot JSON from Core (via the authenticated BFF) with progress labels, MUI X Charts visualizations, and MUI X Community Data Grid task tables. Objective and context task Data Grids SHALL support client-side column sorting and filtering. While the initial project library is loading from Core, the page SHALL show a loading indicator and SHALL NOT show the empty upload state. The empty upload state SHALL appear only when Core successfully returns no selectable snapshot sources.
 
 #### Scenario: Viewing a saved snapshot
 
@@ -30,9 +30,14 @@ The application SHALL use `/` as a project-status landing page that visualizes t
 
 #### Scenario: Missing snapshot
 
-- **WHEN** a user opens `/` and the project library has finished loading with no snapshot JSON available from Core for the active project
+- **WHEN** a user opens `/` and Core successfully returns no snapshot sources for the account
 - **THEN** the page SHALL show an empty state explaining that an upload is required
 - **AND** authenticated users SHALL be directed toward the upload entry in the account menu
+
+#### Scenario: Library request failed
+
+- **WHEN** a user opens `/` and the project library request to Core does not succeed
+- **THEN** the page SHALL NOT show the empty upload state
 
 #### Scenario: Honoring the navbar selection
 
