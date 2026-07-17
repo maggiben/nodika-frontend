@@ -5,11 +5,13 @@ Upload already writes `SourceOfTruth` in Core MongoDB and sets `Account.activePr
 ## Goals / Non-Goals
 
 **Goals:**
+
 - Dashboard + navbar project selector read projects from Core.
 - Remove snapshot JSON persistence from `localStorage`.
 - Keep selection via existing `PATCH /api/settings` `{ activeProjectId }`.
 
 **Non-Goals:**
+
 - Editing snapshots in the UI.
 - Multi-account sharing of sources beyond what Core already stores.
 - Keeping a durable offline cache.

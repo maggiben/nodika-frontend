@@ -15,9 +15,7 @@ const baseSnapshot = {
     { id: "t1", label: "Steel", avance_base: 20, duracion: 5 },
     { id: "t2", label: "Deck", avance_base: 40, duracion: 3 },
   ],
-  tareas_contexto: [
-    { id: "c1", label: "Fence", avance_base: 10, duracion: 1 },
-  ],
+  tareas_contexto: [{ id: "c1", label: "Fence", avance_base: 10, duracion: 1 }],
 };
 
 function liveWithReports(

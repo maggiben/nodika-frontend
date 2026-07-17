@@ -8,9 +8,24 @@ describe("activateActiveProject", () => {
       "fetch",
       vi.fn(() =>
         Promise.resolve(
-          new Response(JSON.stringify({ email: "a@b.co", nextSendDates: [], emailSchedule: { enabled: false, frequency: "weekly", daysOfWeek: [1], dayOfMonth: 1, sendTime: "09:00", timezone: "UTC" }, activeProjectId: "proj_a" }), {
-            status: 200,
-          }),
+          new Response(
+            JSON.stringify({
+              email: "a@b.co",
+              nextSendDates: [],
+              emailSchedule: {
+                enabled: false,
+                frequency: "weekly",
+                daysOfWeek: [1],
+                dayOfMonth: 1,
+                sendTime: "09:00",
+                timezone: "UTC",
+              },
+              activeProjectId: "proj_a",
+            }),
+            {
+              status: 200,
+            },
+          ),
         ),
       ),
     );

@@ -22,10 +22,7 @@ function taskPercentById(
   return byTaskId;
 }
 
-function patchTaskList(
-  tasks: unknown,
-  byTaskId: Map<string, number>,
-): unknown {
+function patchTaskList(tasks: unknown, byTaskId: Map<string, number>): unknown {
   if (!Array.isArray(tasks) || byTaskId.size === 0) {
     return tasks;
   }

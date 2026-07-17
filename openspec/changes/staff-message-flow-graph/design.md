@@ -22,9 +22,10 @@ Staff catalog messages are flat Core records sent via Evolution. Inbound replies
 
 1. **Core owns progression**  
    Automatic next-send MUST run inside `recordInboundMessage` (or an immediate helper) after `replyBody` is stored. Frontend cannot receive Evolution webhooks.  
-   *Alternative:* UI polling + manual send — rejected; fails the product ask.
+   _Alternative:_ UI polling + manual send — rejected; fails the product ask.
 
-2. **Flow document model (Mongo)**  
+2. **Flow document model (Mongo)**
+
    ```
    Flow {
      _id, name, active,
@@ -38,11 +39,12 @@ Staff catalog messages are flat Core records sent via Evolution. Inbound replies
      lastOutboundMessageId?, updatedAt
    }
    ```
+
    Frontend treats this as the BFF JSON contract; Core implements persistence.
 
 3. **v1 editor stack**  
    Client canvas with absolute-positioned MUI Paper nodes + SVG/CSS edges (no new heavy graph library unless build forces it). Drag nodes, click connection handles, form for edge match text.  
-   *Alternative:* `@xyflow/react` — acceptable if MUI-only canvas proves too costly; prefer zero new deps first.
+   _Alternative:_ `@xyflow/react` — acceptable if MUI-only canvas proves too costly; prefer zero new deps first.
 
 4. **Node content**  
    v1 nodes carry their own `title`/`body` (may be copied from catalog templates like attendance). Linking live catalog ids is a later optimization.

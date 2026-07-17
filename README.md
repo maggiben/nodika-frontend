@@ -6,14 +6,14 @@ Next.js BFF (backend-for-frontend) for Nodika: auth session cookies, project das
 Browser → nodika-frontend (Next.js /api/*) → nodika-core (NestJS) → MongoDB / Redis / Resend / Evolution
 ```
 
-| Area | Stack |
-| --- | --- |
-| Runtime | Node.js 20+ (22 used in Docker / Railway) |
-| App | Next.js 16, React 19, TypeScript |
-| Package manager | **npm** (`package-lock.json`) |
-| UI | MUI 9, MUI X Data Grid / Charts |
-| Deploy | [Railway](https://railway.com) via Docker (`Dockerfile` + `railway.toml`) |
-| Specs | [OpenSpec](https://github.com/Fission-AI/OpenSpec) under `openspec/` |
+| Area            | Stack                                                                     |
+| --------------- | ------------------------------------------------------------------------- |
+| Runtime         | Node.js 20+ (22 used in Docker / Railway)                                 |
+| App             | Next.js 16, React 19, TypeScript                                          |
+| Package manager | **npm** (`package-lock.json`)                                             |
+| UI              | MUI 9, MUI X Data Grid / Charts                                           |
+| Deploy          | [Railway](https://railway.com) via Docker (`Dockerfile` + `railway.toml`) |
+| Specs           | [OpenSpec](https://github.com/Fission-AI/OpenSpec) under `openspec/`      |
 
 Sibling API: [nodika-core](https://github.com/maggiben/nodika-core) — required for auth, sources, and messaging. That repo has its own README for Core / Railway / Mongo.
 
@@ -37,11 +37,11 @@ Sibling API: [nodika-core](https://github.com/maggiben/nodika-core) — required
 
 ### Required to run this app
 
-| Dependency | Purpose | Notes |
-| --- | --- | --- |
-| **Node.js** ≥ 20 | Runtime | Docker image uses Node 22; local often 22–24 |
-| **npm** | Install & scripts | Prefer the lockfile with `npm ci` |
-| **nodika-core** | Auth, sources, staff messaging API | Running Core URL in `NODIKA_CORE_URL` |
+| Dependency       | Purpose                            | Notes                                        |
+| ---------------- | ---------------------------------- | -------------------------------------------- |
+| **Node.js** ≥ 20 | Runtime                            | Docker image uses Node 22; local often 22–24 |
+| **npm**          | Install & scripts                  | Prefer the lockfile with `npm ci`            |
+| **nodika-core**  | Auth, sources, staff messaging API | Running Core URL in `NODIKA_CORE_URL`        |
 
 Without `NODIKA_CORE_URL`, the UI can boot, but login, uploads, roster, and catalog will fail when they hit `/api/*`.
 
@@ -49,24 +49,24 @@ Without `NODIKA_CORE_URL`, the UI can boot, but login, uploads, roster, and cata
 
 These are **not** installed in this repo; Core must be configured for the feature to work end-to-end:
 
-| Dependency | Needed for |
-| --- | --- |
-| MongoDB | Accounts, projects, messaging persistence |
-| Resend | Email verification / password recovery |
-| Evolution API (optional) | WhatsApp send / inbound webhooks |
-| Redis (optional) | Core HTTP cache |
+| Dependency               | Needed for                                |
+| ------------------------ | ----------------------------------------- |
+| MongoDB                  | Accounts, projects, messaging persistence |
+| Resend                   | Email verification / password recovery    |
+| Evolution API (optional) | WhatsApp send / inbound webhooks          |
+| Redis (optional)         | Core HTTP cache                           |
 
 ### Frontend libraries (high level)
 
-| Package | Role |
-| --- | --- |
-| `next` / `react` / `react-dom` | App router, RSC, BFF routes |
-| `@mui/material` + Emotion | UI shell and forms |
+| Package                              | Role                             |
+| ------------------------------------ | -------------------------------- |
+| `next` / `react` / `react-dom`       | App router, RSC, BFF routes      |
+| `@mui/material` + Emotion            | UI shell and forms               |
 | `@mui/x-data-grid` / `@mui/x-charts` | Staff grids and dashboard charts |
-| `react-hook-form` | Forms |
-| CodeMirror (`@uiw/react-codemirror`) | JSON snapshot editor |
-| Vitest + Testing Library | Unit / component tests |
-| OpenSpec (`@fission-ai/openspec`) | Spec-driven change workflow |
+| `react-hook-form`                    | Forms                            |
+| CodeMirror (`@uiw/react-codemirror`) | JSON snapshot editor             |
+| Vitest + Testing Library             | Unit / component tests           |
+| OpenSpec (`@fission-ai/openspec`)    | Spec-driven change workflow      |
 
 ---
 
@@ -108,10 +108,10 @@ Create a local env file (never commit secrets):
 NODIKA_CORE_URL=http://localhost:3000
 ```
 
-| Variable | Local tip |
-| --- | --- |
-| `NODIKA_CORE_URL` | Public or loopback URL of Core. **Server-only** — do not use `NEXT_PUBLIC_NODIKA_CORE_URL`. |
-| `PORT` | Optional; `next dev` defaults to `3000`. If Core already uses 3000, run Next on another port. |
+| Variable          | Local tip                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| `NODIKA_CORE_URL` | Public or loopback URL of Core. **Server-only** — do not use `NEXT_PUBLIC_NODIKA_CORE_URL`.   |
+| `PORT`            | Optional; `next dev` defaults to `3000`. If Core already uses 3000, run Next on another port. |
 
 Live obra progress (navbar chip + dashboard overlay) comes from Core `GET /messaging/progress` via the BFF. Configure `OPENAI_API_KEY` on **nodika-core** (not this frontend) so inbound WhatsApp replies can be parsed into structured progress.
 
@@ -210,13 +210,13 @@ npx vitest run src/lib/staff-catalog.test.ts
 
 ### Common local failures
 
-| Symptom | Likely cause |
-| --- | --- |
-| Auth / API “Core is temporarily unavailable” | Core down, wrong `NODIKA_CORE_URL`, or Core 5xx |
-| Login OK but no session | `Secure` cookie / mixed HTTP–HTTPS mismatch |
-| CORS errors in browser to Core | Browser must not call Core directly; fix BFF. If emails/CORS break, check Core `APP_URL` |
-| Messaging send fails | Evolution not configured on Core; check Core logs |
-| Port already in use | Another process on 3000 — use `-p 3001` |
+| Symptom                                      | Likely cause                                                                             |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Auth / API “Core is temporarily unavailable” | Core down, wrong `NODIKA_CORE_URL`, or Core 5xx                                          |
+| Login OK but no session                      | `Secure` cookie / mixed HTTP–HTTPS mismatch                                              |
+| CORS errors in browser to Core               | Browser must not call Core directly; fix BFF. If emails/CORS break, check Core `APP_URL` |
+| Messaging send fails                         | Evolution not configured on Core; check Core logs                                        |
+| Port already in use                          | Another process on 3000 — use `-p 3001`                                                  |
 
 ### Railway runtime debugging
 
@@ -232,12 +232,12 @@ railway deployment list
 
 Build failures often show up under `npm run build` / TypeScript (`Failed to type check`). Reproduce with `npm run build` locally before redeploying.
 
-| Symptom on Railway | Likely cause |
-| --- | --- |
-| Healthcheck fail on `/` | App not listening on `PORT`, or boot crash |
-| Auth broken in prod | `NODIKA_CORE_URL` wrong, or not using private URL to Core |
+| Symptom on Railway      | Likely cause                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| Healthcheck fail on `/` | App not listening on `PORT`, or boot crash                                                       |
+| Auth broken in prod     | `NODIKA_CORE_URL` wrong, or not using private URL to Core                                        |
 | Frontend → Core timeout | Core service crashed; or used public URL instead of `http://nodika-core.railway.internal:<port>` |
-| Cookie / login loops | `APP_URL` / public domain mismatch; cookies not `Secure` over HTTPS |
+| Cookie / login loops    | `APP_URL` / public domain mismatch; cookies not `Secure` over HTTPS                              |
 
 ---
 
@@ -255,12 +255,12 @@ Railway injects `PORT`; Next.js listens on it. Healthcheck path: `/`.
 
 Typical services in the same project (project name may still be `nodika-core`):
 
-| Service | Role |
-| --- | --- |
-| `nodika-frontend` | This app (public domain) |
-| `nodika-core` | Nest API (private + optional public) |
-| MongoDB | Database plugin |
-| `evolution-api` (optional) | WhatsApp gateway |
+| Service                    | Role                                 |
+| -------------------------- | ------------------------------------ |
+| `nodika-frontend`          | This app (public domain)             |
+| `nodika-core`              | Nest API (private + optional public) |
+| MongoDB                    | Database plugin                      |
+| `evolution-api` (optional) | WhatsApp gateway                     |
 
 Frontend should call Core over the **private network**, for example:
 
@@ -340,12 +340,12 @@ railway logs --build -n 300
 
 ## Environment variables
 
-| Variable | Required | Notes |
-| --- | --- | --- |
-| `NODIKA_CORE_URL` | Yes (for real features) | Absolute Core base URL. Server-only. On Railway prefer private hostname. |
-| `APP_URL` | Recommended in prod | Public frontend URL (used with Core CORS / email links — set consistently on Core too). |
-| `PORT` | No | Injected by Railway; default `3000` for `next start` / `next dev`. |
-| `NODE_ENV` | No | `production` in the Docker runner stage. |
+| Variable          | Required                | Notes                                                                                   |
+| ----------------- | ----------------------- | --------------------------------------------------------------------------------------- |
+| `NODIKA_CORE_URL` | Yes (for real features) | Absolute Core base URL. Server-only. On Railway prefer private hostname.                |
+| `APP_URL`         | Recommended in prod     | Public frontend URL (used with Core CORS / email links — set consistently on Core too). |
+| `PORT`            | No                      | Injected by Railway; default `3000` for `next start` / `next dev`.                      |
+| `NODE_ENV`        | No                      | `production` in the Docker runner stage.                                                |
 
 **Do not set** `NEXT_PUBLIC_NODIKA_CORE_URL` or `OPENAI_API_KEY` on the frontend. OpenAI keys belong on Core only; the BFF proxies `/api/messaging/progress` with the session cookie.
 
@@ -353,17 +353,17 @@ railway logs --build -n 300
 
 ## Scripts reference
 
-| Script | What it does |
-| --- | --- |
-| `npm run dev` | Next.js turbo/dev server |
-| `npm run build` | Production build + typecheck |
-| `npm run start` | Serve `.next` production build |
-| `npm run lint` | ESLint |
-| `npm run format` / `format:check` | Prettier |
-| `npm test` | Vitest once |
-| `npm run test:watch` | Vitest watch |
-| `npm run test:coverage` | Vitest + coverage |
-| `npm run spec:validate` | OpenSpec validate (`--all --strict`) |
+| Script                            | What it does                         |
+| --------------------------------- | ------------------------------------ |
+| `npm run dev`                     | Next.js turbo/dev server             |
+| `npm run build`                   | Production build + typecheck         |
+| `npm run start`                   | Serve `.next` production build       |
+| `npm run lint`                    | ESLint                               |
+| `npm run format` / `format:check` | Prettier                             |
+| `npm test`                        | Vitest once                          |
+| `npm run test:watch`              | Vitest watch                         |
+| `npm run test:coverage`           | Vitest + coverage                    |
+| `npm run spec:validate`           | OpenSpec validate (`--all --strict`) |
 
 ---
 
@@ -425,12 +425,12 @@ UI copy belongs in `src/i18n/dictionaries/{es,en}.json`. Server-only Core access
 
 ### What to test
 
-| Layer | Where | Focus |
-| --- | --- | --- |
-| Lib / parsers | `src/lib/*.test.ts` | Pure helpers (catalog, roster, auth helpers) |
-| API routes | `src/app/api/**/*.test.ts` | Cookie / proxy behavior with mocked `fetch` |
-| Components | Testing Library where valuable | Critical UI flows |
-| Coverage | `npm run test:coverage` | Meet the gate in `openspec/specs/test-coverage-gate` |
+| Layer         | Where                          | Focus                                                |
+| ------------- | ------------------------------ | ---------------------------------------------------- |
+| Lib / parsers | `src/lib/*.test.ts`            | Pure helpers (catalog, roster, auth helpers)         |
+| API routes    | `src/app/api/**/*.test.ts`     | Cookie / proxy behavior with mocked `fetch`          |
+| Components    | Testing Library where valuable | Critical UI flows                                    |
+| Coverage      | `npm run test:coverage`        | Meet the gate in `openspec/specs/test-coverage-gate` |
 
 ### Related Core work
 

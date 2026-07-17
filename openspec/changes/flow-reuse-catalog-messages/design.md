@@ -40,11 +40,11 @@ Flows and the team message catalog are separate today: catalog rows are `title`/
 
 ## Risks / Trade-offs
 
-| Risk | Mitigation |
-| --- | --- |
-| Stale denormalized copy after catalog edit | Resolve on send from catalog |
-| Orphan links after soft-delete | Validate on upsert; fail send if inactive |
-| Larger upsert payload mistakes | Zod/class-validator optional ObjectId; frontend validates against loaded catalog list |
+| Risk                                       | Mitigation                                                                            |
+| ------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Stale denormalized copy after catalog edit | Resolve on send from catalog                                                          |
+| Orphan links after soft-delete             | Validate on upsert; fail send if inactive                                             |
+| Larger upsert payload mistakes             | Zod/class-validator optional ObjectId; frontend validates against loaded catalog list |
 
 ## Migration
 

@@ -151,7 +151,8 @@ function libraryFromSources(
     updatedAt: source.createdAt,
   }));
   const selectedId =
-    activeProjectId && projects.some((project) => project.id === activeProjectId)
+    activeProjectId &&
+    projects.some((project) => project.id === activeProjectId)
       ? activeProjectId
       : (projects[0]?.id ?? null);
   return { projects, selectedId };

@@ -47,12 +47,13 @@ Constraints: LLM keys stay on Core; frontend uses session-auth BFF only; snapsho
 
   ```ts
   progressAi: {
-    provider: 'openai' | 'anthropic';
+    provider: "openai" | "anthropic";
     model: string; // selected chat model id
   }
   ```
 
   Frontend settings form: provider toggle/select; model select filtered by provider from a curated allowlist (OpenAI: e.g. `gpt-4o-mini`, `gpt-4o`; Anthropic: e.g. `claude-sonnet-4-5`, `claude-haiku-4-5` — exact ids matched to Core supported list). Defaults: `openai` + Core’s current default model env.
+
 - **Parse path:** Core `ProgressParseService` reads the account (or workspace) setting for the project owner / request context; uses corresponding env API key; fails closed if that provider’s key is unset.
 - **Why:** Matches user request for settings control without shipping keys to the client.
 - **Alt rejected:** Global-only env switch without UI — operators cannot choose per account.

@@ -30,10 +30,7 @@ import {
 } from "@/i18n/config";
 import { useDictionary } from "@/i18n/dictionary-provider";
 import type { AccountSettings } from "@/lib/core-auth";
-import {
-  DEFAULT_TIMEZONE,
-  TIMEZONE_OPTIONS,
-} from "@/lib/timezone-options";
+import { DEFAULT_TIMEZONE, TIMEZONE_OPTIONS } from "@/lib/timezone-options";
 import {
   DEFAULT_PROGRESS_AI_MODELS,
   defaultProgressAi,
@@ -91,9 +88,7 @@ export function UserSettingsForm() {
       setAnthropicModel(normalized.model);
     }
     setOpenaiKeyConfigured(Boolean(next.progressAi?.openaiKeyConfigured));
-    setAnthropicKeyConfigured(
-      Boolean(next.progressAi?.anthropicKeyConfigured),
-    );
+    setAnthropicKeyConfigured(Boolean(next.progressAi?.anthropicKeyConfigured));
     setOpenaiApiKey("");
     setAnthropicApiKey("");
   }
@@ -219,10 +214,7 @@ export function UserSettingsForm() {
   function changeProgressProvider(provider: ProgressAiProvider) {
     setProgressAi({
       provider,
-      model:
-        provider === "openai"
-          ? openaiModel
-          : anthropicModel,
+      model: provider === "openai" ? openaiModel : anthropicModel,
     });
   }
 

@@ -18,12 +18,12 @@ Mensajes del equipo already supports an attendance prefill that uses the assigne
 
 ## Decisions
 
-1. **Frontend-only presets** — pure draft builders, same as attendance.  
-2. **MUI Select** for presets to match the assign dropdown, not a separate menu library.  
+1. **Frontend-only presets** — pure draft builders, same as attendance.
+2. **MUI Select** for presets to match the assign dropdown, not a separate menu library.
 3. **Preset set (v1):**
-   - `attendance` — existing full/half/absent checklist  
-   - `performance` — per-person performance ask (reuse/extend `buildPerformanceDraft`)  
-   - `workProgress` — ask percent cumplido, duración, avance, notas, and work time for the jornada  
+   - `attendance` — existing full/half/absent checklist
+   - `performance` — per-person performance ask (reuse/extend `buildPerformanceDraft`)
+   - `workProgress` — ask percent cumplido, duración, avance, notas, and work time for the jornada
 4. **Empty selection** — Select includes a “choose preset…” placeholder; applying happens on change.
 
 ## Risks / Trade-offs

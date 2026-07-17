@@ -114,9 +114,7 @@ export function AppNavbar({
       listStoredProjects().find(
         (project) => project.id === library.selectedId,
       ) ?? null;
-    const live = selected
-      ? await fetchObraProgress(selected.id)
-      : null;
+    const live = selected ? await fetchObraProgress(selected.id) : null;
     const patched = buildProgressPatchJson(snapshotJson, live);
     if (!patched) {
       return;

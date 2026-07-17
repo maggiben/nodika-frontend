@@ -65,85 +65,87 @@ describe("SnapshotUploadForm", () => {
   });
 
   test("uploads a valid snapshot with the browser session", async () => {
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-      if (url === "/api/settings" && init?.method === "PATCH") {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              email: "user@example.com",
-              activeProjectId: "proj_mrjbubmw_vbds9",
-              emailSchedule: {
-                enabled: false,
-                frequency: "weekly",
-                daysOfWeek: [1],
-                dayOfMonth: 1,
-                sendTime: "09:00",
-                timezone: "UTC",
-              },
-              nextSendDates: [],
-            }),
-            { status: 200 },
-          ),
-        );
-      }
-      if (url === "/api/settings") {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              email: "user@example.com",
-              activeProjectId: "proj_mrjbubmw_vbds9",
-              emailSchedule: {
-                enabled: false,
-                frequency: "weekly",
-                daysOfWeek: [1],
-                dayOfMonth: 1,
-                sendTime: "09:00",
-                timezone: "UTC",
-              },
-              nextSendDates: [],
-            }),
-            { status: 200 },
-          ),
-        );
-      }
-      if (url === "/api/snapshots" && init?.method !== "POST") {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify([
-              {
-                id: "source_1",
-                projectId: "proj_mrjbubmw_vbds9",
-                name: "Sin nombre",
-                filename: "nodika-snapshot.json",
-                createdAt: "2026-07-15T00:50:36.611Z",
-                content: {
-                  schema_version: "nodika-snapshot-v1",
-                  meta: {
-                    projectId: "proj_mrjbubmw_vbds9",
-                    projectNombre: "Sin nombre",
+    const fetchMock = vi
+      .fn()
+      .mockImplementation((url: string, init?: RequestInit) => {
+        if (url === "/api/settings" && init?.method === "PATCH") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                email: "user@example.com",
+                activeProjectId: "proj_mrjbubmw_vbds9",
+                emailSchedule: {
+                  enabled: false,
+                  frequency: "weekly",
+                  daysOfWeek: [1],
+                  dayOfMonth: 1,
+                  sendTime: "09:00",
+                  timezone: "UTC",
+                },
+                nextSendDates: [],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        if (url === "/api/settings") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                email: "user@example.com",
+                activeProjectId: "proj_mrjbubmw_vbds9",
+                emailSchedule: {
+                  enabled: false,
+                  frequency: "weekly",
+                  daysOfWeek: [1],
+                  dayOfMonth: 1,
+                  sendTime: "09:00",
+                  timezone: "UTC",
+                },
+                nextSendDates: [],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        if (url === "/api/snapshots" && init?.method !== "POST") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify([
+                {
+                  id: "source_1",
+                  projectId: "proj_mrjbubmw_vbds9",
+                  name: "Sin nombre",
+                  filename: "nodika-snapshot.json",
+                  createdAt: "2026-07-15T00:50:36.611Z",
+                  content: {
+                    schema_version: "nodika-snapshot-v1",
+                    meta: {
+                      projectId: "proj_mrjbubmw_vbds9",
+                      projectNombre: "Sin nombre",
+                    },
                   },
                 },
-              },
-            ]),
-            { status: 200 },
-          ),
-        );
-      }
-      if (url === "/api/snapshots") {
-        return Promise.resolve(
-          new Response(
-            JSON.stringify({
-              createdAt: "2026-07-15T00:50:36.611Z",
-              filename: "nodika-snapshot.json",
-              id: "source_1",
-              projectId: "proj_mrjbubmw_vbds9",
-            }),
-            { status: 200 },
-          ),
-        );
-      }
-      return Promise.resolve(new Response("{}", { status: 404 }));
-    });
+              ]),
+              { status: 200 },
+            ),
+          );
+        }
+        if (url === "/api/snapshots") {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                createdAt: "2026-07-15T00:50:36.611Z",
+                filename: "nodika-snapshot.json",
+                id: "source_1",
+                projectId: "proj_mrjbubmw_vbds9",
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        return Promise.resolve(new Response("{}", { status: 404 }));
+      });
     vi.stubGlobal("fetch", fetchMock);
     render(
       <TestI18n locale="en">

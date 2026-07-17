@@ -60,9 +60,7 @@ export function proxy(request: NextRequest) {
 
   if (pathnameHasLocale) {
     const locale = localeFromPathname(pathname) ?? preferredLocale(request);
-    const hasAccess = Boolean(
-      request.cookies.get(CORE_ACCESS_COOKIE)?.value,
-    );
+    const hasAccess = Boolean(request.cookies.get(CORE_ACCESS_COOKIE)?.value);
 
     if (!hasAccess && !isPublicAuthPath(pathname)) {
       const url = request.nextUrl.clone();

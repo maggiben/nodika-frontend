@@ -87,7 +87,11 @@ describe("GET /api/snapshots", () => {
     ];
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(new Response(JSON.stringify(listed), { status: 200 })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(JSON.stringify(listed), { status: 200 }),
+        ),
     );
 
     const response = await GET(createGetRequest());

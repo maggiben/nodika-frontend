@@ -3,7 +3,9 @@
 ## Purpose
 
 Visualize Nodika snapshot JSON on the landing page using progress labels, charts, and task grids.
+
 ## Requirements
+
 ### Requirement: Project status landing dashboard
 
 The application SHALL use `/` as a project-status landing page that visualizes the selected project's snapshot JSON from Core (via the authenticated BFF) with progress labels, MUI X Charts visualizations, and MUI X Community Data Grid task tables. Objective and context task Data Grids SHALL support client-side column sorting and filtering. While the initial project library is loading from Core for an authenticated user, the page SHALL show a loading indicator and SHALL NOT show the empty upload state. When the visitor is not authenticated (or the library request returns unauthorized), the page SHALL prompt them to sign in or create an account and SHALL NOT show the loading spinner. The empty upload state SHALL appear only when Core successfully returns no selectable snapshot sources for an authenticated account.
@@ -56,4 +58,3 @@ The application SHALL use `/` as a project-status landing page that visualizes t
 
 - **WHEN** the user changes the active project in the navbar selector
 - **THEN** the dashboard SHALL update to that project's visualization without requiring another upload
-

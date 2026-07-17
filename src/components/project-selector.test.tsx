@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -36,7 +42,9 @@ function stubTwoProjects() {
               name: "Alpha",
               filename: "a.json",
               createdAt: "2026-01-01T00:00:00.000Z",
-              content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+              content: {
+                meta: { projectId: "proj_a", projectNombre: "Alpha" },
+              },
             },
           ]),
           { status: 200 },

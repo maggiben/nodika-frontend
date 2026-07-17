@@ -44,7 +44,9 @@ describe("snapshot-storage", () => {
                 name: "Alpha",
                 filename: "a.json",
                 createdAt: "2026-01-02T00:00:00.000Z",
-                content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
+                content: {
+                  meta: { projectId: "proj_a", projectNombre: "Alpha" },
+                },
               },
               {
                 id: "src_b",
@@ -52,7 +54,9 @@ describe("snapshot-storage", () => {
                 name: "Beta",
                 filename: "b.json",
                 createdAt: "2026-01-01T00:00:00.000Z",
-                content: { meta: { projectId: "proj_b", projectNombre: "Beta" } },
+                content: {
+                  meta: { projectId: "proj_b", projectNombre: "Beta" },
+                },
               },
             ]),
             { status: 200 },
@@ -137,7 +141,9 @@ describe("snapshot-storage", () => {
       }),
     );
 
-    const stored = await activateUploadedSnapshot(snapshot("proj_new", "Nuevo"));
+    const stored = await activateUploadedSnapshot(
+      snapshot("proj_new", "Nuevo"),
+    );
     expect(stored?.id).toBe("proj_new");
     expect(readSelectedSnapshotJson()).toContain("Nuevo");
   });

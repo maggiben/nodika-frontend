@@ -458,11 +458,7 @@ function SignInDashboard() {
         spacing={1.5}
         sx={{ justifyContent: "center" }}
       >
-        <Button
-          component={Link}
-          href={`/${locale}/login`}
-          variant="contained"
-        >
+        <Button component={Link} href={`/${locale}/login`} variant="contained">
           {t("nav.signIn")}
         </Button>
         <Button

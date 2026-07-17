@@ -444,7 +444,11 @@ export function StaffCatalogPanel({
       <Typography component="h2" variant="h6">
         {t("staff.catalogTitle")}
       </Typography>
-      <Typography color="text.secondary" sx={{ mb: 1.5, mt: 0.25 }} variant="body2">
+      <Typography
+        color="text.secondary"
+        sx={{ mb: 1.5, mt: 0.25 }}
+        variant="body2"
+      >
         {t("staff.catalogDescription")}
       </Typography>
 
@@ -605,414 +609,421 @@ export function StaffCatalogPanel({
               const canReorder = Boolean(group.contactId);
               return (
                 <Box key={group.contactId ?? "unassigned"}>
-                <Stack
-                  direction="row"
-                  spacing={1.25}
-                  sx={{
-                    alignItems: "center",
-                    bgcolor: group.contactId
-                      ? "primary.main"
-                      : "action.selected",
-                    borderRadius: 1.5,
-                    color: group.contactId
-                      ? "primary.contrastText"
-                      : "text.primary",
-                    mb: 1,
-                    px: 1.25,
-                    py: 0.85,
-                  }}
-                >
-                  <Box
-                    aria-hidden
+                  <Stack
+                    direction="row"
+                    spacing={1.25}
                     sx={{
                       alignItems: "center",
                       bgcolor: group.contactId
-                        ? "rgba(255,255,255,0.22)"
-                        : "background.paper",
-                      borderRadius: "50%",
-                      display: "inline-flex",
-                      fontWeight: 700,
-                      height: 32,
-                      justifyContent: "center",
-                      typography: "subtitle2",
-                      width: 32,
+                        ? "primary.main"
+                        : "action.selected",
+                      borderRadius: 1.5,
+                      color: group.contactId
+                        ? "primary.contrastText"
+                        : "text.primary",
+                      mb: 1,
+                      px: 1.25,
+                      py: 0.85,
                     }}
                   >
-                    {leadInitial(group.label)}
-                  </Box>
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography noWrap sx={{ fontWeight: 700 }} variant="subtitle2">
-                      {group.contactId
-                        ? t("staff.catalogLeadGroup", { name: group.label })
-                        : t("staff.catalogUnassignedGroup")}
-                    </Typography>
-                    <Typography
-                      noWrap
+                    <Box
+                      aria-hidden
                       sx={{
-                        opacity: 0.9,
-                        typography: "caption",
+                        alignItems: "center",
+                        bgcolor: group.contactId
+                          ? "rgba(255,255,255,0.22)"
+                          : "background.paper",
+                        borderRadius: "50%",
+                        display: "inline-flex",
+                        fontWeight: 700,
+                        height: 32,
+                        justifyContent: "center",
+                        typography: "subtitle2",
+                        width: 32,
                       }}
                     >
-                      {canReorder
-                        ? t("staff.catalogOrderHint")
-                        : t("staff.catalogUnassignedHint")}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={t("staff.catalogLeadCount", {
-                      n: group.rows.length,
-                    })}
-                    size="small"
-                    sx={{
-                      bgcolor: group.contactId
-                        ? "rgba(255,255,255,0.2)"
-                        : "background.paper",
-                      color: "inherit",
-                      fontWeight: 600,
-                    }}
-                  />
-                </Stack>
-
-                <Box
-                  sx={{
-                    display: "grid",
-                    gap: 1,
-                    gridTemplateColumns: {
-                      xs: "1fr",
-                      sm: "repeat(2, minmax(0, 1fr))",
-                      md: "repeat(4, minmax(0, 1fr))",
-                    },
-                  }}
-                >
-                  {group.rows.map((row) => {
-                    const busy = busyId === row._id;
-                    const status = resolveCatalogStatus(row);
-                    const statusLabel = t(`staff.status.${status}`);
-                    const order =
-                      group.contactId && row.sortOrder > 0
-                        ? row.sortOrder
-                        : null;
-                    const isSource = dragCatalogId === row._id;
-                    const isDropTarget =
-                      dragOverId === row._id &&
-                      dragCatalogId !== null &&
-                      dragCatalogId !== row._id;
-
-                    return (
-                      <Box
-                        key={row._id}
-                        data-catalog-card=""
-                        data-catalog-id={row._id}
-                        data-contact-id={group.contactId ?? ""}
+                      {leadInitial(group.label)}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography
+                        noWrap
+                        sx={{ fontWeight: 700 }}
+                        variant="subtitle2"
+                      >
+                        {group.contactId
+                          ? t("staff.catalogLeadGroup", { name: group.label })
+                          : t("staff.catalogUnassignedGroup")}
+                      </Typography>
+                      <Typography
+                        noWrap
                         sx={{
-                          bgcolor: isDropTarget
-                            ? "action.selected"
-                            : "background.paper",
-                          border: "1px solid",
-                          borderColor: isDropTarget
-                            ? "primary.main"
-                            : isSource
-                              ? "primary.light"
-                              : "divider",
-                          borderRadius: 1,
-                          boxShadow: isDropTarget ? 2 : 0,
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 0.75,
-                          minHeight: 0,
-                          opacity: isSource ? 0.45 : 1,
-                          outline: isDropTarget
-                            ? "2px solid"
-                            : undefined,
-                          outlineColor: isDropTarget
-                            ? "primary.main"
-                            : undefined,
-                          p: 1,
-                          // Let elementFromPoint hit sibling cards under the dragged one.
-                          pointerEvents: isSource ? "none" : "auto",
-                          position: "relative",
-                          transition: "border-color 120ms, box-shadow 120ms",
+                          opacity: 0.9,
+                          typography: "caption",
                         }}
                       >
-                        <Stack
-                          direction="row"
-                          spacing={0.75}
-                          sx={{ alignItems: "center" }}
-                        >
-                          {canReorder && group.contactId ? (
-                            <Box
-                              aria-label={t("staff.catalogDragHandle")}
-                              onPointerCancel={() => {
-                                clearDragState();
-                              }}
-                              onPointerDown={(event) => {
-                                if (event.button !== 0 || busy) {
-                                  return;
-                                }
-                                event.preventDefault();
-                                event.stopPropagation();
-                                const contactId = group.contactId;
-                                if (!contactId) {
-                                  return;
-                                }
-                                event.currentTarget.setPointerCapture(
-                                  event.pointerId,
-                                );
-                                dragSessionRef.current = {
-                                  catalogId: row._id,
-                                  contactId,
-                                  pointerId: event.pointerId,
-                                };
-                                setDragCatalogId(row._id);
-                                setDragOverId(null);
-                              }}
-                              onPointerMove={(event) => {
-                                const session = dragSessionRef.current;
-                                if (
-                                  !session ||
-                                  session.pointerId !== event.pointerId
-                                ) {
-                                  return;
-                                }
-                                const hit = cardAtPoint(
-                                  event.clientX,
-                                  event.clientY,
-                                );
-                                if (
-                                  !hit ||
-                                  hit.contactId !== session.contactId ||
-                                  hit.catalogId === session.catalogId
-                                ) {
-                                  if (dragOverId !== null) {
-                                    setDragOverId(null);
-                                  }
-                                  return;
-                                }
-                                if (dragOverId !== hit.catalogId) {
-                                  setDragOverId(hit.catalogId);
-                                }
-                              }}
-                              onPointerUp={(event) => {
-                                const session = dragSessionRef.current;
-                                if (
-                                  !session ||
-                                  session.pointerId !== event.pointerId
-                                ) {
-                                  return;
-                                }
-                                try {
-                                  event.currentTarget.releasePointerCapture(
-                                    event.pointerId,
-                                  );
-                                } catch {
-                                  // Capture may already be released.
-                                }
-                                const hit = cardAtPoint(
-                                  event.clientX,
-                                  event.clientY,
-                                );
-                                if (
-                                  hit &&
-                                  hit.contactId === session.contactId &&
-                                  hit.catalogId !== session.catalogId
-                                ) {
-                                  void reorderLead(
-                                    session.contactId,
-                                    session.catalogId,
-                                    hit.catalogId,
-                                  );
-                                  return;
-                                }
-                                clearDragState();
-                              }}
-                              role="button"
-                              tabIndex={0}
-                              title={t("staff.catalogDragHandle")}
-                              sx={{
-                                alignItems: "center",
-                                bgcolor: "action.hover",
-                                borderRadius: 0.75,
-                                color: "text.secondary",
-                                cursor: isSource ? "grabbing" : "grab",
-                                display: "inline-flex",
-                                flexShrink: 0,
-                                fontSize: 14,
-                                height: 28,
-                                justifyContent: "center",
-                                letterSpacing: "-1px",
-                                lineHeight: 1,
-                                // Keep receiving captured pointer events while the card ignores hits.
-                                pointerEvents: "auto",
-                                touchAction: "none",
-                                userSelect: "none",
-                                width: 22,
-                              }}
-                            >
-                              ⋮⋮
-                            </Box>
-                          ) : null}
-                          {order !== null ? (
-                            <Box
-                              aria-label={t("staff.catalogOrderBadge", {
-                                n: order,
-                              })}
-                              sx={{
-                                bgcolor: "primary.main",
-                                borderRadius: "50%",
-                                color: "primary.contrastText",
-                                display: "inline-flex",
-                                flexShrink: 0,
-                                fontWeight: 700,
-                                height: 24,
-                                alignItems: "center",
-                                justifyContent: "center",
-                                minWidth: 24,
-                                typography: "caption",
-                              }}
-                            >
-                              {order}
-                            </Box>
-                          ) : null}
-                          <Typography
-                            noWrap
-                            sx={{ flex: 1, fontWeight: 600 }}
-                            title={row.title}
-                            variant="subtitle2"
-                          >
-                            {row.title}
-                          </Typography>
-                          <Tooltip title={statusLabel}>
-                            <IconButton
-                              aria-label={statusLabel}
-                              size="small"
-                              sx={{
-                                color:
-                                  STATUS_COLOR[status] ?? STATUS_COLOR.neutral,
-                                p: 0.25,
-                              }}
-                            >
-                              <Box
-                                aria-hidden
-                                component="span"
-                                sx={{
-                                  bgcolor: "currentColor",
-                                  borderRadius: "50%",
-                                  display: "inline-block",
-                                  height: 8,
-                                  width: 8,
-                                }}
-                              />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
+                        {canReorder
+                          ? t("staff.catalogOrderHint")
+                          : t("staff.catalogUnassignedHint")}
+                      </Typography>
+                    </Box>
+                    <Chip
+                      label={t("staff.catalogLeadCount", {
+                        n: group.rows.length,
+                      })}
+                      size="small"
+                      sx={{
+                        bgcolor: group.contactId
+                          ? "rgba(255,255,255,0.2)"
+                          : "background.paper",
+                        color: "inherit",
+                        fontWeight: 600,
+                      }}
+                    />
+                  </Stack>
 
-                        {isDragging ? (
-                          <Typography
-                            color="text.secondary"
-                            sx={{ minHeight: 18 }}
-                            variant="caption"
-                          >
-                            {isDropTarget
-                              ? t("staff.catalogDropHere")
-                              : isSource
-                                ? t("staff.catalogDragging")
-                                : " "}
-                          </Typography>
-                        ) : (
-                          <Tooltip
-                            title={
-                              <Box sx={{ maxWidth: 320, whiteSpace: "pre-wrap" }}>
-                                {row.body}
-                              </Box>
-                            }
-                          >
-                            <Typography
-                              color="text.secondary"
-                              sx={{
-                                WebkitBoxOrient: "vertical",
-                                WebkitLineClamp: 2,
-                                display: "-webkit-box",
-                                minHeight: 36,
-                                overflow: "hidden",
-                              }}
-                              variant="caption"
-                            >
-                              {truncateForPreview(row.body, 120)}
-                            </Typography>
-                          </Tooltip>
-                        )}
+                  <Box
+                    sx={{
+                      display: "grid",
+                      gap: 1,
+                      gridTemplateColumns: {
+                        xs: "1fr",
+                        sm: "repeat(2, minmax(0, 1fr))",
+                        md: "repeat(4, minmax(0, 1fr))",
+                      },
+                    }}
+                  >
+                    {group.rows.map((row) => {
+                      const busy = busyId === row._id;
+                      const status = resolveCatalogStatus(row);
+                      const statusLabel = t(`staff.status.${status}`);
+                      const order =
+                        group.contactId && row.sortOrder > 0
+                          ? row.sortOrder
+                          : null;
+                      const isSource = dragCatalogId === row._id;
+                      const isDropTarget =
+                        dragOverId === row._id &&
+                        dragCatalogId !== null &&
+                        dragCatalogId !== row._id;
 
-                        <Typography
-                          color="text.secondary"
-                          noWrap
-                          title={`${formatStaffTimestamp(row.lastSentAt, locale)} · ${formatStaffTimestamp(row.repliedAt, locale)}`}
-                          variant="caption"
-                        >
-                          {formatStaffTimestamp(row.lastSentAt, locale)} ·{" "}
-                          {formatLatency(row.responseLatencyMs)}
-                        </Typography>
-
-                        <FormControl
-                          fullWidth
-                          size="small"
+                      return (
+                        <Box
+                          key={row._id}
+                          data-catalog-card=""
+                          data-catalog-id={row._id}
+                          data-contact-id={group.contactId ?? ""}
                           sx={{
-                            pointerEvents: isDragging ? "none" : "auto",
+                            bgcolor: isDropTarget
+                              ? "action.selected"
+                              : "background.paper",
+                            border: "1px solid",
+                            borderColor: isDropTarget
+                              ? "primary.main"
+                              : isSource
+                                ? "primary.light"
+                                : "divider",
+                            borderRadius: 1,
+                            boxShadow: isDropTarget ? 2 : 0,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 0.75,
+                            minHeight: 0,
+                            opacity: isSource ? 0.45 : 1,
+                            outline: isDropTarget ? "2px solid" : undefined,
+                            outlineColor: isDropTarget
+                              ? "primary.main"
+                              : undefined,
+                            p: 1,
+                            // Let elementFromPoint hit sibling cards under the dragged one.
+                            pointerEvents: isSource ? "none" : "auto",
+                            position: "relative",
+                            transition: "border-color 120ms, box-shadow 120ms",
                           }}
                         >
-                          <Select
-                            disabled={busy || roster.length === 0 || isDragging}
-                            displayEmpty
-                            onChange={(event) => {
-                              const contactId = String(event.target.value);
-                              if (contactId) {
-                                void assignRow(row, contactId);
-                              }
-                            }}
-                            sx={{
-                              "& .MuiSelect-select": {
-                                py: 0.75,
-                              },
-                            }}
-                            value={row.assignedContactId ?? ""}
+                          <Stack
+                            direction="row"
+                            spacing={0.75}
+                            sx={{ alignItems: "center" }}
                           >
-                            <MenuItem value="">
-                              <em>{t("staff.catalogAssignPlaceholder")}</em>
-                            </MenuItem>
-                            {roster.map((contact) => (
-                              <MenuItem key={contact._id} value={contact._id}>
-                                {contact.label || contact.phone}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                            {canReorder && group.contactId ? (
+                              <Box
+                                aria-label={t("staff.catalogDragHandle")}
+                                onPointerCancel={() => {
+                                  clearDragState();
+                                }}
+                                onPointerDown={(event) => {
+                                  if (event.button !== 0 || busy) {
+                                    return;
+                                  }
+                                  event.preventDefault();
+                                  event.stopPropagation();
+                                  const contactId = group.contactId;
+                                  if (!contactId) {
+                                    return;
+                                  }
+                                  event.currentTarget.setPointerCapture(
+                                    event.pointerId,
+                                  );
+                                  dragSessionRef.current = {
+                                    catalogId: row._id,
+                                    contactId,
+                                    pointerId: event.pointerId,
+                                  };
+                                  setDragCatalogId(row._id);
+                                  setDragOverId(null);
+                                }}
+                                onPointerMove={(event) => {
+                                  const session = dragSessionRef.current;
+                                  if (
+                                    !session ||
+                                    session.pointerId !== event.pointerId
+                                  ) {
+                                    return;
+                                  }
+                                  const hit = cardAtPoint(
+                                    event.clientX,
+                                    event.clientY,
+                                  );
+                                  if (
+                                    !hit ||
+                                    hit.contactId !== session.contactId ||
+                                    hit.catalogId === session.catalogId
+                                  ) {
+                                    if (dragOverId !== null) {
+                                      setDragOverId(null);
+                                    }
+                                    return;
+                                  }
+                                  if (dragOverId !== hit.catalogId) {
+                                    setDragOverId(hit.catalogId);
+                                  }
+                                }}
+                                onPointerUp={(event) => {
+                                  const session = dragSessionRef.current;
+                                  if (
+                                    !session ||
+                                    session.pointerId !== event.pointerId
+                                  ) {
+                                    return;
+                                  }
+                                  try {
+                                    event.currentTarget.releasePointerCapture(
+                                      event.pointerId,
+                                    );
+                                  } catch {
+                                    // Capture may already be released.
+                                  }
+                                  const hit = cardAtPoint(
+                                    event.clientX,
+                                    event.clientY,
+                                  );
+                                  if (
+                                    hit &&
+                                    hit.contactId === session.contactId &&
+                                    hit.catalogId !== session.catalogId
+                                  ) {
+                                    void reorderLead(
+                                      session.contactId,
+                                      session.catalogId,
+                                      hit.catalogId,
+                                    );
+                                    return;
+                                  }
+                                  clearDragState();
+                                }}
+                                role="button"
+                                tabIndex={0}
+                                title={t("staff.catalogDragHandle")}
+                                sx={{
+                                  alignItems: "center",
+                                  bgcolor: "action.hover",
+                                  borderRadius: 0.75,
+                                  color: "text.secondary",
+                                  cursor: isSource ? "grabbing" : "grab",
+                                  display: "inline-flex",
+                                  flexShrink: 0,
+                                  fontSize: 14,
+                                  height: 28,
+                                  justifyContent: "center",
+                                  letterSpacing: "-1px",
+                                  lineHeight: 1,
+                                  // Keep receiving captured pointer events while the card ignores hits.
+                                  pointerEvents: "auto",
+                                  touchAction: "none",
+                                  userSelect: "none",
+                                  width: 22,
+                                }}
+                              >
+                                ⋮⋮
+                              </Box>
+                            ) : null}
+                            {order !== null ? (
+                              <Box
+                                aria-label={t("staff.catalogOrderBadge", {
+                                  n: order,
+                                })}
+                                sx={{
+                                  bgcolor: "primary.main",
+                                  borderRadius: "50%",
+                                  color: "primary.contrastText",
+                                  display: "inline-flex",
+                                  flexShrink: 0,
+                                  fontWeight: 700,
+                                  height: 24,
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  minWidth: 24,
+                                  typography: "caption",
+                                }}
+                              >
+                                {order}
+                              </Box>
+                            ) : null}
+                            <Typography
+                              noWrap
+                              sx={{ flex: 1, fontWeight: 600 }}
+                              title={row.title}
+                              variant="subtitle2"
+                            >
+                              {row.title}
+                            </Typography>
+                            <Tooltip title={statusLabel}>
+                              <IconButton
+                                aria-label={statusLabel}
+                                size="small"
+                                sx={{
+                                  color:
+                                    STATUS_COLOR[status] ??
+                                    STATUS_COLOR.neutral,
+                                  p: 0.25,
+                                }}
+                              >
+                                <Box
+                                  aria-hidden
+                                  component="span"
+                                  sx={{
+                                    bgcolor: "currentColor",
+                                    borderRadius: "50%",
+                                    display: "inline-block",
+                                    height: 8,
+                                    width: 8,
+                                  }}
+                                />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
 
-                        <Stack direction="row" spacing={0.75}>
-                          <Button
-                            disabled={busy || !row.assignedContactId}
-                            fullWidth
-                            onClick={() => void sendRow(row)}
-                            size="small"
-                            variant="outlined"
+                          {isDragging ? (
+                            <Typography
+                              color="text.secondary"
+                              sx={{ minHeight: 18 }}
+                              variant="caption"
+                            >
+                              {isDropTarget
+                                ? t("staff.catalogDropHere")
+                                : isSource
+                                  ? t("staff.catalogDragging")
+                                  : " "}
+                            </Typography>
+                          ) : (
+                            <Tooltip
+                              title={
+                                <Box
+                                  sx={{ maxWidth: 320, whiteSpace: "pre-wrap" }}
+                                >
+                                  {row.body}
+                                </Box>
+                              }
+                            >
+                              <Typography
+                                color="text.secondary"
+                                sx={{
+                                  WebkitBoxOrient: "vertical",
+                                  WebkitLineClamp: 2,
+                                  display: "-webkit-box",
+                                  minHeight: 36,
+                                  overflow: "hidden",
+                                }}
+                                variant="caption"
+                              >
+                                {truncateForPreview(row.body, 120)}
+                              </Typography>
+                            </Tooltip>
+                          )}
+
+                          <Typography
+                            color="text.secondary"
+                            noWrap
+                            title={`${formatStaffTimestamp(row.lastSentAt, locale)} · ${formatStaffTimestamp(row.repliedAt, locale)}`}
+                            variant="caption"
                           >
-                            {t("staff.catalogSend")}
-                          </Button>
-                          <Button
-                            color="warning"
-                            disabled={busy}
+                            {formatStaffTimestamp(row.lastSentAt, locale)} ·{" "}
+                            {formatLatency(row.responseLatencyMs)}
+                          </Typography>
+
+                          <FormControl
                             fullWidth
-                            onClick={() => void deleteRow(row)}
                             size="small"
+                            sx={{
+                              pointerEvents: isDragging ? "none" : "auto",
+                            }}
                           >
-                            {t("staff.catalogDelete")}
-                          </Button>
-                        </Stack>
-                      </Box>
-                    );
-                  })}
+                            <Select
+                              disabled={
+                                busy || roster.length === 0 || isDragging
+                              }
+                              displayEmpty
+                              onChange={(event) => {
+                                const contactId = String(event.target.value);
+                                if (contactId) {
+                                  void assignRow(row, contactId);
+                                }
+                              }}
+                              sx={{
+                                "& .MuiSelect-select": {
+                                  py: 0.75,
+                                },
+                              }}
+                              value={row.assignedContactId ?? ""}
+                            >
+                              <MenuItem value="">
+                                <em>{t("staff.catalogAssignPlaceholder")}</em>
+                              </MenuItem>
+                              {roster.map((contact) => (
+                                <MenuItem key={contact._id} value={contact._id}>
+                                  {contact.label || contact.phone}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+
+                          <Stack direction="row" spacing={0.75}>
+                            <Button
+                              disabled={busy || !row.assignedContactId}
+                              fullWidth
+                              onClick={() => void sendRow(row)}
+                              size="small"
+                              variant="outlined"
+                            >
+                              {t("staff.catalogSend")}
+                            </Button>
+                            <Button
+                              color="warning"
+                              disabled={busy}
+                              fullWidth
+                              onClick={() => void deleteRow(row)}
+                              size="small"
+                            >
+                              {t("staff.catalogDelete")}
+                            </Button>
+                          </Stack>
+                        </Box>
+                      );
+                    })}
+                  </Box>
                 </Box>
-              </Box>
-            );
-          })}
+              );
+            })}
           </Stack>
         )}
       </Box>

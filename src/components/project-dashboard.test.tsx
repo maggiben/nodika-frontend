@@ -80,10 +80,9 @@ describe("ProjectDashboard", () => {
         name: "Inicia sesión para ver el estado del proyecto",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Iniciar sesión" })).toHaveAttribute(
-      "href",
-      "/es/login",
-    );
+    expect(
+      screen.getByRole("link", { name: "Iniciar sesión" }),
+    ).toHaveAttribute("href", "/es/login");
     expect(screen.getByRole("link", { name: "Registrarse" })).toHaveAttribute(
       "href",
       "/es/register",

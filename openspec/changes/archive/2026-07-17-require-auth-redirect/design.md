@@ -29,6 +29,7 @@ After locale resolution, if the path is not in the public auth allowlist and the
 Public paths (per locale): `login`, `register`, `forgot-password`, `reset-password`, `verify-email`.
 
 Alternatives considered:
+
 - Per-page `redirect()` helpers — already used for settings/staff; easy to miss new routes and does not cover home/upload.
 - Client-only redirects — flashes protected UI; weaker for data exposure.
 

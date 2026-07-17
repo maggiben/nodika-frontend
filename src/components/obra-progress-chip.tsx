@@ -53,9 +53,7 @@ function baselineAverageFromJson(raw: string | null): number | null {
     if (!model || model.totalObjectiveTasks === 0) {
       return null;
     }
-    return Math.round(
-      Math.max(0, Math.min(100, model.averageProgress)),
-    );
+    return Math.round(Math.max(0, Math.min(100, model.averageProgress)));
   } catch {
     return null;
   }
