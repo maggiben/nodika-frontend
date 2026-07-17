@@ -19,6 +19,8 @@ rules:
   design:
     - Identify Server Component and Client Component boundaries.
     - Describe security, accessibility, compatibility, rollback, and test implications.
+    - Apply DRY: name the single typed module for shared domain rules, validation, formatting, or mapping; do not accept copy-paste of the same knowledge across routes, Client Components, or helpers.
+    - Apply SOLID (frontend-adapted): separate UI, parsing, and storage responsibilities; prefer composition and narrow props; keep substitutable helpers on shared contracts; depend on typed lib abstractions rather than scattered I/O in components.
   specs:
     - Use only observable requirements with SHALL or MUST and at least one testable scenario.
     - Use ADDED, MODIFIED, REMOVED, or RENAMED sections for change deltas.

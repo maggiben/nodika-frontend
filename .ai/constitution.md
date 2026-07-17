@@ -13,6 +13,13 @@ Evolve this Next.js 16 frontend safely from its current server-rendered App Rout
 5. Keep changes small, reversible, tested where behavior exists, and production-buildable.
 6. Do not add dependencies, services, or package-manager lockfiles without justification and review.
 7. OpenSpec is mandatory for behavior changes: read current specs, propose before implementation, validate, sync accepted deltas, then archive.
+8. DRY: do not duplicate knowledge. Shared domain rules, validation, formatting, and mapping live in one typed module; copy-paste across routes, Client Components, or helpers is a defect to extract, not a shortcut.
+9. SOLID (applied to this frontend):
+   - Single Responsibility: each module/component owns one reason to change (UI shell, form state, parsing, storage, or presentation—not several).
+   - Open/Closed: extend via composition, props, and shared utilities; avoid editing stable core paths for one-off feature variants.
+   - Liskov Substitution: interchangeable components and helpers must honor the same contracts (props, return shapes, error behavior) without callers needing special cases.
+   - Interface Segregation: prefer narrow props and focused modules over god objects or catch-all context bags.
+   - Dependency Inversion: UI depends on typed abstractions (pure functions, lib modules, validated shapes), not on concrete I/O details scattered through components.
 
 ## Current baseline
 
