@@ -39,6 +39,8 @@ const EMPTY_LIBRARY: ProjectLibrary = {
 
 let memoryLibrary: ProjectLibrary = EMPTY_LIBRARY;
 let loadPromise: Promise<ProjectLibraryRefresh> | null = null;
+/** Bumps when a forced refresh starts so stale in-flight GETs cannot overwrite. */
+let loadGeneration = 0;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -177,20 +179,32 @@ async function fetchActiveProjectId(): Promise<string | null> {
 }
 
 /** Load projects from Core BFF into memory. */
-export async function refreshProjectLibrary(): Promise<ProjectLibraryRefresh> {
+export async function refreshProjectLibrary(options?: {
+  /** Skip joining an in-flight load (use after mutations like delete). */
+  force?: boolean;
+}): Promise<ProjectLibraryRefresh> {
   if (typeof window === "undefined") {
     return { library: EMPTY_LIBRARY, ok: false, unauthorized: false };
   }
 
-  if (loadPromise) {
+  if (loadPromise && !options?.force) {
     return loadPromise;
   }
 
-  loadPromise = (async () => {
+  const generation = ++loadGeneration;
+
+  const request = (async (): Promise<ProjectLibraryRefresh> => {
     clearLegacyLocalStorage();
     try {
       const response = await fetch("/api/snapshots", { cache: "no-store" });
       if (!response.ok) {
+        if (generation !== loadGeneration) {
+          return {
+            library: memoryLibrary,
+            ok: false,
+            unauthorized: response.status === 401,
+          };
+        }
         writeLibrary(EMPTY_LIBRARY);
         return {
           library: EMPTY_LIBRARY,
@@ -202,17 +216,26 @@ export async function refreshProjectLibrary(): Promise<ProjectLibraryRefresh> {
       const sources = parseListedSources(body);
       const activeProjectId = await fetchActiveProjectId();
       const library = libraryFromSources(sources, activeProjectId);
+      if (generation !== loadGeneration) {
+        return { library: memoryLibrary, ok: true, unauthorized: false };
+      }
       writeLibrary(library);
       return { library, ok: true, unauthorized: false };
     } catch {
+      if (generation !== loadGeneration) {
+        return { library: memoryLibrary, ok: false, unauthorized: false };
+      }
       writeLibrary(EMPTY_LIBRARY);
       return { library: EMPTY_LIBRARY, ok: false, unauthorized: false };
     } finally {
-      loadPromise = null;
+      if (loadPromise === request) {
+        loadPromise = null;
+      }
     }
   })();
 
-  return loadPromise;
+  loadPromise = request;
+  return request;
 }
 
 export function readProjectLibrary(): ProjectLibrary {
@@ -309,11 +332,27 @@ export async function deleteStoredProject(
     }
 
     const wasSelected = memoryLibrary.selectedId === trimmed;
-    const refresh = await refreshProjectLibrary();
+    // Drop locally first so a stale in-flight list cannot keep showing it.
+    writeLibrary({
+      projects: memoryLibrary.projects.filter(
+        (project) => project.id !== trimmed,
+      ),
+      selectedId:
+        memoryLibrary.selectedId === trimmed ? null : memoryLibrary.selectedId,
+    });
+
+    const refresh = await refreshProjectLibrary({ force: true });
     if (!refresh.ok) {
       return {
         ok: false,
         message: "Project deleted, but the library could not be refreshed.",
+      };
+    }
+
+    if (refresh.library.projects.some((project) => project.id === trimmed)) {
+      return {
+        ok: false,
+        message: "Project is still present in Core after delete.",
       };
     }
 
