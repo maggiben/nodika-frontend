@@ -128,7 +128,7 @@ describe("StaffAttendanceSheet", () => {
     expect(screen.getByText(/Faltas: 1/)).toBeInTheDocument();
     expect(
       screen.getByText(
-        "El historial de asistencia se guarda en Nodika para este jefe de obra.",
+        "La asistencia se guarda en Nodika. Las respuestas al mensaje de asistencia del equipo por WhatsApp pueden actualizar las marcas del día automáticamente.",
       ),
     ).toBeInTheDocument();
 

@@ -306,6 +306,7 @@ function buildPerformanceDraftOrPlaceholder(input: {
 }
 
 export const ADELANTO_CATALOG_TAG = "adelanto";
+export const ATTENDANCE_CATALOG_TAG = "attendance";
 
 export const CATALOG_MESSAGE_PRESET_IDS = [
   "attendance",
@@ -323,9 +324,7 @@ export function buildAdelantoTitle(input: {
 }): string {
   const lead = input.leadName?.trim();
   if (input.locale === "en") {
-    return lead
-      ? `Ahead-of-schedule work — ${lead}`
-      : "Ahead-of-schedule work";
+    return lead ? `Ahead-of-schedule work — ${lead}` : "Ahead-of-schedule work";
   }
   return lead ? `Adelanto de obra — ${lead}` : "Adelanto de obra";
 }
@@ -378,7 +377,7 @@ export function applyCatalogMessagePreset(input: {
           chart: input.chart,
         }),
         usedOrgChart,
-        tags: [],
+        tags: [ATTENDANCE_CATALOG_TAG],
       };
     case "performance":
       return {

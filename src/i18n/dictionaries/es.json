@@ -276,7 +276,7 @@
       "searchPlaceholder": "Nombre…",
       "export": "Exportar CSV del mes",
       "emptyTeam": "Agregá personas en el organigrama antes de cargar asistencia.",
-      "storageNote": "El historial de asistencia se guarda en Nodika para este jefe de obra.",
+      "storageNote": "La asistencia se guarda en Nodika. Las respuestas al mensaje de asistencia del equipo por WhatsApp pueden actualizar las marcas del día automáticamente.",
       "loadError": "No pudimos cargar la asistencia desde Nodika.",
       "saveError": "No pudimos guardar la asistencia en Nodika.",
       "removedPerson": "Baja",

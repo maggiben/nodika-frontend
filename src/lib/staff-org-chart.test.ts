@@ -406,6 +406,7 @@ describe("staff-org-chart-draft", () => {
     expect(attendance.usedOrgChart).toBe(false);
     expect(attendance.title).toContain("Team attendance");
     expect(attendance.body).toContain("No people on this lead’s org chart yet");
+    expect(attendance.tags).toEqual(["attendance"]);
 
     const performanceEmpty = applyCatalogMessagePreset({
       presetId: "performance",

@@ -276,7 +276,7 @@
       "searchPlaceholder": "Name…",
       "export": "Export monthly CSV",
       "emptyTeam": "Add people in the org chart before recording attendance.",
-      "storageNote": "Attendance history is saved in Nodika for this site lead.",
+      "storageNote": "Attendance is saved in Nodika. Replies to the team attendance WhatsApp message can update today’s marks automatically.",
       "loadError": "We could not load attendance from Nodika.",
       "saveError": "We could not save attendance to Nodika.",
       "removedPerson": "Removed",
