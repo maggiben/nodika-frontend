@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -82,16 +82,48 @@ export function SnapshotUploadForm({
     control,
     formState: { isSubmitting },
     handleSubmit,
+    setValue,
   } = useForm<UploadFormValues>({
     defaultValues: {
       snapshot: sampleSnapshot,
     },
   });
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [snapshot, setSnapshot] = useState(sampleSnapshot);
   const [result, setResult] = useState<UploadResult | null>(null);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
   const validation = parseNodikaSnapshot(snapshot);
   const canSubmit = validation.success && authenticated && !isSubmitting;
+
+  function applySnapshotText(text: string) {
+    setValue("snapshot", text, { shouldDirty: true });
+    setSnapshot(text);
+    setResult(null);
+    setSubmissionError(null);
+    setFileError(null);
+  }
+
+  async function onSnapshotFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.name.toLowerCase().endsWith(".json")) {
+      setFileError(t("upload.fileNotJson"));
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      applySnapshotText(text);
+    } catch {
+      setFileError(t("upload.fileReadFailed"));
+    }
+  }
 
   async function submit(values: UploadFormValues) {
     setResult(null);
@@ -154,6 +186,32 @@ export function SnapshotUploadForm({
           <Typography color="text.secondary" sx={{ mb: 1 }} variant="body2">
             {t("upload.editorHelp")}
           </Typography>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            sx={{
+              alignItems: { xs: "stretch", sm: "center" },
+              mb: 1.5,
+            }}
+          >
+            <input
+              accept=".json,application/json"
+              hidden
+              onChange={onSnapshotFileChange}
+              ref={fileInputRef}
+              type="file"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              type="button"
+              variant="outlined"
+            >
+              {t("upload.chooseFile")}
+            </Button>
+            <Typography color="text.secondary" variant="body2">
+              {t("upload.fileHelp")}
+            </Typography>
+          </Stack>
           <Controller
             control={control}
             name="snapshot"
@@ -177,6 +235,7 @@ export function SnapshotUploadForm({
                   onChange={(value) => {
                     field.onChange(value);
                     setSnapshot(value);
+                    setFileError(null);
                   }}
                   theme="dark"
                   value={field.value}
@@ -188,6 +247,12 @@ export function SnapshotUploadForm({
 
         {!authenticated && (
           <Alert severity="info">{t("upload.signInPrompt")}</Alert>
+        )}
+
+        {fileError && (
+          <Alert aria-live="polite" severity="error">
+            {fileError}
+          </Alert>
         )}
 
         {!validation.success && (

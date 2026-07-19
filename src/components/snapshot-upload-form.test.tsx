@@ -225,4 +225,84 @@ describe("SnapshotUploadForm", () => {
       screen.queryByLabelText("Core upload token"),
     ).not.toBeInTheDocument();
   });
+
+  test("loads a local JSON file into the editor", async () => {
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
+
+    const loaded = `{"schema_version":"nodika-snapshot-v1","meta":{"projectId":"proj_from_file"}}`;
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File([loaded], "snapshot.json", {
+      type: "application/json",
+    });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Snapshot JSON")).toHaveValue(loaded);
+    });
+    expect(
+      screen.queryByText(/Choose a file with a \.json extension/),
+    ).not.toBeInTheDocument();
+  });
+
+  test("rejects a non-JSON file without changing the editor", async () => {
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
+
+    const editor = screen.getByLabelText(
+      "Snapshot JSON",
+    ) as HTMLTextAreaElement;
+    const before = editor.value;
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["not-json"], "notes.txt", { type: "text/plain" });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      await screen.findByText("Choose a file with a .json extension."),
+    ).toBeInTheDocument();
+    expect(editor.value).toBe(before);
+  });
+
+  test("shows an error when the file cannot be read", async () => {
+    render(
+      <TestI18n locale="en">
+        <SnapshotUploadForm authenticated />
+      </TestI18n>,
+    );
+
+    const editor = screen.getByLabelText(
+      "Snapshot JSON",
+    ) as HTMLTextAreaElement;
+    const before = editor.value;
+    const input = document.querySelector(
+      'input[type="file"]',
+    ) as HTMLInputElement;
+    const file = new File(["{}"], "broken.json", {
+      type: "application/json",
+    });
+    Object.defineProperty(file, "text", {
+      value: () => Promise.reject(new Error("read failed")),
+    });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      await screen.findByText(
+        "The selected file could not be read. Try again or paste the JSON instead.",
+      ),
+    ).toBeInTheDocument();
+    expect(editor.value).toBe(before);
+  });
 });
