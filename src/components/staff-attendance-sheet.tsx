@@ -30,7 +30,9 @@ import {
   downloadTextFile,
   filterPeopleByName,
   getMark,
+  loadAttendanceMonthFromCore,
   readAttendanceStore,
+  saveAttendanceMonthToCore,
   setMark,
   STAFF_ATTENDANCE_CHANGED_EVENT,
   statusShortLabel,
@@ -98,6 +100,8 @@ export function StaffAttendanceSheet({ contactId }: StaffAttendanceSheetProps) {
   const { t } = useDictionary();
   const [lead, setLead] = useState<LeadInfo | null>(null);
   const [leadError, setLeadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [yearMonth, setYearMonth] = useState(() => currentYearMonth());
   const [search, setSearch] = useState("");
@@ -176,6 +180,26 @@ export function StaffAttendanceSheet({ contactId }: StaffAttendanceSheetProps) {
       cancelled = true;
     };
   }, [contactId, t]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMarks() {
+      setLoadError(null);
+      const result = await loadAttendanceMonthFromCore(contactId, yearMonth);
+      if (cancelled) {
+        return;
+      }
+      if (!result.ok) {
+        setLoadError(result.message || t("staff.attendance.loadError"));
+      }
+    }
+
+    void loadMarks();
+    return () => {
+      cancelled = true;
+    };
+  }, [contactId, yearMonth, t]);
 
   const chart = useMemo(() => {
     void storeTick;
@@ -273,7 +297,7 @@ export function StaffAttendanceSheet({ contactId }: StaffAttendanceSheetProps) {
     return [...base, ...dayCols];
   }, [days, statusLabels, t]);
 
-  function handleProcessRowUpdate(newRow: GridRowModel<AttendanceRow>) {
+  async function handleProcessRowUpdate(newRow: GridRowModel<AttendanceRow>) {
     const reportId = String(newRow.id);
     for (const day of days) {
       const raw = String(newRow[day] ?? "");
@@ -285,6 +309,11 @@ export function StaffAttendanceSheet({ contactId }: StaffAttendanceSheetProps) {
       if (prev !== next) {
         setMark(contactId, reportId, day, next);
       }
+    }
+    setSaveError(null);
+    const result = await saveAttendanceMonthToCore(contactId, yearMonth);
+    if (!result.ok) {
+      setSaveError(result.message || t("staff.attendance.saveError"));
     }
     return newRow;
   }
@@ -328,6 +357,8 @@ export function StaffAttendanceSheet({ contactId }: StaffAttendanceSheetProps) {
         </Box>
 
         {leadError ? <Alert severity="error">{leadError}</Alert> : null}
+        {loadError ? <Alert severity="error">{loadError}</Alert> : null}
+        {saveError ? <Alert severity="error">{saveError}</Alert> : null}
 
         <Alert severity="info">{t("staff.attendance.storageNote")}</Alert>
 

@@ -11,7 +11,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { StaffAttendanceSheet } from "@/components/staff-attendance-sheet";
 import { StaffOrgChartEditor } from "@/components/staff-org-chart-editor";
-import { clearAttendanceStore, getMark, setMark } from "@/lib/staff-attendance";
+import { clearAttendanceStore, getMark } from "@/lib/staff-attendance";
 import { clearOrgCharts } from "@/lib/staff-org-chart";
 import { TestI18n } from "@/test-utils/test-i18n";
 
@@ -86,10 +86,6 @@ describe("StaffOrgChartEditor attendance link", () => {
 
 describe("StaffAttendanceSheet", () => {
   test("shows team, tallies, and search filter", async () => {
-    setMark("lead_1", "r1", "2026-07-01", "full_day");
-    setMark("lead_1", "r1", "2026-07-02", "absent");
-    setMark("lead_1", "r2", "2026-07-01", "half_day");
-
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL) => {
@@ -98,6 +94,20 @@ describe("StaffAttendanceSheet", () => {
           return new Response(JSON.stringify(rosterResponse()), {
             status: 200,
           });
+        }
+        if (url.includes("/attendance")) {
+          return new Response(
+            JSON.stringify({
+              contactId: "lead_1",
+              yearMonth: "2026-07",
+              marks: [
+                { reportId: "r1", date: "2026-07-01", status: "full_day" },
+                { reportId: "r1", date: "2026-07-02", status: "absent" },
+                { reportId: "r2", date: "2026-07-01", status: "half_day" },
+              ],
+            }),
+            { status: 200 },
+          );
         }
         return new Response("{}", { status: 404 });
       }),
@@ -116,6 +126,11 @@ describe("StaffAttendanceSheet", () => {
     expect(screen.getByText(/Días completos: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Medias jornadas: 1/)).toBeInTheDocument();
     expect(screen.getByText(/Faltas: 1/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "El historial de asistencia se guarda en Nodika para este jefe de obra.",
+      ),
+    ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("Buscar empleado"), {
       target: { value: "Ana" },
@@ -138,6 +153,16 @@ describe("StaffAttendanceSheet", () => {
         if (url.includes("/api/messaging/roster")) {
           return new Response(
             JSON.stringify(rosterResponse({ orgReports: [] })),
+            { status: 200 },
+          );
+        }
+        if (url.includes("/attendance")) {
+          return new Response(
+            JSON.stringify({
+              contactId: "lead_1",
+              yearMonth: "2026-07",
+              marks: [],
+            }),
             { status: 200 },
           );
         }

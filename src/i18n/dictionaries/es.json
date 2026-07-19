@@ -276,7 +276,9 @@
       "searchPlaceholder": "Nombre…",
       "export": "Exportar CSV del mes",
       "emptyTeam": "Agregá personas en el organigrama antes de cargar asistencia.",
-      "storageNote": "El historial de asistencia se guarda solo en este navegador. Exportá el CSV como respaldo.",
+      "storageNote": "El historial de asistencia se guarda en Nodika para este jefe de obra.",
+      "loadError": "No pudimos cargar la asistencia desde Nodika.",
+      "saveError": "No pudimos guardar la asistencia en Nodika.",
       "removedPerson": "Baja",
       "columns": {
         "name": "Nombre",

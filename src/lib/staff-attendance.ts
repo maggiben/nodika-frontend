@@ -1,6 +1,9 @@
-/** Browser-local attendance marks per lead. No Core API. */
+/** In-memory attendance cache loaded from / saved to Core via BFF. */
+
+import { fetchAuthed } from "@/lib/session-client";
 
 export const STAFF_ATTENDANCE_CHANGED_EVENT = "nodika:staff-attendance-changed";
+/** Legacy browser key — cleared on hydrate; not source of truth. */
 export const STAFF_ATTENDANCE_STORAGE_KEY = "nodika.staffAttendance.v1";
 
 export const ATTENDANCE_STATUSES = [
@@ -11,6 +14,12 @@ export const ATTENDANCE_STATUSES = [
 ] as const;
 
 export type AttendanceStatus = (typeof ATTENDANCE_STATUSES)[number];
+
+export type AttendanceMark = {
+  reportId: string;
+  date: string;
+  status: AttendanceStatus;
+};
 
 /** leadId → reportId → ISO date (YYYY-MM-DD) → status */
 export type AttendanceStore = {
@@ -55,6 +64,37 @@ function notifyStoreChanged() {
   window.dispatchEvent(new Event(STAFF_ATTENDANCE_CHANGED_EVENT));
 }
 
+function clearLegacyLocalStorage(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.removeItem(STAFF_ATTENDANCE_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function parseAttendanceMarksList(value: unknown): AttendanceMark[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const marks: AttendanceMark[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) {
+      continue;
+    }
+    const reportId =
+      typeof item.reportId === "string" ? item.reportId.trim() : "";
+    const date = typeof item.date === "string" ? item.date.trim() : "";
+    if (!reportId || !isIsoDate(date) || !isAttendanceStatus(item.status)) {
+      continue;
+    }
+    marks.push({ reportId, date, status: item.status });
+  }
+  return marks;
+}
+
 export function parseAttendanceStore(value: unknown): AttendanceStore {
   if (!isRecord(value) || !isRecord(value.marks)) {
     return { marks: {} };
@@ -86,33 +126,8 @@ export function parseAttendanceStore(value: unknown): AttendanceStore {
   return { marks };
 }
 
-function readFromLocalStorage(): AttendanceStore {
-  if (typeof window === "undefined") {
-    return EMPTY_STORE;
-  }
-  try {
-    const raw = window.localStorage.getItem(STAFF_ATTENDANCE_STORAGE_KEY);
-    if (!raw) {
-      return EMPTY_STORE;
-    }
-    return parseAttendanceStore(JSON.parse(raw) as unknown);
-  } catch {
-    return EMPTY_STORE;
-  }
-}
-
-function writeStore(store: AttendanceStore): void {
+function writeMemoryStore(store: AttendanceStore): void {
   memoryStore = store;
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.setItem(
-        STAFF_ATTENDANCE_STORAGE_KEY,
-        JSON.stringify(store),
-      );
-    } catch {
-      // Ignore quota / private mode failures; keep memory cache.
-    }
-  }
   notifyStoreChanged();
 }
 
@@ -120,19 +135,13 @@ export function readAttendanceStore(): AttendanceStore {
   if (memoryStore) {
     return memoryStore;
   }
-  memoryStore = readFromLocalStorage();
+  memoryStore = EMPTY_STORE;
   return memoryStore;
 }
 
 export function clearAttendanceStore(): void {
   memoryStore = { marks: {} };
-  if (typeof window !== "undefined") {
-    try {
-      window.localStorage.removeItem(STAFF_ATTENDANCE_STORAGE_KEY);
-    } catch {
-      // ignore
-    }
-  }
+  clearLegacyLocalStorage();
   notifyStoreChanged();
 }
 
@@ -161,6 +170,64 @@ export function daysInYearMonth(yearMonth: string): string[] {
   return days;
 }
 
+export function marksForLeadMonth(
+  leadId: string,
+  yearMonth: string,
+): AttendanceMark[] {
+  const days = new Set(daysInYearMonth(yearMonth));
+  const leadMarks = readAttendanceStore().marks[leadId] ?? {};
+  const list: AttendanceMark[] = [];
+  for (const [reportId, byDate] of Object.entries(leadMarks)) {
+    for (const [date, status] of Object.entries(byDate)) {
+      if (days.has(date)) {
+        list.push({ reportId, date, status });
+      }
+    }
+  }
+  return list;
+}
+
+/** Replace in-memory marks for one lead+month; keep other months/leads. */
+export function hydrateAttendanceMonth(
+  leadId: string,
+  yearMonth: string,
+  marks: AttendanceMark[],
+): void {
+  clearLegacyLocalStorage();
+  const prev = readAttendanceStore();
+  const nextLead: Record<string, Record<string, AttendanceStatus>> = {
+    ...(prev.marks[leadId] ?? {}),
+  };
+  const days = daysInYearMonth(yearMonth);
+  for (const day of days) {
+    for (const reportId of Object.keys(nextLead)) {
+      const byDate = { ...(nextLead[reportId] ?? {}) };
+      delete byDate[day];
+      if (Object.keys(byDate).length === 0) {
+        delete nextLead[reportId];
+      } else {
+        nextLead[reportId] = byDate;
+      }
+    }
+  }
+  for (const mark of marks) {
+    if (!mark.date.startsWith(`${yearMonth}-`)) {
+      continue;
+    }
+    nextLead[mark.reportId] = {
+      ...(nextLead[mark.reportId] ?? {}),
+      [mark.date]: mark.status,
+    };
+  }
+  const marksMap = { ...prev.marks };
+  if (Object.keys(nextLead).length === 0) {
+    delete marksMap[leadId];
+  } else {
+    marksMap[leadId] = nextLead;
+  }
+  writeMemoryStore({ marks: marksMap });
+}
+
 export function getMark(
   leadId: string,
   reportId: string,
@@ -170,6 +237,7 @@ export function getMark(
   return status ?? null;
 }
 
+/** Update in-memory mark only. Call saveAttendanceMonthToCore to persist. */
 export function setMark(
   leadId: string,
   reportId: string,
@@ -204,7 +272,77 @@ export function setMark(
     marks[leadId] = leadMarks;
   }
 
-  writeStore({ marks });
+  writeMemoryStore({ marks });
+}
+
+export type AttendanceSaveResult =
+  { ok: true } | { ok: false; message: string; status?: number };
+
+export async function loadAttendanceMonthFromCore(
+  leadId: string,
+  yearMonth: string,
+): Promise<AttendanceSaveResult> {
+  const id = leadId.trim();
+  if (!id || !/^\d{4}-\d{2}$/.test(yearMonth)) {
+    return { ok: false, message: "Invalid attendance request." };
+  }
+  try {
+    const response = await fetchAuthed(
+      `/api/messaging/contacts/${encodeURIComponent(id)}/attendance?yearMonth=${encodeURIComponent(yearMonth)}`,
+      { cache: "no-store" },
+    );
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message =
+        isRecord(body) && typeof body.message === "string"
+          ? body.message
+          : `Load failed (${response.status}).`;
+      return { ok: false, message, status: response.status };
+    }
+    const marks = parseAttendanceMarksList(
+      isRecord(body) ? body.marks : undefined,
+    );
+    hydrateAttendanceMonth(id, yearMonth, marks);
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "Could not reach the messaging service." };
+  }
+}
+
+export async function saveAttendanceMonthToCore(
+  leadId: string,
+  yearMonth: string,
+): Promise<AttendanceSaveResult> {
+  const id = leadId.trim();
+  if (!id || !/^\d{4}-\d{2}$/.test(yearMonth)) {
+    return { ok: false, message: "Invalid attendance request." };
+  }
+  const marks = marksForLeadMonth(id, yearMonth);
+  try {
+    const response = await fetchAuthed(
+      `/api/messaging/contacts/${encodeURIComponent(id)}/attendance`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yearMonth, marks }),
+      },
+    );
+    const body: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const message =
+        isRecord(body) && typeof body.message === "string"
+          ? body.message
+          : `Save failed (${response.status}).`;
+      return { ok: false, message, status: response.status };
+    }
+    const saved = parseAttendanceMarksList(
+      isRecord(body) ? body.marks : undefined,
+    );
+    hydrateAttendanceMonth(id, yearMonth, saved);
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "Could not reach the messaging service." };
+  }
 }
 
 export function emptyTally(): AttendanceTally {

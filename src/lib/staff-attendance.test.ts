@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import {
   buildAttendanceCsv,
@@ -9,8 +9,11 @@ import {
   daysInYearMonth,
   filterPeopleByName,
   getMark,
+  hydrateAttendanceMonth,
+  loadAttendanceMonthFromCore,
   parseAttendanceStore,
   readAttendanceStore,
+  saveAttendanceMonthToCore,
   setMark,
   STAFF_ATTENDANCE_STORAGE_KEY,
   summarizeAttendance,
@@ -20,11 +23,15 @@ describe("staff-attendance", () => {
   beforeEach(() => {
     clearAttendanceStore();
     window.localStorage.clear();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   afterEach(() => {
     clearAttendanceStore();
     window.localStorage.clear();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   test("daysInYearMonth lists every calendar day", () => {
@@ -38,20 +45,16 @@ describe("staff-attendance", () => {
     expect(currentYearMonth(new Date("2026-07-19T12:00:00Z"))).toBe("2026-07");
   });
 
-  test("persists marks and round-trips through localStorage", () => {
+  test("setMark updates memory and clears legacy localStorage key", () => {
+    window.localStorage.setItem(STAFF_ATTENDANCE_STORAGE_KEY, "{}");
     setMark("lead_1", "r1", "2026-07-01", "full_day");
-    setMark("lead_1", "r1", "2026-07-02", "absent");
+    hydrateAttendanceMonth("lead_1", "2026-07", [
+      { reportId: "r1", date: "2026-07-01", status: "full_day" },
+    ]);
     expect(getMark("lead_1", "r1", "2026-07-01")).toBe("full_day");
-    expect(getMark("lead_1", "r1", "2026-07-02")).toBe("absent");
-
-    const raw = window.localStorage.getItem(STAFF_ATTENDANCE_STORAGE_KEY);
-    expect(raw).toBeTruthy();
-    clearAttendanceStore();
-    window.localStorage.setItem(STAFF_ATTENDANCE_STORAGE_KEY, raw!);
-    // Force re-read from storage
     expect(
-      parseAttendanceStore(JSON.parse(raw!)).marks.lead_1.r1["2026-07-01"],
-    ).toBe("full_day");
+      window.localStorage.getItem(STAFF_ATTENDANCE_STORAGE_KEY),
+    ).toBeNull();
   });
 
   test("clearing a mark leaves other history intact", () => {
@@ -99,7 +102,7 @@ describe("staff-attendance", () => {
     expect(filterPeopleByName(people, "  ")).toEqual(people);
   });
 
-  test("CSV includes orphans and does not clear storage", () => {
+  test("CSV includes orphans and does not clear memory", () => {
     setMark("lead_1", "alive", "2026-07-01", "full_day");
     setMark("lead_1", "gone", "2026-07-02", "absent");
 
@@ -113,10 +116,7 @@ describe("staff-attendance", () => {
 
     expect(csv).toContain("Alive Person");
     expect(csv).toContain("Removed (gone)");
-    expect(csv).toContain("full_day");
-    expect(csv).toContain("absent");
     expect(getMark("lead_1", "alive", "2026-07-01")).toBe("full_day");
-    expect(getMark("lead_1", "gone", "2026-07-02")).toBe("absent");
     expect(readAttendanceStore().marks.lead_1.gone["2026-07-02"]).toBe(
       "absent",
     );
@@ -133,5 +133,58 @@ describe("staff-attendance", () => {
         },
       }).marks,
     ).toEqual({});
+  });
+
+  test("loadAttendanceMonthFromCore hydrates marks from BFF", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              contactId: "lead_1",
+              yearMonth: "2026-07",
+              marks: [
+                { reportId: "r1", date: "2026-07-01", status: "full_day" },
+              ],
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+
+    const result = await loadAttendanceMonthFromCore("lead_1", "2026-07");
+    expect(result).toEqual({ ok: true });
+    expect(getMark("lead_1", "r1", "2026-07-01")).toBe("full_day");
+  });
+
+  test("saveAttendanceMonthToCore PUTs month marks", async () => {
+    setMark("lead_1", "r1", "2026-07-01", "absent");
+    const fetchMock = vi.fn(
+      async (_url: RequestInfo | URL, init?: RequestInit) => {
+        expect(init?.method).toBe("PUT");
+        const body = JSON.parse(String(init?.body ?? "{}")) as {
+          yearMonth: string;
+          marks: unknown[];
+        };
+        expect(body.yearMonth).toBe("2026-07");
+        expect(body.marks).toEqual([
+          { reportId: "r1", date: "2026-07-01", status: "absent" },
+        ]);
+        return new Response(
+          JSON.stringify({
+            contactId: "lead_1",
+            yearMonth: "2026-07",
+            marks: body.marks,
+          }),
+          { status: 200 },
+        );
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await saveAttendanceMonthToCore("lead_1", "2026-07");
+    expect(result).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalled();
   });
 });

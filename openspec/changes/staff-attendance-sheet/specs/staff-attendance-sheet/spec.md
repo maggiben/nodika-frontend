@@ -29,19 +29,19 @@ The attendance sheet SHALL use MUI X Data Grid with one row per person and one c
 
 - **WHEN** the operator selects a year-month
 - **THEN** the grid SHALL show day columns for every calendar day in that month
-- **AND** SHALL load any previously saved marks for those dates without clearing other months’ history
+- **AND** SHALL load any previously saved marks for those dates from Core through the messaging BFF without clearing other months’ history
 
 #### Scenario: Record and change a mark
 
 - **WHEN** the operator sets a cell to full day, half day, absent, or justified
-- **THEN** the app SHALL persist that mark for the lead, report id, and date
+- **THEN** the app SHALL persist that mark for the lead, report id, and date to Core through the messaging BFF
 - **WHEN** the operator clears a cell
-- **THEN** the app SHALL remove that day’s mark while leaving all other history intact
+- **THEN** the app SHALL remove that day’s mark in Core while leaving all other history intact
 
 #### Scenario: History survives month changes
 
 - **WHEN** the operator records marks in month A, then views month B, then returns to month A
-- **THEN** month A’s marks SHALL still be present
+- **THEN** month A’s marks SHALL still be present from Core
 
 ### Requirement: Employee search and attendance tallies
 
@@ -66,10 +66,19 @@ The attendance sheet SHALL let the operator export a CSV report for the selected
 
 - **WHEN** the operator activates monthly export for the visible month
 - **THEN** the app SHALL download a CSV that includes each relevant person and their day marks for that month
-- **AND** the stored attendance history SHALL remain unchanged after the export
+- **AND** the Core-stored attendance history SHALL remain unchanged after the export
 
 #### Scenario: People who left mid-month
 
 - **WHEN** a report id has marks in the selected month but is no longer on the lead’s org chart
 - **THEN** the export SHALL still include that report id’s marks for the month
 - **AND** SHALL label the person from the chart when available, otherwise with a clear removed/unknown placeholder
+
+### Requirement: Core is the attendance source of truth
+
+The attendance sheet SHALL NOT use browser `localStorage` as the source of truth for marks. Marks SHALL be loaded from and saved to Core through the authenticated messaging BFF.
+
+#### Scenario: Persist across sessions
+
+- **WHEN** the operator saves marks for a lead and later opens the sheet on another browser session with the same account
+- **THEN** the sheet SHALL show those marks loaded from Core

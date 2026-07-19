@@ -1,31 +1,26 @@
 ## Why
 
-Operators already manage each jefe de obra’s team in the org chart and can draft WhatsApp attendance asks, but they still lack a durable **planilla de asistencia** to mark, search, tally, and export monthly results while keeping a full history. They need that sheet reachable from the organigrama, built with MUI Data Grid, using the same standard attendance marks already used in messaging.
+Operators need attendance history shared across devices. Browser `localStorage` is not durable enough; marks must use Core Mongo via the messaging BFF, matching org-chart persistence.
 
 ## What Changes
 
-- Add a localized attendance sheet per lead (`contactId`), reachable from the org-chart editor.
-- Show the lead’s current org-chart reports in an MUI X Data Grid (rows = people, columns = days of the selected month) with standard marks: full day, half day, absent (and optional justified leave).
-- Persist a complete mark history in the browser (no new Core API); month views are filters over that history, not destructive snapshots.
-- Support employee name search/filter and live tallies (asistencias, medias, faltas) for the visible period and for a selected person.
-- Export a monthly CSV report for the selected lead + month without deleting history.
-- Extend org-chart / staff-org navigation and i18n (es/en) for the new surface.
+- Persist attendance marks in Core (`attendanceMarks` on the lead contact), not `localStorage` as source of truth.
+- Add BFF GET/PUT proxies for `/api/messaging/contacts/:id/attendance`.
+- Load the selected month from Core on open; save month marks to Core on each edit (replace-that-month semantics).
+- Keep in-memory cache + UI events; clear legacy localStorage key.
+- Update i18n storage note to say data is saved in Nodika (database).
 
 ## Capabilities
 
 ### New Capabilities
 
-- `staff-attendance-sheet`: Per-lead attendance grid, history, search/tallies, and monthly CSV export.
+- (none — extends existing change capability)
 
 ### Modified Capabilities
 
-- `staff-org-chart`: Add an entry point from the org-chart editor to the attendance sheet for that lead.
+- `staff-attendance-sheet`: Require Core-backed persistence through the messaging BFF instead of browser-only storage.
 
 ## Impact
 
-- New route under `src/app/[locale]/staff/[contactId]/attendance`
-- New Client Component + lib module for marks, storage, aggregation, and CSV export
-- Org-chart editor link + breadcrumbs/i18n
-- Vitest coverage for domain helpers (status parsing, tallies, export)
-- Uses existing `@mui/x-data-grid`; no new npm dependencies
-- Does **not** invent Core attendance endpoints; browser storage is the source of truth for marks until a future Core integration
+- Depends on Core change `staff-attendance-persistence`
+- `src/lib/staff-attendance.ts`, BFF routes, attendance sheet UI/i18n/tests
