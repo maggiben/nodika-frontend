@@ -69,12 +69,19 @@ export function buildBreadcrumbItems(
       return [home, { labelKey: "breadcrumb.staff" }];
     }
 
-    // /staff/[contactId]/org — skip the contact id crumb
+    // /staff/[contactId]/org|attendance — skip the contact id crumb
     if (segments.length === 3 && segments[2] === "org") {
       return [
         home,
         { labelKey: "breadcrumb.staff", href: `${homeHref}/staff` },
         { labelKey: "breadcrumb.org" },
+      ];
+    }
+    if (segments.length === 3 && segments[2] === "attendance") {
+      return [
+        home,
+        { labelKey: "breadcrumb.staff", href: `${homeHref}/staff` },
+        { labelKey: "breadcrumb.attendance" },
       ];
     }
   }

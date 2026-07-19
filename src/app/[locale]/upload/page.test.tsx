@@ -29,7 +29,9 @@ describe("UploadPage", () => {
       }),
     ).toBeInTheDocument();
     expect(screen.getByText("Snapshot upload form")).toBeInTheDocument();
-    expect(screen.getByText(/Pega el JSON del snapshot/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Carga un archivo JSON de snapshot/),
+    ).toBeInTheDocument();
   });
 
   test("rejects unsupported locales", async () => {

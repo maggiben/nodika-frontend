@@ -16,6 +16,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useDictionary } from "@/i18n/dictionary-provider";
@@ -147,9 +148,12 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
         let rows = rosterResponse.ok ? parseStaffRoster(body) : [];
 
         if (!rosterResponse.ok) {
-          const contactsResponse = await fetchAuthed("/api/messaging/contacts", {
-            cache: "no-store",
-          });
+          const contactsResponse = await fetchAuthed(
+            "/api/messaging/contacts",
+            {
+              cache: "no-store",
+            },
+          );
           const contactsBody: unknown = await contactsResponse
             .json()
             .catch(() => null);
@@ -358,6 +362,14 @@ export function StaffOrgChartEditor({ contactId }: StaffOrgChartEditorProps) {
           <Typography color="text.secondary" sx={{ mt: 1 }}>
             {t("staff.org.description")}
           </Typography>
+          <Button
+            component={Link}
+            href={`/${locale}/staff/${encodeURIComponent(contactId)}/attendance`}
+            sx={{ mt: 2 }}
+            variant="outlined"
+          >
+            {t("staff.org.openAttendance")}
+          </Button>
         </Box>
 
         {leadError ? <Alert severity="error">{leadError}</Alert> : null}

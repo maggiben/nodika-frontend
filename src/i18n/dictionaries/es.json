@@ -31,7 +31,8 @@
     "upload": "Subir snapshot",
     "settings": "Configuración",
     "staff": "Equipo",
-    "org": "Organigrama"
+    "org": "Organigrama",
+    "attendance": "Asistencia"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -259,10 +260,39 @@
       "copied": "Mensaje copiado.",
       "copyError": "No pudimos copiar el mensaje.",
       "draftEmpty": "Agregá al menos una persona antes de generar el mensaje de performance.",
+      "openAttendance": "Planilla de asistencia",
       "roles": {
         "operario": "Operario",
         "jornalero": "Jornalero",
         "otro": "Otro"
+      }
+    },
+    "attendance": {
+      "title": "Planilla de asistencia",
+      "description": "Marcá la asistencia diaria del equipo a cargo de este jefe de obra. Se conserva el historial de todos los meses.",
+      "loading": "Cargando planilla de asistencia…",
+      "month": "Mes",
+      "search": "Buscar empleado",
+      "searchPlaceholder": "Nombre…",
+      "export": "Exportar CSV del mes",
+      "emptyTeam": "Agregá personas en el organigrama antes de cargar asistencia.",
+      "storageNote": "El historial de asistencia se guarda solo en este navegador. Exportá el CSV como respaldo.",
+      "removedPerson": "Baja",
+      "columns": {
+        "name": "Nombre",
+        "role": "Rol"
+      },
+      "marks": {
+        "fullDay": "Día completo",
+        "halfDay": "Media jornada",
+        "absent": "Faltó",
+        "justified": "Justificada"
+      },
+      "tally": {
+        "fullDay": "Días completos: {count}",
+        "halfDay": "Medias jornadas: {count}",
+        "absent": "Faltas: {count}",
+        "justified": "Justificadas: {count}"
       }
     },
     "templateTitle": "Mensaje de WhatsApp",

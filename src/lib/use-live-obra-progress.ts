@@ -19,12 +19,14 @@ export function useLiveObraProgress(
   const [progressById, setProgressById] = useState<
     Record<string, ObraProgressSummary | null>
   >({});
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   useEffect(() => {
     // Drop cached live % when projects are deleted/uploaded so a re-used
     // projectId cannot briefly show the previous obra's overall progress.
     return subscribeToProjectLibrary(() => {
       setProgressById({});
+      setLoadedFor(null);
     });
   }, []);
 
@@ -35,12 +37,12 @@ export function useLiveObraProgress(
 
     let cancelled = false;
     const id = projectId;
-    setProgressById((prev) => ({ ...prev, [id]: null }));
 
     async function load() {
       const next = await fetchObraProgress(id);
       if (!cancelled) {
         setProgressById((prev) => ({ ...prev, [id]: next }));
+        setLoadedFor(id);
       }
     }
 
@@ -64,7 +66,7 @@ export function useLiveObraProgress(
     };
   }, [projectId]);
 
-  if (!projectId) {
+  if (!projectId || loadedFor !== projectId) {
     return null;
   }
   return progressById[projectId] ?? null;

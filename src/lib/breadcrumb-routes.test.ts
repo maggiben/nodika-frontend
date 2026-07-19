@@ -40,6 +40,14 @@ describe("buildBreadcrumbItems", () => {
     ]);
   });
 
+  test("builds nested attendance trail without contact id", () => {
+    expect(buildBreadcrumbItems("/es/staff/contact-42/attendance")).toEqual([
+      { labelKey: "breadcrumb.home", href: "/es" },
+      { labelKey: "breadcrumb.staff", href: "/es/staff" },
+      { labelKey: "breadcrumb.attendance" },
+    ]);
+  });
+
   test("returns null for unknown paths", () => {
     expect(buildBreadcrumbItems("/es/unknown")).toBeNull();
     expect(buildBreadcrumbItems("/es/staff/only-id")).toBeNull();

@@ -31,7 +31,8 @@
     "upload": "Upload snapshot",
     "settings": "Settings",
     "staff": "Staff",
-    "org": "Org chart"
+    "org": "Org chart",
+    "attendance": "Attendance"
   },
   "auth": {
     "email": "Email address",
@@ -259,10 +260,39 @@
       "copied": "Message copied.",
       "copyError": "We could not copy the message.",
       "draftEmpty": "Add at least one person before generating a performance message.",
+      "openAttendance": "Attendance sheet",
       "roles": {
         "operario": "Operator",
         "jornalero": "Day laborer",
         "otro": "Other"
+      }
+    },
+    "attendance": {
+      "title": "Attendance sheet",
+      "description": "Mark daily attendance for people under this site lead. History is kept for every month.",
+      "loading": "Loading attendance sheet…",
+      "month": "Month",
+      "search": "Search employee",
+      "searchPlaceholder": "Name…",
+      "export": "Export monthly CSV",
+      "emptyTeam": "Add people in the org chart before recording attendance.",
+      "storageNote": "Attendance history is saved in this browser only. Export CSV for a backup.",
+      "removedPerson": "Removed",
+      "columns": {
+        "name": "Name",
+        "role": "Role"
+      },
+      "marks": {
+        "fullDay": "Full day",
+        "halfDay": "Half day",
+        "absent": "Absent",
+        "justified": "Justified"
+      },
+      "tally": {
+        "fullDay": "Full days: {count}",
+        "halfDay": "Half days: {count}",
+        "absent": "Absences: {count}",
+        "justified": "Justified: {count}"
       }
     },
     "templateTitle": "WhatsApp message",

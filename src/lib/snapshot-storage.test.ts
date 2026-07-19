@@ -380,7 +380,7 @@ describe("snapshot-storage", () => {
         content: { meta: { projectId: "proj_a", projectNombre: "Alpha" } },
       },
     ];
-    let progressByProject: Record<
+    const progressByProject: Record<
       string,
       {
         projectId: string;
@@ -399,7 +399,10 @@ describe("snapshot-storage", () => {
       "fetch",
       vi.fn(async (input: RequestInfo, init?: RequestInit) => {
         const url = String(input);
-        if (url.includes("/api/snapshots/proj_a") && init?.method === "DELETE") {
+        if (
+          url.includes("/api/snapshots/proj_a") &&
+          init?.method === "DELETE"
+        ) {
           projects = [];
           // Mirrors Core cascade: messaging progress wiped with the source.
           delete progressByProject.proj_a;
